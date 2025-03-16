@@ -22,12 +22,19 @@ class EventsCRUD(BaseCRUD):
 
     async def get_event(self, event_id: uuid.UUID) -> Event:
         query = select(Event).where(Event.id == event_id).options(
-            selectinload(Event.users), selectinload(Event.task))
+            selectinload(Event.task))
         result = await self.db.execute(query)
         return result.scalars().first()
 
     async def get_full_event(self, event_id: uuid.UUID) -> Event:
         query = select(Event).where(Event.id == event_id).options(
-            selectinload(Event.task).selectinload(Task.typed_tasks).selectinload(TypedTask.users))
+            selectinload(Event.task).selectinload(Task.typed_tasks).selectinload(TypedTask.task_states).selectinload(TaskState.user))
         result = await self.db.execute(query)
         return result.scalars().first()
+
+    async def update_event(self, event: Event, name: str, date: datetime, location: str, organizer: str) -> Event:
+        event.name = name
+        event.date = date
+        event.location = location
+        event.organizer = organizer
+        return await self.update(event)

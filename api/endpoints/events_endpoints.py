@@ -1,5 +1,5 @@
 from models.events import Task
-from schemas.events import EventFullInfo, EventCreateOrUpdate, TaskRead
+from schemas.events import EventFullInfo, EventCreateOrUpdate
 import uuid
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -49,3 +49,34 @@ async def create_event(event: EventCreateOrUpdate, db=Depends(get_async_session)
     task: Task = db_event.task
 
     return db_event
+
+
+@api_router.get("/{event_id}", response_model=EventFullInfo)
+async def get_event(event_id: uuid.UUID, db=Depends(get_async_session)):
+    db_event = await EventsCRUD(db).get_full_event(event_id)
+    if db_event is None:
+        raise HTTPException(status_code=404, detail="Мероприятие не найдено")
+    return db_event
+
+
+@api_router.put("/{event_id}", response_model=EventFullInfo, dependencies=[Depends(current_superuser)])
+async def update_event(event_id: uuid.UUID, event: EventCreateOrUpdate, db=Depends(get_async_session)):
+    db_event = await EventsCRUD(db).get_full_event(event_id)
+    if db_event is None:
+        raise HTTPException(status_code=404, detail="Мероприятие не найдено")
+    db_event = await EventsCRUD(db).update_event(
+        event=db_event,
+        name=event.name,
+        date=event.date,
+        location=event.location,
+        organizer=event.organizer,
+    )
+    return db_event
+
+
+@api_router.delete("/{event_id}", status_code=204, dependencies=[Depends(current_superuser)])
+async def delete_event(event_id: uuid.UUID, db=Depends(get_async_session)):
+    db_event = await EventsCRUD(db).get_event(event_id)
+    if db_event is None:
+        raise HTTPException(status_code=404, detail="Мероприятие не найдено")
+    await EventsCRUD(db).delete(db_event)

@@ -35,7 +35,6 @@ async def register_user(user: UserCreate, db=Depends(get_async_session), current
     if not await institute_crud.get_institute_by_id(user.institute_id):
         raise HTTPException(
             status_code=400, detail="Институт не найден")
-    # если администратора нет, то создаем его
 
     user = await create_user(
         email=user.email,
@@ -43,6 +42,7 @@ async def register_user(user: UserCreate, db=Depends(get_async_session), current
         first_name=user.first_name,
         last_name=user.last_name,
         patronymic=user.patronymic,
+        roles=user.roles,
         # если администратора нет, то создаем его
         is_superuser=user.is_superuser if has_admin else True,
         institute_id=user.institute_id,

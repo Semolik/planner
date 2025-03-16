@@ -53,17 +53,47 @@ class EventReadShort(EventRead):
         from_attributes = True
 
 
+class TypedTaskState(BaseModel):
+    user: UserReadShort
+    is_completed: bool
+    comment: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
 class TypedTaskRead(BaseModel):
     id: uuid.UUID
     task_type: UserRole
     description: str | None
+    link: str | None
     for_single_user: bool
-    users: List[UserReadShort]
+    task_states: List[TypedTaskState]
 
 
-class TaskRead(TaskBase):
+class TaskReadShortWithoutEvent(TaskBase):
     id: uuid.UUID
+
+
+class TaskReadShort(TaskReadShortWithoutEvent):
     event: EventRead
+
+    class Config:
+        from_attributes = True
+
+
+class TypedTaskReadFull(TypedTaskRead):
+    parent_task: TaskReadShort
+
+
+class TaskRead(TaskReadShort):
+    typed_tasks: List[TypedTaskRead]
+
+    class Config:
+        from_attributes = True
+
+
+class TaskWithoutEventRead(TaskReadShortWithoutEvent):
     typed_tasks: List[TypedTaskRead]
 
     class Config:
@@ -71,7 +101,7 @@ class TaskRead(TaskBase):
 
 
 class EventFullInfo(EventRead):
-    task: TaskRead
+    task: TaskWithoutEventRead
 
     class Config:
         from_attributes = True

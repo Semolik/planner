@@ -21,17 +21,17 @@ class TasksCRUD(BaseCRUD):
 
     async def get_typed_task(self, typed_task_id: uuid.UUID) -> TypedTask:
         query = select(TypedTask).where(TypedTask.id == typed_task_id).options(
-            selectinload(TypedTask.users), selectinload(TypedTask.task_states))
+            selectinload(TypedTask.users), selectinload(TypedTask.task_states), selectinload(TypedTask.parent_task).selectinload(Task.event))
         result = await self.db.execute(query)
         return result.scalars().first()
 
-    async def assign_user_to_task(self, typed_task: TypedTask, user: User) -> TypedTask:
+    async def assign_user_to_task(self, typed_task: TypedTask, user: User) -> TaskState:
         task_state = TaskState(
             type_task_id=typed_task.id,
             user_id=user.id,
         )
         await self.create(task_state)
-        return await self.get_typed_task(typed_task.id)
+        return task_state
 
     async def is_user_assigned_to_task(self, typed_task: TypedTask, user: User) -> bool:
         query = select(TaskState).where(TaskState.type_task_id ==

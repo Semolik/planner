@@ -1,6 +1,7 @@
 import uuid
 import enum
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import Column, String, DateTime, func, ForeignKey, Enum
 from fastapi_users.db import SQLAlchemyBaseUserTableUUID
@@ -32,8 +33,12 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     updated_at = Column(DateTime, server_default=func.now(),
                         onupdate=func.now(), nullable=False)
 
-    roles = relationship("UserRoleAssociation", back_populates="user")
+    roles_objects = relationship("UserRoleAssociation", back_populates="user")
 
+    @property
+    def roles(self):
+        return [role.role for role in self.roles_objects
+                ]
     institute = relationship("Institute", foreign_keys=[institute_id])
 
 
@@ -44,7 +49,7 @@ class UserRoleAssociation(Base):
         'users.id'), primary_key=True)
     role = Column(Enum(UserRole), primary_key=True)
 
-    user = relationship("User", back_populates="roles")
+    user = relationship("User", back_populates="roles_objects")
 
 
 class Institute(Base):

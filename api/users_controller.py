@@ -13,10 +13,11 @@ from fastapi_users.authentication import (
 )
 from fastapi_users.exceptions import UserAlreadyExists
 from fastapi_users.db import SQLAlchemyUserDatabase
-from models.user import User
+from models.user import User, UserRole, UserRoleAssociation
 from os import getenv
 from db.session import get_async_session, AsyncSession, get_async_session_context
 from config import settings
+from cruds.base_crud import BaseCRUD
 
 
 async def get_user_db(session: AsyncSession = Depends(get_async_session)):
@@ -130,12 +131,12 @@ get_user_db_context = contextlib.asynccontextmanager(get_user_db)
 get_user_manager_context = contextlib.asynccontextmanager(get_user_manager)
 
 
-async def create_user(email: str, password: str, first_name: str, last_name: str, group: str, institute_id: uuid.UUID, patronymic: str | None = None, is_superuser: bool = False, is_verified: bool = False):
+async def create_user(email: str, password: str, first_name: str, last_name: str, group: str, institute_id: uuid.UUID, roles: list[UserRole], patronymic: str | None = None, is_superuser: bool = False, is_verified: bool = False):
     try:
         async with get_async_session_context() as session:
             async with get_user_db_context(session) as user_db:
                 async with get_user_manager_context(user_db) as user_manager:
-                    return await user_manager.create(
+                    db_user = await user_manager.create(
                         UserCreate(
                             email=email,
                             password=password,
@@ -148,6 +149,10 @@ async def create_user(email: str, password: str, first_name: str, last_name: str
                             institute_id=institute_id
                         )
                     )
+                    for role in roles:
+                        await BaseCRUD(session).create(UserRoleAssociation(
+                            user_id=db_user.id, role=role))
+                    return await user_manager.get(db_user.id)
     except UserAlreadyExists:
         print(f"User {email} already exists")
 

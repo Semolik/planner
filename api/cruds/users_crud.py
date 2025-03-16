@@ -11,7 +11,7 @@ from users_controller import get_user_manager_context
 class UsersCRUD(BaseCRUD):
     async def get_user_by_id(self, user_id: uuid.UUID) -> User:
         query = await self.db.execute(select(User).where(User.id == user_id).options(
-            selectinload(User.institute), selectinload(User.roles)))
+            selectinload(User.institute), selectinload(User.roles_objects)))
         return query.scalars().first()
 
     async def get_user_by_email(self, email: str) -> User:
@@ -38,7 +38,7 @@ class UsersCRUD(BaseCRUD):
             users = users.where(User.is_superuser == True)
         users = users.offset(
             (page - 1) * page_size).limit(page_size)
-        result = await self.db.execute(users.options(selectinload(User.institute), selectinload(User.roles)))
+        result = await self.db.execute(users.options(selectinload(User.institute), selectinload(User.roles_objects)))
         return result.scalars().all()
 
     async def update_user(self, user: User, user_data: UserUpdate, update_as_superuser: bool = False) -> User:
