@@ -8,7 +8,7 @@ from cruds.tasks_crud import TasksCRUD
 from users_controller import current_superuser
 from db.session import get_async_session
 from models.user import UserRole
-
+from endpoints.events_groups_endpoints import api_router as groups_router
 api_router = APIRouter(prefix="/events", tags=["events"])
 
 
@@ -59,6 +59,13 @@ async def get_event(event_id: uuid.UUID, db=Depends(get_async_session)):
     return db_event
 
 
+@api_router.get("", response_model=list[EventFullInfo])
+async def get_events(prioritize_unstaffed: bool = True, page: int = 1, db=Depends(get_async_session)):
+    # if prioritize_unstaffed show all events with unstaffed photographers
+    events = await EventsCRUD(db).get_events(page=page, prioritize_unstaffed=prioritize_unstaffed)
+    return events
+
+
 @api_router.put("/{event_id}", response_model=EventFullInfo, dependencies=[Depends(current_superuser)])
 async def update_event(event_id: uuid.UUID, event: EventCreateOrUpdate, db=Depends(get_async_session)):
     db_event = await EventsCRUD(db).get_full_event(event_id)
@@ -80,3 +87,5 @@ async def delete_event(event_id: uuid.UUID, db=Depends(get_async_session)):
     if db_event is None:
         raise HTTPException(status_code=404, detail="Мероприятие не найдено")
     await EventsCRUD(db).delete(db_event)
+
+api_router.include_router(groups_router)

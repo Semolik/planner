@@ -20,11 +20,11 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
-    patronymic = Column(String, nullable=True)
-    vk_username = Column(String, nullable=True)
+    patronymic = Column(String, nullable=False, default="")
+    vk_username = Column(String, nullable=False, default="")
 
     birth_date = Column(DateTime, nullable=True)
-    phone = Column(String, nullable=True)
+    phone = Column(String, nullable=False, default="")
     group = Column(String, nullable=False)
     institute_id = Column(UUID(as_uuid=True), ForeignKey(
         'institutes.id'), nullable=False)
@@ -37,8 +37,9 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
 
     @property
     def roles(self):
-        return [role.role for role in self.roles_objects
-                ]
+        return [
+            role.role for role in self.roles_objects
+        ]
     institute = relationship("Institute", foreign_keys=[institute_id])
 
 

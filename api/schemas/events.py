@@ -9,14 +9,14 @@ class EventBase(BaseModel):
     name: str
     date: datetime
     location: str
-    link: str | None = None
-    organizer: str | None = None
+    link: str
+    organizer: str
 
 
 class EventCreateOrUpdate(EventBase):
-    photographer_description: str | None = None
-    copywriter_description: str | None = None
-    designer_description: str | None = None
+    photographer_description: str
+    copywriter_description: str
+    designer_description: str
 
 
 class TaskBase(BaseModel):
@@ -31,7 +31,7 @@ class TaskCreate(TaskBase):
 
 class TaskStateBase(UserReadShort):
     is_completed: bool
-    comment: str | None = None
+    comment: str
 
     class Config:
         from_attributes = True
@@ -56,7 +56,7 @@ class EventReadShort(EventRead):
 class TypedTaskState(BaseModel):
     user: UserReadShort
     is_completed: bool
-    comment: str | None = None
+    comment: str
 
     class Config:
         from_attributes = True
@@ -65,8 +65,8 @@ class TypedTaskState(BaseModel):
 class TypedTaskRead(BaseModel):
     id: uuid.UUID
     task_type: UserRole
-    description: str | None
-    link: str | None
+    description: str
+    link: str
     for_single_user: bool
     task_states: List[TypedTaskState]
 
@@ -102,6 +102,25 @@ class TaskWithoutEventRead(TaskReadShortWithoutEvent):
 
 class EventFullInfo(EventRead):
     task: TaskWithoutEventRead
+
+    class Config:
+        from_attributes = True
+
+
+class EventGroupBase(BaseModel):
+    name: str
+    description: str
+    organizer: str
+    link: str
+
+
+class EventGroupCreate(EventGroupBase):
+    pass
+
+
+class EventGroupRead(EventGroupBase):
+    id: uuid.UUID
+    events: List[EventFullInfo]
 
     class Config:
         from_attributes = True
