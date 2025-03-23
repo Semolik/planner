@@ -14,8 +14,6 @@ from endpoints.events_groups_endpoints import api_router as groups_router
 from endpoints.events_levels import api_router as levels_router
 
 api_router = APIRouter(prefix="/events", tags=["events"])
-api_router.include_router(groups_router)
-api_router.include_router(levels_router)
 
 
 @api_router.post("", response_model=EventFullInfo, dependencies=[Depends(current_superuser)])

@@ -94,13 +94,13 @@ class EventsCRUD(BaseCRUD):
         await self.create(event_group_association)
         return event_group_association
 
-    async def event_already_in_group(self, group_id: uuid.UUID, event_id: uuid.UUID):
+    async def get_event_group_association(self, group_id: uuid.UUID, event_id: uuid.UUID):
         query = select(EventGroupAssociation).where(
             EventGroupAssociation.group_id == group_id,
             EventGroupAssociation.event_id == event_id
         )
         result = await self.db.execute(query)
-        return result.scalars().first() is not None
+        return result.scalars().first()
 
     def _get_event_options(self):
         return (
@@ -172,3 +172,13 @@ class EventsCRUD(BaseCRUD):
         level.name = name
         level.order = order
         return await self.update(level)
+
+    async def delete_group_events(self, group_id: uuid.UUID):
+        query = select(EventGroupAssociation).where(
+            EventGroupAssociation.group_id == group_id).options(
+                EventGroupAssociation.event)
+        result = await self.db.execute(query)
+        associations = result.scalars().all()
+        for association in associations:
+            await self.delete(association)
+            await self.delete(association.event)

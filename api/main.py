@@ -5,6 +5,8 @@ from endpoints.users_endpoints import api_router as users_router
 from endpoints.auth_endpoints import api_router as auth_router
 from endpoints.events_endpoints import api_router as events_router
 from endpoints.tasks_endpoints import api_router as tasks_router
+from endpoints.events_groups_endpoints import api_router as events_groups_router
+from endpoints.events_levels import api_router as events_levels_router
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from db.init import init_db
@@ -15,6 +17,8 @@ app = FastAPI()
 
 app.include_router(auth_router)
 app.include_router(events_router)
+app.include_router(events_groups_router)
+app.include_router(events_levels_router)
 app.include_router(tasks_router)
 app.include_router(users_router)
 app.include_router(files_router)

@@ -5,7 +5,7 @@ from cruds.events_crud import EventsCRUD
 from users_controller import current_superuser
 from db.session import get_async_session
 
-api_router = APIRouter(prefix="/levels", tags=["events levels"])
+api_router = APIRouter(prefix="/events/levels", tags=["events levels"])
 
 
 @api_router.get("", response_model=list[EventLevelRead])

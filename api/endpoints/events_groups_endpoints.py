@@ -9,7 +9,7 @@ from users_controller import current_superuser, current_active_user
 from db.session import get_async_session
 from models.user import UserRole
 
-api_router = APIRouter(prefix="/groups", tags=["events groups"])
+api_router = APIRouter(prefix="/events/groups", tags=["events groups"])
 
 
 @api_router.post("", response_model=EventGroupRead, dependencies=[Depends(current_superuser)])
@@ -37,6 +37,20 @@ async def get_event_group(
     return db_group
 
 
+@api_router.delete("/{group_id}", status_code=204, dependencies=[Depends(current_superuser)])
+async def delete_event_group(
+    group_id: uuid.UUID = Path(...),
+    remove_events: bool = Query(False),
+    session=Depends(get_async_session),
+):
+    db_group = await EventsCRUD(session).get_event_group(group_id=group_id)
+    if db_group is None:
+        raise HTTPException(status_code=404, detail="Группа не найдена")
+    if remove_events:
+        await EventsCRUD(session).delete_group_events(group_id=group_id)
+    await EventsCRUD(session).delete(db_group)
+
+
 @api_router.post("/{group_id}/events/{event_id}", status_code=204, dependencies=[Depends(current_superuser)])
 async def add_event_to_group(
     group_id: uuid.UUID = Path(...),
@@ -44,7 +58,20 @@ async def add_event_to_group(
 
     session=Depends(get_async_session),
 ):
-    if await EventsCRUD(session).event_already_in_group(group_id=group_id, event_id=event_id):
+    if await EventsCRUD(session).get_event_group_association(group_id=group_id, event_id=event_id):
         raise HTTPException(
             status_code=400, detail="Мероприятие уже добавлено в группу")
     await EventsCRUD(session).add_event_to_group(group_id=group_id, event_id=event_id)
+
+
+@api_router.delete("/{group_id}/events/{event_id}", status_code=204, dependencies=[Depends(current_superuser)])
+async def remove_event_from_group(
+    group_id: uuid.UUID = Path(...),
+    event_id: uuid.UUID = Path(...),
+    session=Depends(get_async_session),
+):
+    event_group_association = await EventsCRUD(session).get_event_group_association(group_id=group_id, event_id=event_id)
+    if event_group_association is None:
+        raise HTTPException(
+            status_code=404, detail="Мероприятие не найдено в группе")
+    await EventsCRUD(session).delete(event_group_association)
