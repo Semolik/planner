@@ -32,7 +32,6 @@ class BaseUser(BaseUserCustomFields):
     is_active: bool
     is_superuser: bool
     is_verified: bool = True
-    institute: Institute
 
     class Config:
         from_attributes = True
@@ -51,6 +50,7 @@ class UserReadShort(BaseModel):
     id: uuid.UUID
     first_name: str
     last_name: str
+    institute: Institute
 
     class Config:
         from_attributes = True
@@ -73,6 +73,6 @@ class UserReadWithEmail(UserRead, BaseUserEmail):
     pass
 
 
-class UserUpdate(BaseUser, BaseUserEmail):
+class UserUpdate(UserCreate, BaseUserEmail):
     password: str | None = None
     institute_id: uuid.UUID | None = None

@@ -9,58 +9,25 @@ from sqlalchemy.orm import selectinload, joinedload
 from cruds.base_crud import BaseCRUD
 from models.user import User, UserRole
 from models.events import Event
-from models.events import Task, TypedTask, TaskState, EventGroup, EventGroupAssociation
+from models.events import Task, TypedTask, TaskState, EventGroup, EventGroupAssociation, EventLevel
 
 
 class EventsCRUD(BaseCRUD):
-    async def create_event(self, name: str, date: datetime, location: str, organizer: str) -> Event:
+    async def create_event(self, name: str, date: datetime, location: str, organizer: str, start_time: datetime, end_time: datetime, name_approved: bool, required_photographers: int, description: str, group_id: uuid.UUID = None, level_id: uuid.UUID = None) -> Event:
         event = Event(
             name=name,
             date=date,
             location=location,
             organizer=organizer,
+            start_time=start_time,
+            end_time=end_time,
+            name_approved=name_approved,
+            required_photographers=required_photographers,
+            description=description,
+            group_id=group_id,
+            level_id=level_id
         )
         return await self.create(event)
-
-    async def get_events(self, page: int = 1, per_page: int = 10, prioritize_unstaffed: bool = True):
-        if not prioritize_unstaffed or page > 1:
-            # Обычная пагинация без приоритизации
-            paginated_query = self._get_paginated_events_query(
-                None, (page - 1) * per_page, per_page)
-            result = await self.db.execute(paginated_query)
-            return result.unique().scalars().all()
-
-        # Подзапрос для проверки наличия исполнителей-фотографов
-        subquery_has_photographers = (
-            exists()
-            .where(
-                and_(
-                    TypedTask.task_id == Task.id,
-                    TypedTask.task_type == UserRole.PHOTOGRAPHER,
-                    TaskState.type_task_id == TypedTask.id,
-                    TaskState.user_id.is_not(None)
-                )
-            )
-        )
-
-        # Запрос для получения всех неоформленных мероприятий
-        unstaffed_query = self._get_unstaffed_events_query(
-            subquery_has_photographers)
-        result = await self.db.execute(unstaffed_query)
-        unstaffed_events = result.unique().scalars().all()
-
-        if len(unstaffed_events) >= per_page:
-            # Если неоформленных мероприятий достаточно для заполнения страницы
-            return unstaffed_events
-
-        # Если неоформленных мероприятий меньше, чем нужно, дополняем обычными мероприятиями
-        remaining_count = per_page - len(unstaffed_events)
-        regular_query = self._get_regular_events_query(
-            subquery_has_photographers, remaining_count)
-        result = await self.db.execute(regular_query)
-        regular_events = result.unique().scalars().all()
-
-        return unstaffed_events + regular_events
 
     async def get_event(self, event_id: uuid.UUID) -> Event:
         query = select(Event).where(Event.id == event_id).options(
@@ -178,3 +145,30 @@ class EventsCRUD(BaseCRUD):
                 .offset(offset)
                 .limit(limit)
             )
+
+    async def get_event_levels(self):
+        query = select(EventLevel).order_by(EventLevel.order.desc())
+        result = await self.db.execute(query)
+        return result.scalars().all()
+
+    async def get_event_level(self, level_id: uuid.UUID):
+        query = select(EventLevel).where(EventLevel.id == level_id)
+        result = await self.db.execute(query)
+        return result.scalars().first()
+
+    async def get_event_level_by_name(self, name: str):
+        query = select(EventLevel).where(EventLevel.name == name)
+        result = await self.db.execute(query)
+        return result.scalars().first()
+
+    async def create_event_level(self, name: str, order: int) -> EventLevel:
+        event_level = EventLevel(
+            name=name,
+            order=order
+        )
+        return await self.create(event_level)
+
+    async def update_event_level(self, level: EventLevel, name: str, order: int) -> EventLevel:
+        level.name = name
+        level.order = order
+        return await self.update(level)

@@ -45,7 +45,17 @@ class SettingsCRUD(BaseCRUD):
         settings = result.scalars().all()
         app_logo = await self.get_image()
         app_name = list(filter(lambda x: x.key == 'app_name', settings))
+        designers_deadline = list(
+            filter(lambda x: x.key == 'designers_deadline', settings))
+        photographers_deadline = list(
+            filter(lambda x: x.key == 'photographers_deadline', settings))
+        copywriters_deadline = list(
+            filter(lambda x: x.key == 'copywriters_deadline', settings))
         return Settings(
             app_logo=app_logo,
-            app_name=app_name[0].value
+            app_name=app_name[0].value,
+            designers_deadline=int(designers_deadline[0].value),
+            photographers_deadline=int(photographers_deadline[0].value),
+            copywriters_deadline=int(copywriters_deadline[0].value)
+
         )

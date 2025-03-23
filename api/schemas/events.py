@@ -1,22 +1,30 @@
 from pydantic import BaseModel
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, date, time
 import uuid
 from schemas.users import UserReadShort, UserRole
 
 
 class EventBase(BaseModel):
     name: str
-    date: datetime
+    date: date
+    start_time: time
+    end_time: time
+    name_approved: bool = False
     location: str
     link: str
     organizer: str
+    required_photographers: int
+    group_id: Optional[uuid.UUID] = None
+    description: str
 
 
 class EventCreateOrUpdate(EventBase):
+    level_id: Optional[uuid.UUID] = None
     photographer_description: str
     copywriter_description: str
     designer_description: str
+    days_to_complete: int
 
 
 class TaskBase(BaseModel):
@@ -32,6 +40,8 @@ class TaskCreate(TaskBase):
 class TaskStateBase(UserReadShort):
     is_completed: bool
     comment: str
+    period_start: time
+    period_end: time
 
     class Config:
         from_attributes = True
@@ -39,6 +49,7 @@ class TaskStateBase(UserReadShort):
 
 class EventRead(EventBase):
     id: uuid.UUID
+    level: str
 
     class Config:
         from_attributes = True
@@ -121,6 +132,28 @@ class EventGroupCreate(EventGroupBase):
 class EventGroupRead(EventGroupBase):
     id: uuid.UUID
     events: List[EventFullInfo]
+
+    class Config:
+        from_attributes = True
+
+
+class UpdateTypedTaskState(BaseModel):
+    is_completed: bool = False
+    comment: str
+    period_start: time
+    period_end: time
+
+    class Config:
+        from_attributes = True
+
+
+class EventLevelCreateOrUpdate(BaseModel):
+    name: str
+    order: int
+
+
+class EventLevelRead(EventLevelCreateOrUpdate):
+    id: uuid.UUID
 
     class Config:
         from_attributes = True

@@ -1,13 +1,15 @@
-from datetime import datetime
+from datetime import datetime, time
+from typing import Optional
 import uuid
 
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, contains_eager
 
 from cruds.base_crud import BaseCRUD
 from models.user import User, UserRole
-from models.events import Task, TypedTask, TaskState
+from models.events import Task, TypedTask, TaskState, TasksToken
 from sqlalchemy import select, and_, or_
 from sqlalchemy.sql import exists
+from sqlalchemy.sql import case
 
 
 class TasksCRUD(BaseCRUD):
@@ -25,19 +27,30 @@ class TasksCRUD(BaseCRUD):
         result = await self.db.execute(query)
         return result.scalars().first()
 
-    async def assign_user_to_task(self, typed_task: TypedTask, user: User) -> TaskState:
+    async def assign_user_to_task(self, typed_task: TypedTask, user: User, period_start: time, period_end: time, comment: str, is_completed: bool = False) -> TaskState:
         task_state = TaskState(
             type_task_id=typed_task.id,
             user_id=user.id,
+            period_start=period_start,
+            period_end=period_end,
+            comment=comment,
+            is_completed=is_completed
         )
         await self.create(task_state)
         return task_state
 
-    async def is_user_assigned_to_task(self, typed_task: TypedTask, user: User) -> bool:
+    async def get_task_state(self, typed_task: TypedTask, user: User) -> TaskState:
         query = select(TaskState).where(TaskState.type_task_id ==
                                         typed_task.id, TaskState.user_id == user.id)
         result = await self.db.execute(query)
-        return result.scalars().first() is not None
+        return result.scalars().first()
+
+    async def update_task_state(self, task_state: TaskState, period_start: time, period_end: time, comment: str, is_completed: bool = False):
+        task_state.period_start = period_start
+        task_state.period_end = period_end
+        task_state.comment = comment
+        task_state.is_completed = is_completed
+        return await self.update(task_state)
 
     async def create_typed_task(self, task_id: uuid.UUID, task_type: UserRole,  for_single_user: bool, description: str | None = None) -> TypedTask:
         typed_task = TypedTask(
@@ -60,43 +73,118 @@ class TasksCRUD(BaseCRUD):
         result = await self.db.execute(query)
         return result.scalars().first()
 
-    async def get_tasks(self, page: int, per_page: int = 10) -> list[Task]:
-        query = select(Task).slice((page - 1) * per_page, page * per_page)
-        result = await self.db.execute(query)
-        return result.scalars().all()
+    async def get_tasks(
+        self,
+        user_id: Optional[uuid.UUID] = None,
+        roles: list[UserRole] = [],
+        page: int = 1,
+        per_page: int = 10,
+        hide_busy_tasks: bool = True,
+        prioritize_unassigned: bool = True
+    ):
+        if not roles:
+            roles = [UserRole[role.name] for role in UserRole]
 
-    async def get_tasks(self, task_types: list[UserRole]) -> list[tuple[Task,
-                                                                        TypedTask]]:
-        typed_task_subquery = (
-            select(TypedTask.task_id)
-            .where(TypedTask.task_type.in_(task_types))
-            .distinct()
-            .scalar_subquery()
+        if page < 1 or per_page < 1:
+            raise ValueError("Page and per_page must be positive integers")
+
+        # Подзапрос для проверки наличия исполнителей
+        subquery_has_users = (
+            exists()
+            .where(
+                and_(
+                    TaskState.type_task_id == TypedTask.id,
+                    TaskState.user_id.is_not(None),
+                )
+            )
+            .correlate(TypedTask)
         )
 
-        query = (
-            select(Task, TypedTask)
-            .join(Task.typed_tasks)
-            .where(Task.id.in_(typed_task_subquery))
-            .group_by(Task.id)
-            .having(
-                or_(
-                    # Для задач с for_single_user = True проверяем, что никто не назначен
-                    and_(
-                        TypedTask.for_single_user == True,
-                        ~exists().where(
-                            TaskState.type_task_id == TypedTask.id,
-                            TaskState.user_id.isnot(None),
-                        ),
+        if prioritize_unassigned or not hide_busy_tasks:
+            unassigned_query = self._get_unassigned_tasks_query(
+                roles, subquery_has_users, user_id
+            )
+            result = await self.db.execute(unassigned_query)
+            unassigned_tasks = result.unique().scalars().all()
+
+            if len(unassigned_tasks) >= per_page:
+                return unassigned_tasks[:per_page]
+
+        if hide_busy_tasks and not user_id:
+            regular_query = self._get_regular_tasks_query(
+                roles, subquery_has_users
+            )
+        else:
+            regular_query = self._get_all_tasks_query(roles, user_id)
+
+        # Основной запрос
+        regular_query = (
+            select(Task)
+            .join(TypedTask, TypedTask.task_id == Task.id)
+            .where(TypedTask.task_type.in_(roles))
+            .options(
+                contains_eager(Task.typed_tasks).options(
+                    selectinload(TypedTask.task_states).options(
+                        selectinload(TaskState.user)
                     ),
-                    # Для задач с for_single_user = False разрешаем любые назначения
-                    TypedTask.for_single_user == False,
-                )
+                    selectinload(TypedTask.users).options(
+                        selectinload(User.roles_objects)
+                    )
+                ),
+                selectinload(Task.event),
             )
         )
 
-        result = await self.db.execute(query)
-        return result.scalars().all()
+        # Сортируем так, чтобы задачи без исполнителей были первыми
+        if prioritize_unassigned:
+            regular_query = regular_query.order_by(
+                case((subquery_has_users, 1), else_=0)
+            )
+
+        paginated_query = (
+            regular_query
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+        )
+
+        result = await self.db.execute(paginated_query)
+        paginated_tasks = result.unique().scalars().all()
+
+        return paginated_tasks
+
+    def _get_unassigned_tasks_query(self, roles, subquery_has_users, user_id=None):
+        query = (
+            select(Task)
+            .join(TypedTask, TypedTask.task_id == Task.id)
+            .filter(
+                TypedTask.task_type.in_(roles),
+                ~subquery_has_users | (
+                    TaskState.user_id == user_id if user_id else False)
+            )
+        )
+        return query
+
+    def _get_regular_tasks_query(self, roles, subquery_has_users):
+        query = (
+            select(Task)
+            .join(TypedTask, TypedTask.task_id == Task.id)
+            .filter(
+                TypedTask.task_type.in_(roles),
+                ~subquery_has_users
+            )
+        )
+        return query
+
+    def _get_all_tasks_query(self, roles, user_id=None):
+        query = (
+            select(Task)
+            .join(TypedTask, TypedTask.task_id == Task.id)
+            .filter(TypedTask.task_type.in_(roles))
+        )
+        if user_id:
+            query = query.join(TaskState, TaskState.type_task_id == TypedTask.id).filter(
+                TaskState.user_id == user_id)
+        return query
 
     async def get_user_open_tasks(self, user_id: uuid.UUID, task_types: list[UserRole]) -> list[tuple[Task, TypedTask]]:
         query = select(Task, TypedTask).join(TypedTask, Task.id == TypedTask.task_id).join(
@@ -104,3 +192,27 @@ class TasksCRUD(BaseCRUD):
             TaskState.is_completed == False, TypedTask.task_type.in_(task_types), TaskState.user_id == user_id)
         result = await self.db.execute(query)
         return result.all()
+
+    async def get_tasks_token(self, role: UserRole) -> TasksToken:
+        query = select(TasksToken).where(TasksToken.role == role)
+        result = await self.db.execute(query)
+        return result.scalars().first()
+
+    async def set_tasks_token(self, role: UserRole, token: str) -> TasksToken:
+        existing_token = await self.get_tasks_token(role)
+        if existing_token:
+            existing_token.token = token
+            return await self.update(existing_token)
+        else:
+            tasks_token = TasksToken(role=role, token=token)
+            return await self.create(tasks_token)
+
+    async def get_tasks_token_by_token(self, token: str) -> TasksToken:
+        query = select(TasksToken).where(TasksToken.token == token)
+        result = await self.db.execute(query)
+        return result.scalars().first()
+
+    async def get_tasks_tokens(self) -> list[TasksToken]:
+        query = select(TasksToken)
+        result = await self.db.execute(query)
+        return result.scalars().all()

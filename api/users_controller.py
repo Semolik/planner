@@ -131,7 +131,7 @@ get_user_db_context = contextlib.asynccontextmanager(get_user_db)
 get_user_manager_context = contextlib.asynccontextmanager(get_user_manager)
 
 
-async def create_user(email: str, password: str, first_name: str, last_name: str, group: str, institute_id: uuid.UUID, roles: list[UserRole], patronymic: str | None = None, is_superuser: bool = False, is_verified: bool = False):
+async def create_user(email: str, password: str, first_name: str, last_name: str, group: str, institute_id: uuid.UUID, roles: list[UserRole], patronymic: str | None = None, birth_date: str | None = None, vk_username: str | None = None, phone: str | None = None, is_superuser: bool = False, is_verified: bool = True):
     try:
         async with get_async_session_context() as session:
             async with get_user_db_context(session) as user_db:
@@ -146,7 +146,10 @@ async def create_user(email: str, password: str, first_name: str, last_name: str
                             last_name=last_name,
                             patronymic=patronymic,
                             group=group,
-                            institute_id=institute_id
+                            institute_id=institute_id,
+                            birth_date=birth_date,
+                            vk_username=vk_username,
+                            phone=phone,
                         )
                     )
                     for role in roles:

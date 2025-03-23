@@ -1,10 +1,19 @@
 import uuid
 from sqlalchemy.orm import relationship, column_property
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy import Column, Enum, String, DateTime, ForeignKey, Text, Boolean, UniqueConstraint, TIMESTAMP, select
+from sqlalchemy import Column, Enum, Integer, String, ForeignKey, Text, Boolean, UniqueConstraint, TIMESTAMP, Date, Time, select
 from sqlalchemy.sql import func
 from models.user import User, UserRole
 from db.session import Base
+
+
+class EventLevel(Base):
+    __tablename__ = "event_levels"
+
+    id = Column(UUID(as_uuid=True), primary_key=True,
+                default=uuid.uuid4, index=True)
+    name = Column(String, nullable=False, unique=True)
+    order = Column(Integer, nullable=False, default=0)
 
 
 class Event(Base):
@@ -13,15 +22,30 @@ class Event(Base):
     id = Column(UUID(as_uuid=True), primary_key=True,
                 default=uuid.uuid4, index=True)
     name = Column(String, nullable=False)
-    date = Column(TIMESTAMP(timezone=True), nullable=False)
+    name_approved = Column(Boolean, nullable=False, default=False)
+    date = Column(Date, nullable=False)
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
     location = Column(String, nullable=False)
     organizer = Column(String, nullable=False, default="")
     link = Column(Text, nullable=False, default="")
+    required_photographers = Column(
+        Integer, nullable=False)
+    description = Column(Text, nullable=False, default="")
+    level_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey('event_levels.id', ondelete='SET NULL'),
+        nullable=True
+    )
+    level = column_property(
+        select(EventLevel.name).where(EventLevel.id ==
+                                      level_id).correlate_except(EventLevel).scalar_subquery()
+    )
 
     # Внешний ключ на EventGroup (событие принадлежит одной группе)
     group_id = Column(
         UUID(as_uuid=True),
-        ForeignKey('event_groups.id', ondelete='SET NULL'),
+        ForeignKey('event_groups.id', ondelete='CASCADE'),
         nullable=True
     )
 
@@ -29,7 +53,9 @@ class Event(Base):
     group = relationship(
         "EventGroup",
         foreign_keys=[group_id],
-        back_populates="events"
+        back_populates="events",
+        cascade="all, delete-orphan",
+        single_parent=True
     )
 
     # Cascade deletion for Task
@@ -40,6 +66,18 @@ class Event(Base):
         cascade="all, delete-orphan",
         single_parent=True
     )
+
+
+class PersonalEvent(Base):
+    __tablename__ = "personal_events"
+
+    id = Column(UUID(as_uuid=True), primary_key=True,
+                default=uuid.uuid4, index=True)
+    name = Column(String, nullable=False)
+    date = Column(Date, nullable=False)
+    role = Column(String, nullable=False, default="")
+    level = Column(String, nullable=False, default="")
+    approve_link = Column(Text, nullable=False, default="")
 
 
 class EventGroup(Base):
@@ -115,25 +153,38 @@ class Task(Base):
     )
 
 
+class TasksToken(Base):
+    __tablename__ = "tasks_token"
+
+    id = Column(UUID(as_uuid=True), primary_key=True,
+                default=uuid.uuid4, index=True)
+    token = Column(String, nullable=False, default="")
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True),
+                        server_default=func.now(), onupdate=func.now())
+    role = Column(Enum(UserRole), nullable=False)
+
+
 class TypedTask(Base):
     __tablename__ = "typed_tasks"
+    __table_args__ = (
+        UniqueConstraint(
+            'task_id', 'task_type',
+            name='uq_typed_task_task_id_task_type'
+        ),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True,
                 default=uuid.uuid4, index=True)
     task_id = Column(
         UUID(as_uuid=True),
-        ForeignKey('tasks.id', ondelete='CASCADE'),  # Ensure CASCADE here
+        ForeignKey('tasks.id', ondelete='CASCADE'),
         nullable=False
     )
     task_type = Column(Enum(UserRole), nullable=False)
     description = Column(Text, nullable=False, default="")
     for_single_user = Column(Boolean, nullable=False)
     link = Column(Text, nullable=False, default="")
-    __table_args__ = (
-        UniqueConstraint('task_id', 'task_type',
-                         name='uq_typed_task_task_id_task_type'),
-    )
-
     parent_task = relationship(
         "Task",
         foreign_keys=[task_id],
@@ -163,15 +214,16 @@ class TaskState(Base):
 
     type_task_id = Column(
         UUID(as_uuid=True),
-        # Ensure CASCADE here
         ForeignKey('typed_tasks.id', ondelete='CASCADE'),
         primary_key=True
     )
     user_id = Column(
         UUID(as_uuid=True),
-        ForeignKey('users.id', ondelete='CASCADE'),  # Ensure CASCADE here
+        ForeignKey('users.id', ondelete='CASCADE'),
         primary_key=True
     )
+    period_start = Column(Time, nullable=False)
+    period_end = Column(Time, nullable=False)
     is_completed = Column(Boolean, nullable=False, default=False)
     comment = Column(Text, nullable=False, default="")
 
