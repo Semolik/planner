@@ -58,11 +58,8 @@ async def create_event(event: EventCreateOrUpdate, db=Depends(get_async_session)
     if event.group_id is not None:
         await EventsCRUD(db).add_event_to_group(group_id=event.group_id, event_id=db_event.id)
 
-    due_date = event.date + \
-        timedelta(days=event.days_to_complete_photographers)
     task = await TasksCRUD(db).create_task(
         name="Освещение мероприятия",
-        due_date=due_date,
         event_id=db_event.id,
     )
     await TasksCRUD(db).create_typed_task(
@@ -70,18 +67,24 @@ async def create_event(event: EventCreateOrUpdate, db=Depends(get_async_session)
         task_type=UserRole.PHOTOGRAPHER,
         description=event.photographer_description,
         for_single_user=False,
+        due_date=event.date +
+        timedelta(days=event.days_to_complete_photographers),
     )
     await TasksCRUD(db).create_typed_task(
         task_id=task.id,
         task_type=UserRole.COPYWRITER,
         description=event.copywriter_description,
         for_single_user=True,
+        due_date=event.date +
+        timedelta(days=event.days_to_complete_copywriters),
     )
     await TasksCRUD(db).create_typed_task(
         task_id=task.id,
         task_type=UserRole.DESIGNER,
         description=event.designer_description,
         for_single_user=True,
+        due_date=event.date +
+        timedelta(days=event.days_to_complete_designers),
     )
     db_event = await EventsCRUD(db).get_full_event(db_event.id)
     task: Task = db_event.task
@@ -101,6 +104,14 @@ async def get_event(event_id: uuid.UUID, db=Depends(get_async_session)):
     if db_event is None:
         raise HTTPException(status_code=404, detail="Мероприятие не найдено")
     return db_event
+
+
+@api_router.get("/{event_id}/history")
+async def get_event_history(event_id: uuid.UUID, db=Depends(get_async_session)):
+    db_event = await EventsCRUD(db).get_full_event(event_id)
+    if db_event is None:
+        raise HTTPException(status_code=404, detail="Мероприятие не найдено")
+    return await db_event.get_audit_history(session=db)
 
 
 @api_router.put("/{event_id}", response_model=EventFullInfo, dependencies=[Depends(current_superuser)])

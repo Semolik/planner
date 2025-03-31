@@ -1,6 +1,4 @@
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi_mail import FastMail, MessageSchema, MessageType
-from mail.conf import conf
 from fastapi_users.authentication import CookieTransport
 from schemas.users import UserCreate
 import uuid
@@ -17,7 +15,7 @@ from sqlalchemy.orm import selectinload
 from fastapi_users.exceptions import UserAlreadyExists
 from fastapi_users.db import SQLAlchemyUserDatabase
 from models.user import User, UserRole, UserRoleAssociation
-from os import getenv
+
 from db.session import get_async_session, AsyncSession, get_async_session_context
 from config import settings
 from cruds.base_crud import BaseCRUD

@@ -1,9 +1,11 @@
 import uuid
-from sqlalchemy.orm import relationship, column_property
+from pytest import Session
+from sqlalchemy.orm import relationship, column_property, object_session
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import Column, Enum, Integer, String, ForeignKey, Text, Boolean, UniqueConstraint, TIMESTAMP, Date, Time, select
 from sqlalchemy.sql import func
-from models.user import User, UserRole
+from models.user import UserRole
+from models.audit import AuditLog, AuditableMixin, register_audit_events
 from db.session import Base
 
 
@@ -16,7 +18,7 @@ class EventLevel(Base):
     order = Column(Integer, nullable=False, default=0)
 
 
-class Event(Base):
+class Event(Base, AuditableMixin):
     __tablename__ = "events"
 
     id = Column(UUID(as_uuid=True), primary_key=True,
@@ -41,7 +43,18 @@ class Event(Base):
         select(EventLevel.name).where(EventLevel.id ==
                                       level_id).correlate_except(EventLevel).scalar_subquery()
     )
-
+    field_labels = {
+        "name": "Название",
+        "name_approved": "Название утверждено",
+        "date": "Дата проведения",
+        "location": "Место проведения",
+        "organizer": "Организатор",
+        "link": "Ссылка на мероприятие",
+        "required_photographers": "Количество фотографов",
+        "description": "Описание",
+        "start_time": "Время начала",
+        "end_time": "Время окончания",
+    }
     # Внешний ключ на EventGroup (событие принадлежит одной группе)
     group_id = Column(
         UUID(as_uuid=True),
@@ -80,7 +93,7 @@ class PersonalEvent(Base):
     approve_link = Column(Text, nullable=False, default="")
 
 
-class EventGroup(Base):
+class EventGroup(Base, AuditableMixin):
     __tablename__ = "event_groups"
 
     id = Column(UUID(as_uuid=True), primary_key=True,
@@ -164,7 +177,7 @@ class TasksToken(Base):
     role = Column(Enum(UserRole), nullable=False)
 
 
-class TypedTask(Base):
+class TypedTask(Base, AuditableMixin):
     __tablename__ = "typed_tasks"
     __table_args__ = (
         UniqueConstraint(
@@ -242,3 +255,30 @@ class TaskState(Base):
         cascade="all, delete-orphan",
         single_parent=True
     )
+
+
+register_audit_events(Event, tracked_fields=[
+    "name",
+    "name_approved",
+    "date",
+    "location",
+    "organizer",
+    "link",
+    "required_photographers",
+    "description",
+    "start_time",
+    "end_time"
+])
+register_audit_events(EventGroup, tracked_fields=[
+    "name",
+    "description",
+    "organizer",
+    "link"
+])
+register_audit_events(TypedTask, tracked_fields=[
+    "task_id",
+    "task_type",
+    "description",
+    "for_single_user",
+    "link"
+])

@@ -17,9 +17,9 @@ from db.session import create_db_and_tables
 app = FastAPI()
 
 app.include_router(auth_router)
+app.include_router(events_levels_router)
 app.include_router(events_router)
 app.include_router(events_groups_router)
-app.include_router(events_levels_router)
 app.include_router(tasks_router)
 app.include_router(typed_tasks_router)
 app.include_router(users_router)
