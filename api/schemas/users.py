@@ -1,7 +1,8 @@
-from datetime import datetime
+from datetime import date, datetime
+from typing import Optional
 import uuid
 from pydantic import BaseModel, EmailStr
-from fastapi_users.schemas import BaseUserCreate
+from fastapi_users.schemas import CreateUpdateDictModel
 from models.user import UserRole
 
 
@@ -9,8 +10,8 @@ class BaseUserCustomFields(BaseModel):
     first_name: str
     last_name: str
     patronymic: str | None = None
-    vk_username: str | None = None
-    birth_date: datetime | None = None
+    vk_id: int | None = None
+    birth_date: date | None = None
     phone: str | None = None
     group: str
     roles: list[UserRole] = []
@@ -37,13 +38,20 @@ class BaseUser(BaseUserCustomFields):
         from_attributes = True
 
 
-class BaseUserEmail(BaseModel):
-    email: EmailStr
+class BaseUserUsername(BaseModel):
+    username: str
 
 
-class UserCreate(BaseUserCustomFields, BaseUserCreate):
+class UserCreate(BaseUserUsername, BaseUserCustomFields, CreateUpdateDictModel):
+    password: str
+    is_active: Optional[bool] = True
+    is_superuser: Optional[bool] = False
+    is_verified: Optional[bool] = False
     password: str
     institute_id: uuid.UUID
+
+    class Config:
+        exclude = {'email'}
 
 
 class UserReadShort(BaseModel):
@@ -56,7 +64,7 @@ class UserReadShort(BaseModel):
         from_attributes = True
 
 
-class UserReadShortWithEmail(UserReadShort, BaseUserEmail):
+class UserReadShortWithEmail(UserReadShort, BaseUserUsername):
     pass
 
 
@@ -69,10 +77,10 @@ class UserRead(UserReadShortWithEmail, BaseUser):
     }
 
 
-class UserReadWithEmail(UserRead, BaseUserEmail):
+class UserReadWithEmail(UserRead, BaseUserUsername):
     pass
 
 
-class UserUpdate(UserCreate, BaseUserEmail):
+class UserUpdate(UserCreate, BaseUserUsername):
     password: str | None = None
     institute_id: uuid.UUID | None = None

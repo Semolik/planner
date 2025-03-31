@@ -6,18 +6,17 @@ from sqlalchemy.orm import selectinload, contains_eager
 
 from cruds.base_crud import BaseCRUD
 from models.user import User, UserRole
-from models.events import Task, TypedTask, TaskState, TasksToken
+from models.events import Event, Task, TypedTask, TaskState, TasksToken
 from sqlalchemy import select, and_, or_
 from sqlalchemy.sql import exists
 from sqlalchemy.sql import case
 
 
 class TasksCRUD(BaseCRUD):
-    async def create_task(self, name: str, due_date: datetime | None = None, event_id: uuid.UUID | None = None) -> Task:
+    async def create_task(self, name: str,  event_id: uuid.UUID | None = None) -> Task:
         task = Task(
             name=name,
             event_id=event_id,
-            due_date=due_date,
         )
         return await self.create(task)
 
@@ -52,14 +51,22 @@ class TasksCRUD(BaseCRUD):
         task_state.is_completed = is_completed
         return await self.update(task_state)
 
-    async def create_typed_task(self, task_id: uuid.UUID, task_type: UserRole,  for_single_user: bool, description: str | None = None) -> TypedTask:
+    async def create_typed_task(self, task_id: uuid.UUID, task_type: UserRole,  for_single_user: bool, due_date: datetime | None = None, description: str | None = None) -> TypedTask:
         typed_task = TypedTask(
             task_id=task_id,
             task_type=task_type,
             description=description,
+            due_date=due_date,
             for_single_user=for_single_user,
         )
         return await self.create(typed_task)
+
+    async def update_typed_task(self, typed_task: TypedTask, task_type: UserRole,  for_single_user: bool, due_date: datetime | None = None, description: str | None = None) -> TypedTask:
+        typed_task.task_type = task_type
+        typed_task.description = description
+        typed_task.due_date = due_date
+        typed_task.for_single_user = for_single_user
+        return await self.update(typed_task)
 
     async def get_task(self, task_id: uuid.UUID) -> Task:
         query = select(Task).where(Task.id == task_id).options(
@@ -88,6 +95,8 @@ class TasksCRUD(BaseCRUD):
         if page < 1 or per_page < 1:
             raise ValueError("Page and per_page must be positive integers")
 
+        current_datetime = datetime.now()
+
         # Подзапрос для проверки наличия исполнителей
         subquery_has_users = (
             exists()
@@ -100,10 +109,31 @@ class TasksCRUD(BaseCRUD):
             .correlate(TypedTask)
         )
 
+        # Подзапрос для исключения прошедших мероприятий без фотографов
+        past_events_without_photographers = (
+            and_(
+                TypedTask.task_type == UserRole.PHOTOGRAPHER,
+                ~subquery_has_users,
+                Task.event_id.is_not(None),
+                Task.event.has(
+                    or_(
+                        Task.event.has(Event.date < current_datetime.date()),
+                        and_(
+                            Event.date <= current_datetime.date(),
+                            Event.end_time <= current_datetime.time()
+                        )
+                    )
+                )
+            )
+        )
+
         if prioritize_unassigned or not hide_busy_tasks:
             unassigned_query = self._get_unassigned_tasks_query(
                 roles, subquery_has_users, user_id
             )
+            # Исключаем прошедшие мероприятия без фотографов
+            unassigned_query = unassigned_query.filter(
+                ~past_events_without_photographers)
             result = await self.db.execute(unassigned_query)
             unassigned_tasks = result.unique().scalars().all()
 
@@ -125,7 +155,9 @@ class TasksCRUD(BaseCRUD):
             .options(
                 contains_eager(Task.typed_tasks).options(
                     selectinload(TypedTask.task_states).options(
-                        selectinload(TaskState.user)
+                        selectinload(TaskState.user).options(
+                            selectinload(User.institute)
+                        )
                     ),
                     selectinload(TypedTask.users).options(
                         selectinload(User.roles_objects)
@@ -136,9 +168,14 @@ class TasksCRUD(BaseCRUD):
         )
 
         # Сортируем так, чтобы задачи без исполнителей были первыми
+        # Но исключаем прошедшие мероприятия без фотографов из приоритета
         if prioritize_unassigned:
             regular_query = regular_query.order_by(
-                case((subquery_has_users, 1), else_=0)
+                case(
+                    (past_events_without_photographers, 2),  # Низкий приоритет
+                    (subquery_has_users, 1),                # Средний приоритет
+                    else_=0                                 # Высокий приоритет
+                )
             )
 
         paginated_query = (

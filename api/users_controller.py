@@ -1,3 +1,4 @@
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_mail import FastMail, MessageSchema, MessageType
 from mail.conf import conf
 from fastapi_users.authentication import CookieTransport
@@ -11,6 +12,8 @@ from fastapi_users.authentication import (
     AuthenticationBackend,
     JWTStrategy,
 )
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from fastapi_users.exceptions import UserAlreadyExists
 from fastapi_users.db import SQLAlchemyUserDatabase
 from models.user import User, UserRole, UserRoleAssociation
@@ -18,6 +21,8 @@ from os import getenv
 from db.session import get_async_session, AsyncSession, get_async_session_context
 from config import settings
 from cruds.base_crud import BaseCRUD
+from fastapi_users.models import UP
+from fastapi_users import exceptions
 
 
 async def get_user_db(session: AsyncSession = Depends(get_async_session)):
@@ -28,82 +33,92 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     reset_password_token_secret = settings.SECRET
     verification_token_secret = settings.SECRET
 
-    async def on_after_register(self, user: User, request: Optional[Request] = None):
-        print(f"User {user.id} has registered.")
+    async def get_user_by_username(self, username: str) -> Optional[User]:
+        """
+        Get a user by username.
 
-    async def on_after_forgot_password(
-        self, user: User, token: str, request: Optional[Request] = None
-    ):
-        print(
-            f'Пользователь {user.id} запросил сброс пароля, верифицирован ли он: {user.is_verified}')
-        if not user.is_verified:
-            return
-        message = MessageSchema(
-            subject='Сброс пароля',
-            # List of recipients, as many as you can pass
-            recipients=[user.email],
-            template_body={
-                'title': 'Сброс пароля',
-                'text': f'''<p>Здравствуйте, {user.name}</p>
-                            <p>
-                                Вы получили это письмо, так
-                                как был запрошен сброс
-                                пароля для вашей учетной
-                                записи. Если вы не
-                                запрашивали сброс пароля,
-                                пожалуйста, проигнорируйте
-                                это сообщение.
-                            </p>
-                            <p>
-                                Никогда не предоставляйте
-                                свои учетные данные и не
-                                переходите по незнакомым
-                                ссылкам.
-                            </p>
-                            <a
-                                href="{getenv('RESET_PASSWORD_URL').format(token=token)}"
-                                class="btn btn-primary"
-                                target="_blank"
-                            >
-                                Сбросить пароль
-                            </a>'''
-            },
-            subtype=MessageType.html
-        )
-        try:
-            fm = FastMail(conf)
-            await fm.send_message(message, template_name='default.html')
-        except Exception as e:
-            print(e)
+        :param username: The username to search for.
+        :param safe: If True, sensitive values like is_superuser or is_verified
+        will be ignored during the retrieval, defaults to False.
+        :return: The user if found, None otherwise.
+        """
+        async with get_async_session_context() as session:
+            user = await session.execute(
+                select(User).where(User.username == username).options(
+                    selectinload(User.institute),
+                    selectinload(User.roles_objects),
+                )
+            )
+            return user.scalars().first()
 
-    async def on_after_request_verify(
-        self, user: User, token: str, request: Optional[Request] = None
-    ):
-        print(f'Пользователь {user.id} запросил верификацию')
-        message = MessageSchema(
-            subject='Подтверждение почты',
-            recipients=[user.email],
-            template_body={
-                'title': 'Подтверждение почты',
-                'text': f'''<p>Здравствуйте, {user.name}</p>
-                            <p>
-                                Для подтверждения вашей учетной записи, пожалуйста, нажмите на кнопку ниже:
-                            </p>
-                            <a
-                                href="{getenv('VERIFY_ACCOUNT_URL').format(token=token)}"
-                                class="btn btn-primary"
-                                target="_blank"
-                            >
-                                Подтвердить почту
-                            </a>'''
-            },
-            subtype=MessageType.html
+    async def create(
+        self,
+        user_create: UserCreate,
+        safe: bool = False,
+        request: Optional[Request] = None,
+    ) -> UP:
+        """
+        Create a user in database.
+
+        Triggers the on_after_register handler on success.
+
+        :param user_create: The UserCreate model to create.
+        :param safe: If True, sensitive values like is_superuser or is_verified
+        will be ignored during the creation, defaults to False.
+        :param request: Optional FastAPI request that
+        triggered the operation, defaults to None.
+        :raises UserAlreadyExists: A user already exists with the same e-mail.
+        :return: A new user.
+        """
+        await self.validate_password(user_create.password, user_create)
+
+        existing_user = await self.get_user_by_username(user_create.username)
+        if existing_user is not None:
+            raise exceptions.UserAlreadyExists()
+
+        user_dict = (
+            user_create.create_update_dict()
+            if safe
+            else user_create.create_update_dict_superuser()
         )
+
+        password = user_dict.pop("password")
+        user_dict["hashed_password"] = self.password_helper.hash(password)
+
+        created_user = await self.user_db.create(user_dict)
+
+        await self.on_after_register(created_user, request)
+
+        return created_user
+
+    async def authenticate(
+        self, credentials: OAuth2PasswordRequestForm
+    ) -> Optional[UP]:
+        """
+        Authenticate and return a user following an email and a password.
+
+        Will automatically upgrade password hash if necessary.
+
+        :param credentials: The user credentials.
+        """
         try:
-            fm = FastMail(conf)
-            await fm.send_message(message, template_name='default.html')
-        except Exception as e:
-            print(e)
+            user = await self.get_user_by_username(credentials.username)
+        except exceptions.UserNotExists:
+            # Run the hasher to mitigate timing attack
+            # Inspired from Django: https://code.djangoproject.com/ticket/20760
+            self.password_helper.hash(credentials.password)
+            return None
+
+        verified, updated_password_hash = self.password_helper.verify_and_update(
+            credentials.password, user.hashed_password
+        )
+        if not verified:
+            return None
+        # Update password hash to a more robust one if needed
+        if updated_password_hash is not None:
+            await self.user_db.update(user, {"hashed_password": updated_password_hash})
+
+        return user
 
 
 async def get_user_manager(user_db: SQLAlchemyUserDatabase = Depends(get_user_db)):
@@ -131,14 +146,14 @@ get_user_db_context = contextlib.asynccontextmanager(get_user_db)
 get_user_manager_context = contextlib.asynccontextmanager(get_user_manager)
 
 
-async def create_user(email: str, password: str, first_name: str, last_name: str, group: str, institute_id: uuid.UUID, roles: list[UserRole], patronymic: str | None = None, birth_date: str | None = None, vk_username: str | None = None, phone: str | None = None, is_superuser: bool = False, is_verified: bool = True):
+async def create_user(username: str, password: str, first_name: str, last_name: str, group: str, institute_id: uuid.UUID, roles: list[UserRole], patronymic: str | None = None, birth_date: str | None = None, vk_id: int | None = None, phone: str | None = None, is_superuser: bool = False, is_verified: bool = True):
     try:
         async with get_async_session_context() as session:
             async with get_user_db_context(session) as user_db:
                 async with get_user_manager_context(user_db) as user_manager:
                     db_user = await user_manager.create(
                         UserCreate(
-                            email=email,
+                            username=username,
                             password=password,
                             is_superuser=is_superuser,
                             is_verified=is_verified,
@@ -148,7 +163,7 @@ async def create_user(email: str, password: str, first_name: str, last_name: str
                             group=group,
                             institute_id=institute_id,
                             birth_date=birth_date,
-                            vk_username=vk_username,
+                            vk_id=vk_id,
                             phone=phone,
                         )
                     )
@@ -157,7 +172,7 @@ async def create_user(email: str, password: str, first_name: str, last_name: str
                             user_id=db_user.id, role=role))
                     return await user_manager.get(db_user.id)
     except UserAlreadyExists:
-        print(f"User {email} already exists")
+        print(f"User {username} already exists")
 
 
 async def get_user_by_id(id: uuid.UUID):

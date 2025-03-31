@@ -1,3 +1,4 @@
+from cruds.institutes_crud import InstitutesCRUD
 from models.user import User
 from typing import List, Literal, Union
 import uuid
@@ -20,9 +21,14 @@ async def update_handler(db, user: User, user_data: UserUpdate, current_user: Us
         if user.id == current_user.id and not user_data.is_superuser:
             raise HTTPException(
                 status_code=403, detail="Нельзя понизить себя до обычного пользователя")
-    if user_data.email != user.email and await users_crud.get_user_by_email(user_data.email) is not None:
+    if user_data.username != user.username and await users_crud.get_user_by_username(user_data.username) is not None:
         raise HTTPException(
-            status_code=400, detail="Пользователь с таким email уже существует")
+            status_code=400, detail="Пользователь с таким username уже существует")
+    if user_data.institute_id != user.institute_id:
+        institute_crud = InstitutesCRUD(db)
+        if not await institute_crud.get_institute_by_id(user_data.institute_id):
+            raise HTTPException(
+                status_code=400, detail="Институт не найден")
     await users_crud.update_user(user=user, user_data=user_data, update_as_superuser=current_user.is_superuser)
     return await users_crud.get_user_by_id(user.id)
 

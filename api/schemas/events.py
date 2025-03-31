@@ -24,13 +24,14 @@ class EventCreateOrUpdate(EventBase):
     photographer_description: str
     copywriter_description: str
     designer_description: str
-    days_to_complete: int
+    days_to_complete_photographers: int
+    days_to_complete_copywriters: int
+    days_to_complete_designers: int
 
 
 class TaskBase(BaseModel):
     event_id: Optional[uuid.UUID] = None
     name: str
-    due_date: datetime | None = None
 
 
 class TaskCreate(TaskBase):
@@ -80,6 +81,7 @@ class TypedTaskRead(BaseModel):
     link: str
     for_single_user: bool
     task_states: List[TypedTaskState]
+    due_date: datetime | None = None
 
 
 class TaskReadShortWithoutEvent(TaskBase):

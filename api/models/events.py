@@ -134,7 +134,6 @@ class Task(Base):
         ForeignKey('events.id', ondelete='CASCADE'),  # Ensure CASCADE here
         nullable=True
     )
-    due_date = Column(TIMESTAMP(timezone=True), nullable=True)
 
     event = relationship(
         "Event",
@@ -173,7 +172,7 @@ class TypedTask(Base):
             name='uq_typed_task_task_id_task_type'
         ),
     )
-
+    due_date = Column(TIMESTAMP(timezone=True), nullable=True)
     id = Column(UUID(as_uuid=True), primary_key=True,
                 default=uuid.uuid4, index=True)
     task_id = Column(

@@ -3,8 +3,9 @@ import enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy import Column, String, DateTime, func, ForeignKey, Enum
+from sqlalchemy import Column, Date, Integer, String, DateTime, func, ForeignKey, Enum
 from fastapi_users.db import SQLAlchemyBaseUserTableUUID
+from models.audit import AuditableMixin, register_audit_events
 from db.session import Base
 
 
@@ -14,16 +15,18 @@ class UserRole(enum.Enum):
     DESIGNER = "designer"
 
 
-class User(SQLAlchemyBaseUserTableUUID, Base):
+class User(SQLAlchemyBaseUserTableUUID, Base, AuditableMixin):
     __tablename__ = "users"
+    email = None
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    username = Column(String, unique=True, nullable=False)
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
     patronymic = Column(String, nullable=False, default="")
-    vk_username = Column(String, nullable=False, default="")
+    vk_id = Column(Integer, nullable=True)
 
-    birth_date = Column(DateTime, nullable=True)
+    birth_date = Column(Date, nullable=True)
     phone = Column(String, nullable=False, default="")
     group = Column(String, nullable=False)
     institute_id = Column(UUID(as_uuid=True), ForeignKey(
@@ -41,6 +44,9 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
             role.role for role in self.roles_objects
         ]
     institute = relationship("Institute", foreign_keys=[institute_id])
+
+
+register_audit_events(User)
 
 
 class UserRoleAssociation(Base):

@@ -24,9 +24,15 @@ async def create_event(event: EventCreateOrUpdate, db=Depends(get_async_session)
     if event.required_photographers < 1:
         raise HTTPException(
             status_code=400, detail="Количество фотографов должно быть больше 0")
-    if event.days_to_complete < 1:
+    if event.days_to_complete_copywriters < 1:
         raise HTTPException(
-            status_code=400, detail="Количество дней на выполнение задания должно быть больше 0")
+            status_code=400, detail="Количество дней на выполнение задания для копирайтеров должно быть больше 0")
+    if event.days_to_complete_designers < 1:
+        raise HTTPException(
+            status_code=400, detail="Количество дней на выполнение задания для дизайнеров должно быть больше 0")
+    if event.days_to_complete_photographers < 1:
+        raise HTTPException(
+            status_code=400, detail="Количество дней на выполнение задания для фотографов должно быть больше 0")
     if event.group_id is not None:
         group = await EventsCRUD(db).get_event_group(event.group_id)
         if group is None:
@@ -52,7 +58,8 @@ async def create_event(event: EventCreateOrUpdate, db=Depends(get_async_session)
     if event.group_id is not None:
         await EventsCRUD(db).add_event_to_group(group_id=event.group_id, event_id=db_event.id)
 
-    due_date = event.date + timedelta(days=event.days_to_complete)
+    due_date = event.date + \
+        timedelta(days=event.days_to_complete_photographers)
     task = await TasksCRUD(db).create_task(
         name="Освещение мероприятия",
         due_date=due_date,

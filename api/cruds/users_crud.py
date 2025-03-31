@@ -1,9 +1,9 @@
 import uuid
-from sqlalchemy import select, or_, nulls_first
+from sqlalchemy import delete, insert, select, or_, nulls_first
 from sqlalchemy.orm import selectinload
 
 from cruds.base_crud import BaseCRUD
-from models.user import User
+from models.user import User, UserRoleAssociation
 from schemas.users import UserUpdate
 from users_controller import get_user_manager_context
 
@@ -14,8 +14,8 @@ class UsersCRUD(BaseCRUD):
             selectinload(User.institute), selectinload(User.roles_objects)))
         return query.scalars().first()
 
-    async def get_user_by_email(self, email: str) -> User:
-        user = select(User).where(User.email == email)
+    async def get_user_by_username(self, username: str) -> User:
+        user = select(User).where(User.username == username)
         result = await self.db.execute(user)
         return result.scalars().first()
 
@@ -33,7 +33,7 @@ class UsersCRUD(BaseCRUD):
             users = users.where(
                 or_(User.first_name.ilike(f"%{search}%"), User.last_name.ilike(
                     f"%{search}%")), User.patronymic.ilike(f"%{search}%"), User.email.ilike(f"%{search}%"),
-                User.vk_username.ilike(f"%{search}%"), User.phone.ilike(f"%{search}%"), User.group.ilike(f"%{search}%"))
+                User.phone.ilike(f"%{search}%"), User.group.ilike(f"%{search}%"))
         if only_superusers:
             users = users.where(User.is_superuser == True)
         users = users.offset(
@@ -48,11 +48,31 @@ class UsersCRUD(BaseCRUD):
             user.is_verified = user_data.is_verified
             user.group = user_data.group
             user.institute_id = user_data.institute_id
-            user.roles = user_data.roles
+
+            current_roles_query = await self.db.execute(
+                select(UserRoleAssociation.role).where(
+                    UserRoleAssociation.user_id == user.id))
+            current_roles = set(current_roles_query.scalars().all())
+            new_roles = set(user_data.roles)
+
+            for role in current_roles - new_roles:
+                await self.db.execute(
+                    delete(UserRoleAssociation).where(
+                        UserRoleAssociation.user_id == user.id,
+                        UserRoleAssociation.role == role))
+                await self.db.commit()
+            for role in new_roles - current_roles:
+                await self.db.execute(
+                    insert(UserRoleAssociation).values(
+                        user_id=user.id, role=role))
+                await self.db.commit()
+
+            # Commit changes to DB once after all operations
+            await self.db.commit()
         user.first_name = user_data.first_name
         user.last_name = user_data.last_name
         user.patronymic = user_data.patronymic
-        user.vk_username = user_data.vk_username
+        user.vk_id = user_data.vk_id
         user.birth_date = user_data.birth_date
         user.phone = user_data.phone
 
@@ -60,12 +80,10 @@ class UsersCRUD(BaseCRUD):
             async with get_user_manager_context(self.db) as user_manager:
                 user.hashed_password = user_manager.password_helper.hash(
                     user_data.password)
-        if user.email != user_data.email:
-            user.email = user_data.email
+        if user.username != user_data.username:
+            user.username = user_data.username
             user.is_verified = False if not update_as_superuser else user_data.is_verified
             user = await self.update(user)
-            async with get_user_manager_context(self.db) as user_manager:
-                await user_manager.request_verify(user)
         else:
             user = await self.update(user)
         return user

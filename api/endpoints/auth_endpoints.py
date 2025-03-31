@@ -13,13 +13,6 @@ api_router.include_router(
     fastapi_users.get_auth_router(auth_backend), prefix="/jwt"
 )
 
-api_router.include_router(
-    fastapi_users.get_reset_password_router(),
-)
-api_router.include_router(
-    fastapi_users.get_verify_router(UserReadShortWithEmail),
-)
-
 
 @api_router.post("/register", response_model=UserRead, status_code=201)
 async def register_user(user: UserCreate, db=Depends(get_async_session), current_user=Depends(optional_current_user)):
@@ -28,22 +21,21 @@ async def register_user(user: UserCreate, db=Depends(get_async_session), current
     if has_admin and (current_user is None or not current_user.is_superuser):
         raise HTTPException(
             status_code=403, detail="Регистрация пользователей доступна только администратору")
-    if await users_crud.get_user_by_email(user.email):
+    if await users_crud.get_user_by_username(user.username):
         raise HTTPException(
-            status_code=400, detail="Пользователь с таким email уже существует")
+            status_code=400, detail="Пользователь с таким username уже существует")
     institute_crud = InstitutesCRUD(db)
     if not await institute_crud.get_institute_by_id(user.institute_id):
         raise HTTPException(
             status_code=400, detail="Институт не найден")
 
     user = await create_user(
-        email=user.email,
+        username=user.username,
         password=user.password,
         first_name=user.first_name,
         last_name=user.last_name,
         patronymic=user.patronymic,
         roles=user.roles,
-        # если администратора нет, то создаем его
         is_superuser=user.is_superuser if has_admin else True,
         institute_id=user.institute_id,
         group=user.group,
@@ -51,4 +43,5 @@ async def register_user(user: UserCreate, db=Depends(get_async_session), current
     )
     if not has_admin:
         print("\033[93mАдминистратор создан\033[0m")
+    print(user)
     return await users_crud.get_user_by_id(user.id)
