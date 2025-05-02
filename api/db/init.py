@@ -72,5 +72,9 @@ async def init_settings(session):
                     value=str(settings.DESIGNERS_DEADLINE_DEFAULT)))
         logger.warning(
             f'\033[93mУстановлено стандартное количество дней на создание обложки на альбом (дней после выгрузки репортажа): {settings.DESIGNERS_DEADLINE_DEFAULT}\033[0m')
-
+    vk_token = next(
+        (x for x in settings_list if x.key == 'vk_token'), None)
+    if not vk_token:
+        logger.error(
+            "\033[93mТокен ВК не установлен\033[0m")
     await session.commit()

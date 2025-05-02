@@ -1,13 +1,11 @@
-from datetime import time
-from typing import Annotated, Union
-from schemas.events import TypedTaskRead, TypedTaskReadFull, TaskRead, UpdateTypedTaskState
+from schemas.events import TypedTaskReadFull, UpdateTypedTaskState
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, Header, Query
+from fastapi import APIRouter, Depends, HTTPException
 from cruds.tasks_crud import TasksCRUD
 from cruds.users_crud import UsersCRUD
-from users_controller import current_superuser, current_active_user, optional_current_user
+from users_controller import current_superuser, current_active_user
 from db.session import get_async_session
-from models.user import User, UserRole
+from models.user import User
 
 api_router = APIRouter(prefix="/tasks/typed-tasks", tags=["typed tasks"])
 
