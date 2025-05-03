@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload, joinedload
 
 from cruds.base_crud import BaseCRUD
-from models.user import User, UserRole
+from models.user_models import User, UserRole
 from models.events import Event
 from models.events import Task, TypedTask, TaskState, EventGroup, EventGroupAssociation, EventLevel
 

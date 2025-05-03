@@ -1,3 +1,4 @@
+@use "sass:color";
 $primary-bg: rgb(255, 255, 255);
 $secondary-bg: rgb(245, 245, 245);
 $tertiary-bg: rgb(235, 235, 235);
@@ -9,17 +10,18 @@ $octonary-bg: rgb(185, 185, 185);
 $nonary-bg: rgb(175, 175, 175);
 $denary-bg: rgb(165, 165, 165);
 
-$accent: rgb(71, 39, 232);
-$accent-light: mix(white, $accent, 80%);
-$accent-hover: mix(white, $accent, 20%);
-$accent-hover-2: mix(white, $accent, 40%);
-$accent-light-hover: mix(white, $accent-light, 20%);
-$accent-error: hsl(0, 81%, 53%);
-$accent-error-hover: hsl(0, 81%, 43%);
+$accent: black;
+$accent-light: color.mix(white, $accent, 80%);
+$accent-hover: color.mix(white, $accent, 20%);
+$accent-hover-2: color.mix(white, $accent, 40%);
+$accent-light-hover: color.mix(white, $accent-light, 20%);
 
-$accent-error-light: mix(white, $accent-error, 70%);
-$accent-error-light-hover: mix(white, $accent-error-light, 20%);
+$accent-red: hsl(0, 100%, 50%);
+$accent-red-hover: color.mix(white, $accent-red, 20%);
+$accent-red-light: color.mix(white, $accent-red, 80%);
 
 $border-color: rgb(230, 230, 230);
 $text-color: rgb(0, 0, 0);
-$text-color-secondary: rgb(100, 100, 100);
+$text-color-secondary: rgb(51, 51, 51);
+$text-color-tertiary: rgb(100, 100, 100);
+$border-color: rgba(0, 0, 0, 0.075);

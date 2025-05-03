@@ -1,24 +1,37 @@
 {
-  "name": "nuxt-app",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "nuxt build",
-    "dev": "nuxt dev",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
-  },
-  "dependencies": {
-    "@nuxtjs/google-fonts": "^3.2.0",
-    "@openapitools/openapi-generator-cli": "^2.17.0",
-    "@pinia/nuxt": "^0.10.1",
-    "nuxt": "^3.16.0",
-    "pinia": "^3.0.1",
-    "vue": "^3.5.13",
-    "vue-router": "^4.5.0"
-  },
-  "devDependencies": {
-    "sass-embedded": "^1.85.1"
-  }
+    "name": "nuxt-app",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "nuxt build",
+        "dev": "nuxt dev --host",
+        "generate": "nuxt generate",
+        "preview": "nuxt preview",
+        "postinstall": "nuxt prepare",
+        "generate-client-dev": "openapi --input http://localhost:8000/openapi.json --output ./client --client axios"
+    },
+    "dependencies": {
+        "@formkit/auto-animate": "^0.8.2",
+        "@nuxt/icon": "^1.11.0",
+        "@nuxt/ui": "^3.0.2",
+        "@nuxtjs/google-fonts": "^3.2.0",
+        "@pinia/nuxt": "^0.10.1",
+        "@vueuse/nuxt": "^13.0.0",
+        "axios": "^1.8.4",
+        "http-proxy-middleware": "^3.0.5",
+        "nuxt": "^3.16.2",
+        "nuxt-typed-router": "^3.8.0",
+        "nuxt-viewport": "^2.3.0",
+        "prettier": "^3.5.3",
+        "vue": "^3.5.13",
+        "vue-router": "^4.5.0",
+        "vue-toastification": "^2.0.0-rc.5"
+    },
+    "devDependencies": {
+        "@iconify-json/material-symbols": "^1.2.17",
+        "@iconify-json/mdi": "^1.2.3",
+        "@types/node": "^22.14.0",
+        "openapi-typescript-codegen": "^0.29.0",
+        "sass": "^1.77.6"
+    }
 }

@@ -3,11 +3,9 @@
     justify-content: center;
     align-items: center;
 }
-@mixin cut-text($line: 1) {
+@mixin clip-text($lines) {
     display: -webkit-box;
-    -webkit-line-clamp: $line;
-    line-clamp: $line;
     -webkit-box-orient: vertical;
+    -webkit-line-clamp: $lines;
     overflow: hidden;
-    text-overflow: ellipsis;
 }

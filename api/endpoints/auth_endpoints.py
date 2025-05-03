@@ -1,6 +1,6 @@
-from users_controller import auth_backend, fastapi_users
+from core.users_controller import auth_backend, fastapi_users
 from schemas.users import UserCreate, UserReadShortWithEmail, UserRead
-from users_controller import current_superuser, create_user, optional_current_user
+from core.users_controller import current_superuser, create_user, optional_current_user
 from fastapi import APIRouter, Depends, HTTPException
 from cruds.users_crud import UsersCRUD
 from cruds.institutes_crud import InstitutesCRUD

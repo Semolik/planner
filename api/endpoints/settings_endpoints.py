@@ -1,7 +1,7 @@
 from utilities.files import save_image
-from users_controller import current_superuser
+from core.users_controller import current_superuser
 from schemas.settings import SettingsUpdate, Settings
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.orm import Session
 from schemas.files import ImageLink
 from cruds.settings_crud import SettingsCRUD

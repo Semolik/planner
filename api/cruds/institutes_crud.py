@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import select
 
 from cruds.base_crud import BaseCRUD
-from models.user import Institute, User
+from models.user_models import Institute, User
 
 
 class InstitutesCRUD(BaseCRUD):

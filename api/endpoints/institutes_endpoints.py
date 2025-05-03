@@ -1,11 +1,9 @@
-from models.user import User
-from typing import List, Literal, Union
+from typing import List
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import TypeAdapter
+from fastapi import APIRouter, Depends, HTTPException
 from cruds.institutes_crud import InstitutesCRUD
 from schemas.users import Institute, InstituteCreateOrEdit
-from users_controller import current_superuser
+from core.users_controller import current_superuser
 from db.session import get_async_session
 
 

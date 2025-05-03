@@ -1,4 +1,4 @@
-from models.user import Institute
+from models.user_models import Institute
 import asyncio
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession

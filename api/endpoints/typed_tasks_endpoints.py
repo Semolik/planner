@@ -3,9 +3,9 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from cruds.tasks_crud import TasksCRUD
 from cruds.users_crud import UsersCRUD
-from users_controller import current_superuser, current_active_user
+from core.users_controller import current_superuser, current_user
 from db.session import get_async_session
-from models.user import User
+from models.user_models import User
 
 api_router = APIRouter(prefix="/tasks/typed-tasks", tags=["typed tasks"])
 
@@ -45,7 +45,7 @@ async def delete_typed_task_state(
     typed_task_id: uuid.UUID,
     user_id: uuid.UUID,
     db=Depends(get_async_session),
-    current_user: User = Depends(current_active_user)
+    current_user: User = Depends(current_user)
 ):
     task_crud = TasksCRUD(db)
     users_crud = UsersCRUD(db)
@@ -67,7 +67,7 @@ async def delete_typed_task_state(
 
 
 @api_router.get('/{typed_task_id}', response_model=TypedTaskReadFull)
-async def get_typed_task(typed_task_id: uuid.UUID, current_user: User = Depends(current_active_user), db=Depends(get_async_session)):
+async def get_typed_task(typed_task_id: uuid.UUID, current_user: User = Depends(current_user), db=Depends(get_async_session)):
     task_crud = TasksCRUD(db)
     typed_task = await task_crud.get_typed_task(typed_task_id)
     if typed_task is None:

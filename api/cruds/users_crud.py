@@ -3,9 +3,9 @@ from sqlalchemy import delete, insert, select, or_, nulls_first
 from sqlalchemy.orm import selectinload
 
 from cruds.base_crud import BaseCRUD
-from models.user import User, UserRoleAssociation
+from models.user_models import User, UserRoleAssociation
 from schemas.users import UserUpdate
-from users_controller import get_user_manager_context
+from core.users_controller import get_user_manager_context
 
 
 class UsersCRUD(BaseCRUD):

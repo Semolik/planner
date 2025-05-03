@@ -1,18 +1,52 @@
 import { defineStore } from "pinia";
-import { AuthService, UsersService } from "@/client";
+import { AuthService, UsersService, UserRole } from "@/client";
 
-export const useAuthStore = defineStore({
-    id: "auth",
+const roleHierarchy = {
+    [UserRole.USER]: 1,
+    [UserRole.ORGANIZER]: 2,
+    [UserRole.MODERATOR]: 3,
+    [UserRole.ADMIN]: 4,
+};
+export const useAuthStore = defineStore("auth", {
     state: () => ({
         logined: false,
         userData: null,
     }),
     getters: {
-        isSuperuser() {
-            return this.userData?.is_superuser;
+        // Получение текущей роли пользователя
+        userRole() {
+            return this.userData?.role || null;
+        },
+        isUser() {
+            return this.userData?.role === UserRole.USER;
+        },
+        // Проверка, является ли пользователь администратором
+        isAdmin() {
+            return this.userData?.role === UserRole.ADMIN;
+        },
+
+        // Проверка, является ли пользователь модератором или выше
+        isModerator() {
+            return this.userData?.role === UserRole.MODERATOR;
+        },
+
+        // Проверка, является ли пользователь организатором или выше
+        isOrganizer() {
+            return this.userData?.role === UserRole.ORGANIZER;
+        },
+        isModeratorOrAdmin() {
+            return this.isModerator || this.isAdmin;
         },
     },
     actions: {
+        roleEqualOrHigher(requiredRole) {
+            if (!this.userData || !this.userData.role) return false;
+
+            const userRoleLevel = roleHierarchy[this.userData.role] || 0;
+            const requiredRoleLevel = roleHierarchy[requiredRole] || 0;
+
+            return userRoleLevel >= requiredRoleLevel;
+        },
         resetSavedData() {
             this.logined = false;
             this.userData = null;
@@ -26,10 +60,11 @@ export const useAuthStore = defineStore({
         async login(username, password) {
             this.logined = false;
             try {
-                this.userData = await AuthService.authJwtLoginAuthJwtLoginPost({
+                await AuthService.authJwtLoginAuthJwtLoginPost({
                     username: username,
                     password: password,
                 });
+                await this.getUserData();
                 this.logined = true;
             } catch (error) {
                 this.resetSavedData();
@@ -55,15 +90,16 @@ export const useAuthStore = defineStore({
                 return error;
             }
         },
-        async registerRequest(username, password, name) {
+        async registerRequest(username, password, name, role) {
             this.logined = false;
             try {
                 this.userData = await AuthService.registerUserAuthRegisterPost({
-                    username,
+                    email: username,
                     password,
                     name,
+                    role,
                 });
-                this.logined = true;
+                await this.login(username, password);
             } catch (error) {
                 this.resetSavedData();
                 return error;

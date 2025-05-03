@@ -1,12 +1,12 @@
 from cruds.institutes_crud import InstitutesCRUD
-from models.user import User
+from models.user_models import User
 from typing import List, Literal, Union
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import TypeAdapter
 from cruds.users_crud import UsersCRUD
 from schemas.users import UserRead, UserReadWithEmail, UserUpdate
-from users_controller import current_active_user, current_superuser, optional_current_user
+from core.users_controller import current_user, current_superuser, optional_current_user
 from db.session import get_async_session
 
 
@@ -37,7 +37,7 @@ async def update_handler(db, user: User, user_data: UserUpdate, current_user: Us
 async def update_user_me(
     user: UserUpdate,
     db=Depends(get_async_session),
-    current_user: User = Depends(current_active_user)
+    current_user: User = Depends(current_user)
 ):
     return await update_handler(db=db, user=current_user, user_data=user, current_user=current_user)
 
@@ -59,7 +59,7 @@ async def update_user(
 @api_router.get("/me", response_model=UserReadWithEmail, name="users:current_user")
 async def get_user_me(
     db=Depends(get_async_session),
-    current_user: User = Depends(current_active_user)
+    current_user: User = Depends(current_user)
 ):
     return await UsersCRUD(db).get_user_by_id(current_user.id)
 
@@ -68,7 +68,7 @@ async def get_user_me(
 async def get_user(
     user_id: uuid.UUID,
     db=Depends(get_async_session),
-    current_user: User = Depends(current_active_user)
+    current_user: User = Depends(current_user)
 ):
     user = await UsersCRUD(db).get_user_by_id(user_id)
     if user is None:

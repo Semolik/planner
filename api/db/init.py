@@ -1,7 +1,7 @@
 from models.app import AppSettings
 from models.events import EventLevel, TasksToken
 from fastapi.logger import logger
-from models.user import User, UserRole
+from models.user_models import User, UserRole
 from sqlalchemy import select
 from db.session import async_session_maker
 import uuid

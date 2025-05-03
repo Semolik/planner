@@ -4,9 +4,9 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from cruds.tasks_crud import TasksCRUD
 from cruds.users_crud import UsersCRUD
-from users_controller import current_superuser
+from core.users_controller import current_superuser
 from db.session import get_async_session
-from models.user import User
+from models.user_models import User
 
 api_router = APIRouter(prefix="/vk", tags=["vk endpoints"])
 

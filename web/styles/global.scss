@@ -1,16 +1,37 @@
-html,
 #__nuxt,
+html,
 body {
     height: 100%;
 }
+
 body {
-    margin: 0;
-    padding: 0;
+    background-color: $primary-bg;
+    margin: 0px;
+    padding: 0px;
 }
 *,
 *:before,
 *:after {
     box-sizing: border-box;
-    font-family: "Open Sans", sans-serif;
-    transition: 0.1s background-color;
+    transition:
+        color 0.2s,
+        background-color 0.2s,
+        border-color 0.2s,
+        opacity 0.2s;
+    font-family: "Inter", sans-serif;
+}
+.leaflet-control-attribution {
+    display: none;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: $secondary-bg;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: $quinary-bg;
+    border-radius: 10px;
 }

@@ -9,7 +9,7 @@ from config import settings
 
 from alembic import context
 from models.app import *
-from models.user import *
+from models.user_models import *
 from models.files import *
 from models.events import *
 from db.session import Base

@@ -1,13 +1,9 @@
-from models.events import Task
 from schemas.events import EventGroupCreate, EventGroupRead
 import uuid
-from datetime import time, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from cruds.events_crud import EventsCRUD
-from cruds.tasks_crud import TasksCRUD
-from users_controller import current_superuser, current_active_user
+from core.users_controller import current_superuser, current_user
 from db.session import get_async_session
-from models.user import UserRole
 
 api_router = APIRouter(prefix="/events/groups", tags=["events groups"])
 
@@ -26,7 +22,7 @@ async def create_event_group(
     return await EventsCRUD(session).get_event_group(group_id=db_event_group.id)
 
 
-@api_router.get("/{group_id}", response_model=EventGroupRead, dependencies=[Depends(current_active_user)])
+@api_router.get("/{group_id}", response_model=EventGroupRead, dependencies=[Depends(current_user)])
 async def get_event_group(
     group_id: uuid.UUID = Path(...),
     session=Depends(get_async_session),

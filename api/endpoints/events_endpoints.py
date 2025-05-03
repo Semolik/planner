@@ -2,16 +2,12 @@ from models.events import Task
 from schemas.events import EventFullInfo, EventCreateOrUpdate
 import uuid
 from datetime import timedelta
-from typing import Annotated, Union
-from fastapi import APIRouter, Depends, HTTPException, Header, Query
+from fastapi import APIRouter, Depends, HTTPException
 from cruds.events_crud import EventsCRUD
 from cruds.tasks_crud import TasksCRUD
-from cruds.settings_crud import SettingsCRUD
-from users_controller import current_superuser, current_active_user, optional_current_user
+from core.users_controller import current_superuser, current_user
 from db.session import get_async_session
-from models.user import UserRole
-from endpoints.events_groups_endpoints import api_router as groups_router
-from endpoints.events_levels import api_router as levels_router
+from models.user_models import UserRole
 
 api_router = APIRouter(prefix="/events", tags=["events"])
 
@@ -98,7 +94,7 @@ async def get_events_token(db=Depends(get_async_session)):
     return uuid.UUID(str_token)
 
 
-@api_router.get("/{event_id}", response_model=EventFullInfo, dependencies=[Depends(current_active_user)])
+@api_router.get("/{event_id}", response_model=EventFullInfo, dependencies=[Depends(current_user)])
 async def get_event(event_id: uuid.UUID, db=Depends(get_async_session)):
     db_event = await EventsCRUD(db).get_full_event(event_id)
     if db_event is None:
