@@ -3,22 +3,20 @@
         <app-input
             v-model="login"
             type="text"
-            placeholder="Введите email"
-            :label="
-                !login.length || emailValid
-                    ? 'Email'
-                    : 'Email (некорректный email)'
-            "
+            placeholder="Введите имя пользователя"
+            label="Имя пользователя"
+            white
         />
         <app-input
             label="Пароль"
             v-model="password"
             type="password"
             placeholder="Пароль"
+            white
         />
 
         <app-button :active="formValid" @click="handleSubmit">
-            {{ isLogin ? "Войти" : "Зарегистрироваться" }}
+            Войти
         </app-button>
     </div>
 </template>

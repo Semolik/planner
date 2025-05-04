@@ -2,12 +2,16 @@
     <header>
         <div class="header-left">
             <nuxt-link class="header_logo" href="/">
-                IF-ELSE-AGGREGATOR
+                {{ appSettingsStore.settings.app_name }}
             </nuxt-link>
         </div>
     </header>
 </template>
-
+<script setup>
+import { useAppSettingsStore } from "~/stores/app-settings";
+const appSettingsStore = useAppSettingsStore();
+await appSettingsStore.getSettings();
+</script>
 <style lang="scss" scoped>
 header {
     color: black;
