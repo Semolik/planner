@@ -1,13 +1,14 @@
 from pydantic import BaseModel
+from core.config import settings
 
 from schemas.files import ImageLink
 
 
 class SettingsUpdate(BaseModel):
     app_name: str
-    photographers_deadline: int
-    copywriters_deadline: int
-    designers_deadline: int
+    photographers_deadline: int = settings.PHOTOGRAPHERS_DEADLINE_DEFAULT
+    copywriters_deadline: int = settings.COPYWRITERS_DEADLINE_DEFAULT
+    designers_deadline: int = settings.DESIGNERS_DEADLINE_DEFAULT
 
 
 class Settings(SettingsUpdate):

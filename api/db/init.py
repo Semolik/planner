@@ -5,7 +5,7 @@ from models.user_models import User, UserRole
 from sqlalchemy import select
 from db.session import async_session_maker
 import uuid
-from config import settings
+from core.config import settings
 
 
 async def init_db():
