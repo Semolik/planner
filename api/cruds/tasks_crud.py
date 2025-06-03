@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload, contains_eager
 
 from cruds.base_crud import BaseCRUD
 from models.user_models import User, UserRole
-from models.events import Event, Task, TypedTask, TaskState, TasksToken
+from models.events_models import Event, Task, TypedTask, TaskState, TasksToken
 from sqlalchemy import select, and_, or_
 from sqlalchemy.sql import exists
 from sqlalchemy.sql import case

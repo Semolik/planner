@@ -8,7 +8,7 @@ export default defineNuxtRouteMiddleware(async (context) => {
     try {
         await authStore.getUserData();
     } catch (e) {}
-    if (!logined.value || !authStore.roleEqualOrHigher(UserRole.USER)) {
+    if (!logined.value) {
         return navigateTo({ name: routesNames.login });
     }
 });

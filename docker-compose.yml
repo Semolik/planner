@@ -4,15 +4,32 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./api:/app
+      - ./api:/usr/src
       - ./uploads/images:/uploads/images
     env_file:
       - .env
     restart: always
+    command: uvicorn main:app --host 0.0.0.0 --reload --port 8000
     depends_on:
-      db:
+      database:
         condition: service_healthy
-  db:
+      migration:
+        condition: service_completed_successfully
+  migration:
+    build:
+      context: api
+    env_file:
+      - .env
+    environment:
+      - PYTHONPATH=/usr/src
+    command: "alembic upgrade head"
+    depends_on:
+      database:
+        condition: service_healthy
+    volumes:
+      - ./api:/usr/src
+
+  database:
     env_file:
       - .env
     image: postgres:16

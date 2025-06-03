@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import Column, Enum, Integer, String, ForeignKey, Text, Boolean, UniqueConstraint, TIMESTAMP, Date, Time, select
 from sqlalchemy.sql import func
 from models.user_models import UserRole
-from models.audit import AuditLog, AuditableMixin, register_audit_events
+from models.audit_models import AuditLog, AuditableMixin, register_audit_events
 from db.session import Base
 
 

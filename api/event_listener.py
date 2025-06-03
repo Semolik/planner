@@ -3,7 +3,7 @@ from sqlalchemy import event
 from pathlib import Path
 from utilities.files import get_image_path
 import asyncio
-from models.files import Image
+from models.files_models import Image
 
 
 async def delete_image_file(target: Image):

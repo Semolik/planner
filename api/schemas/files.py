@@ -1,6 +1,6 @@
 from pydantic import BaseModel, model_validator, validator
 from utilities.files import get_image_link
-from models.files import Image
+from models.files_models import Image
 from uuid import UUID
 from pydantic_core import core_schema
 

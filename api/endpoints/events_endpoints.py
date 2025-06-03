@@ -1,4 +1,4 @@
-from models.events import Task
+from models.events_models import Task
 from schemas.events import EventFullInfo, EventCreateOrUpdate
 import uuid
 from datetime import timedelta

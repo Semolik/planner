@@ -1,7 +1,7 @@
 import asyncio
 from sqlalchemy import select
 from vkbottle import Bot
-from models.app import AppSettings
+from models.app_models import AppSettings
 from db.session import async_session_maker
 
 

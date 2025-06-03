@@ -5,7 +5,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import Column, Date, Integer, String, DateTime, func, ForeignKey, Enum
 from fastapi_users.db import SQLAlchemyBaseUserTableUUID
-from models.audit import AuditableMixin, register_audit_events
+from models.audit_models import AuditableMixin, register_audit_events
 from db.session import Base
 
 

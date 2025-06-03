@@ -1,12 +1,19 @@
-from models.user_models import Institute
-import asyncio
-from sqlalchemy import delete
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from uuid import UUID, uuid4
 import typer
+from uuid import UUID, uuid4
+from sqlalchemy.future import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import delete
+import asyncio
+import sys
+import os
 
-from db.session import get_async_session_context
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(script_dir, '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from models.user_models import Institute  # noqa: E402
+from db.session import get_async_session_context  # noqa: E402
 app = typer.Typer(context_settings={"help_option_names": [
                   "-h", "--help"]}, add_completion=False)
 

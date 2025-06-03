@@ -1,5 +1,5 @@
-from models.app import AppSettings
-from models.events import EventLevel, TasksToken
+from models.app_models import AppSettings
+from models.events_models import EventLevel, TasksToken
 from fastapi.logger import logger
 from models.user_models import User, UserRole
 from sqlalchemy import select

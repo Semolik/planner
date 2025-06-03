@@ -24,7 +24,7 @@
             <Icon name="svg-spinners:180-ring-with-bg" />
         </div>
     </nuxt-link>
-    <div
+    <button
         v-else
         :class="[
             'app-button',
@@ -47,7 +47,7 @@
         >
             <Icon name="svg-spinners:180-ring-with-bg" />
         </div>
-    </div>
+    </button>
 </template>
 <script setup>
 defineProps({

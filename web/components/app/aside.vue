@@ -1,35 +1,25 @@
 <template>
-    <teleport
-        v-if="mounted"
-        to="#sidebar-content"
-        :disabled="$viewport.isGreaterThan('lg')"
-    >
-        <aside>
-            <div
-                class="aside-block"
-                v-for="(block, index) in blocks"
-                :key="index"
-            >
-                <div class="block-name" v-if="block.name">{{ block.name }}</div>
-                <div class="items">
-                    <nuxt-link
-                        class="aside-item"
-                        v-for="item in block.items"
-                        :key="item.path"
-                        :to="{
-                            name: item.path,
-                        }"
-                    >
-                        <Icon :name="item.icon" />
-                        <span>
-                            {{ item.name }}
-                        </span>
-                    </nuxt-link>
-                </div>
+    <aside>
+        <div class="aside-block" v-for="(block, index) in blocks" :key="index">
+            <div class="block-name" v-if="block.name">{{ block.name }}</div>
+            <div class="items">
+                <nuxt-link
+                    class="aside-item"
+                    v-for="item in block.items"
+                    :key="item.path"
+                    :to="{
+                        name: item.path,
+                    }"
+                >
+                    <Icon :name="item.icon" />
+                    <span>
+                        {{ item.name }}
+                    </span>
+                </nuxt-link>
             </div>
-            <slot name="bottom" />
-        </aside>
-    </teleport>
+        </div>
+        <slot name="bottom" />
+    </aside>
 </template>
 <script setup>
 const { blocks } = defineProps({
@@ -51,7 +41,7 @@ aside {
     gap: 10px;
     border-right: 1px solid $border-color;
     height: 100%;
-    padding: 10px;
+    padding: 5px;
 
     .spliter {
         height: 1px;

@@ -1,5 +1,5 @@
 <template>
-    <div class="login-modal__body">
+    <form class="login-modal__body" @submit.prevent="handleSubmit">
         <app-input
             v-model="login"
             type="text"
@@ -15,10 +15,8 @@
             white
         />
 
-        <app-button :active="formValid" @click="handleSubmit">
-            Войти
-        </app-button>
-    </div>
+        <app-button :active="formValid" type="submit"> Войти </app-button>
+    </form>
 </template>
 <script setup>
 import { useAuthStore } from "~/stores/auth";

@@ -1,19 +1,12 @@
 import { defineStore } from "pinia";
 import { AuthService, UsersService, UserRole } from "@/client";
 
-const roleHierarchy = {
-    [UserRole.USER]: 1,
-    [UserRole.ORGANIZER]: 2,
-    [UserRole.MODERATOR]: 3,
-    [UserRole.ADMIN]: 4,
-};
 export const useAuthStore = defineStore("auth", {
     state: () => ({
         logined: false,
         userData: null,
     }),
     getters: {
-        // Получение текущей роли пользователя
         userRole() {
             return this.userData?.role || null;
         },
@@ -39,14 +32,6 @@ export const useAuthStore = defineStore("auth", {
         },
     },
     actions: {
-        roleEqualOrHigher(requiredRole) {
-            if (!this.userData || !this.userData.role) return false;
-
-            const userRoleLevel = roleHierarchy[this.userData.role] || 0;
-            const requiredRoleLevel = roleHierarchy[requiredRole] || 0;
-
-            return userRoleLevel >= requiredRoleLevel;
-        },
         resetSavedData() {
             this.logined = false;
             this.userData = null;
