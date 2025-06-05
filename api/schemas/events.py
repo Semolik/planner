@@ -89,7 +89,7 @@ class TaskReadShortWithoutEvent(TaskBase):
 
 
 class TaskReadShort(TaskReadShortWithoutEvent):
-    event: EventRead
+    event: EventRead | None = None
 
     class Config:
         from_attributes = True

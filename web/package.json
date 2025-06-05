@@ -25,7 +25,8 @@
         "prettier": "^3.5.3",
         "vue": "^3.5.13",
         "vue-router": "^4.5.0",
-        "vue-toastification": "^2.0.0-rc.5"
+        "vue-toastification": "^2.0.0-rc.5",
+        "vue-virtual-scroller": "^2.0.0-beta.8"
     },
     "devDependencies": {
         "@iconify-json/material-symbols": "^1.2.17",

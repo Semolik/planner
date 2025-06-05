@@ -1,5 +1,6 @@
 <template>
     <aside>
+        <slot name="top" />
         <div class="aside-block" v-for="(block, index) in blocks" :key="index">
             <div class="block-name" v-if="block.name">{{ block.name }}</div>
             <div class="items">
@@ -38,7 +39,7 @@ aside {
     display: flex;
     flex-direction: column;
     width: 280px;
-    gap: 10px;
+
     border-right: 1px solid $border-color;
     height: 100%;
     padding: 5px;

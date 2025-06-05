@@ -40,6 +40,6 @@ async def lifespan_wrapper(app):
 
     async with main_app_lifespan(app) as maybe_state:
         yield maybe_state
-    loop = asyncio.get_event_loop()
-    await VKUtils().start_bot(loop)
+    # loop = asyncio.get_event_loop()
+    # await VKUtils().start_bot(loop)
 app.router.lifespan_context = lifespan_wrapper

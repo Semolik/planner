@@ -4,6 +4,20 @@
             <nuxt-link class="header_logo" href="/">
                 {{ appSettingsStore.settings.app_name }}
             </nuxt-link>
+            <div class="roles" v-if="authStore.logined">
+                <template v-if="!authStore.isAdmin">
+                    <span
+                        v-for="role in authStore.userData.roles"
+                        :class="['role', role]"
+                        :key="role.id"
+                    >
+                        {{ roleNames[role] }}
+                    </span>
+                </template>
+                <template v-else>
+                    <span class="role admin"> Администратор </span>
+                </template>
+            </div>
         </div>
         <nav v-if="authStore.logined">
             <ul>
@@ -64,6 +78,11 @@ const notificationsOverlayOpen = ref(false);
 const notificationsShown = ref(false);
 const mounted = ref(false);
 const notificationsOverlay = ref(null);
+const roleNames = {
+    photographer: "Фотограф",
+    copywriter: "Копирайтер",
+    designer: "Дизайнер",
+};
 onMounted(() => {
     mounted.value = true;
 });
@@ -142,9 +161,6 @@ header {
         position: absolute;
         left: 0;
         top: 0;
-        line-height: 60px;
-        font-size: 16px;
-        font-weight: 600;
 
         @include xl(true) {
             width: 100%;
@@ -153,28 +169,54 @@ header {
             padding-left: 0;
             padding-right: 0;
         }
-    }
+        .roles {
+            display: flex;
+            align-items: center;
+            gap: 5px;
 
-    .header_logo {
-        font-size: 16px;
-        font-weight: 600;
-        color: black;
-        text-decoration: none;
-        padding-left: 20px;
-        padding-right: 20px;
-        line-height: 60px;
-        height: 60px;
-        display: inline-block;
-        transition: color 0.1s;
-
-        &:hover {
-            color: #0066ff;
-            text-decoration: none;
+            @include xl(true) {
+                display: none;
+            }
+            .role {
+                padding: 2px 10px;
+                border-radius: 10px;
+                font-size: 12px;
+                color: white;
+                &.admin {
+                    background-color: #ff0000;
+                }
+                &.photographer {
+                    background-color: #0073e6;
+                }
+                &.copywriter {
+                    background-color: #ff8000;
+                }
+                &.designer {
+                    background-color: #8000ff;
+                }
+            }
         }
-        @include xl(true) {
-            width: 100%;
-            text-align: center;
-            font-size: 14px;
+        .header_logo {
+            font-size: 16px;
+            font-weight: 600;
+            color: black;
+            text-decoration: none;
+            padding-left: 20px;
+            padding-right: 10px;
+            line-height: 60px;
+            height: 60px;
+            display: inline-block;
+            transition: color 0.1s;
+
+            &:hover {
+                color: #0066ff;
+                text-decoration: none;
+            }
+            @include xl(true) {
+                width: 100%;
+                text-align: center;
+                font-size: 14px;
+            }
         }
     }
 

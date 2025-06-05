@@ -2,9 +2,10 @@
     <UApp>
         <NuxtLoadingIndicator />
 
-        <div class="default-layout use-max-width">
+        <div class="default-layout">
             <Header />
-            <app-aside :blocks="asideBlocks" />
+            <app-aside :blocks="asideBlocks" v-if="authStore.logined">
+            </app-aside>
             <div id="teleports"></div>
             <div class="default-layout__content">
                 <slot />
@@ -14,6 +15,9 @@
 </template>
 <script setup>
 import { routesNames } from "@typed-router";
+import { useAuthStore } from "~/stores/auth";
+
+const authStore = useAuthStore();
 
 const asideBlocks = [
     {
@@ -45,20 +49,13 @@ body {
     overflow-y: auto;
     isolation: isolate;
 
-    &.use-max-height .default-layout__content {
-        max-height: calc(100vh - 60px);
-        overflow-y: auto;
-    }
-
-    &.use-max-width &__content {
-        max-width: 1250px;
-    }
     &__content {
         flex: 1;
         min-width: 0;
         max-height: 100%;
         width: 100%;
         margin: 0 auto;
+        padding: 13px;
         z-index: 0;
     }
 }

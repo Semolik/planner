@@ -10,25 +10,9 @@ export const useAuthStore = defineStore("auth", {
         userRole() {
             return this.userData?.role || null;
         },
-        isUser() {
-            return this.userData?.role === UserRole.USER;
-        },
-        // Проверка, является ли пользователь администратором
+
         isAdmin() {
-            return this.userData?.role === UserRole.ADMIN;
-        },
-
-        // Проверка, является ли пользователь модератором или выше
-        isModerator() {
-            return this.userData?.role === UserRole.MODERATOR;
-        },
-
-        // Проверка, является ли пользователь организатором или выше
-        isOrganizer() {
-            return this.userData?.role === UserRole.ORGANIZER;
-        },
-        isModeratorOrAdmin() {
-            return this.isModerator || this.isAdmin;
+            return this.userData?.is_superuser;
         },
     },
     actions: {
