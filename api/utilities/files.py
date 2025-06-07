@@ -21,7 +21,7 @@ def get_image_path(image: Image) -> str:
 
 
 def get_image_link(image_id: UUID) -> str:
-    return f"/images/{image_id}"
+    return f"/api/images/{image_id}"
 
 
 async def save_image(db: AsyncSession, upload_file: UploadFile, resize_image_options=(400, 400),

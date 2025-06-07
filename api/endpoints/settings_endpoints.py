@@ -23,7 +23,7 @@ async def set_app_logo(
     db: Session = Depends(get_async_session),
 ):
     settings_crud = SettingsCRUD(db)
-    image = await save_image(db=db, upload_file=image)
+    image = await save_image(db=db, upload_file=image,  resize_image_options=(2000, 2000))
     await settings_crud.update_app_logo(image=image)
     return image
 

@@ -12,7 +12,7 @@
 <script setup>
 import { useAuthStore } from "~/stores/auth";
 import { TasksService } from "~/client";
-
+const route = useRoute();
 const eventsPage = ref(null);
 const isMounted = ref(false);
 
@@ -21,6 +21,10 @@ onMounted(() => {
 });
 
 const authStore = useAuthStore();
+if (!route.query.token && !authStore.logined) {
+    const router = useRouter();
+    router.push("/login");
+}
 const tasks = ref([]);
 const loading = ref(false);
 const page = ref(1);

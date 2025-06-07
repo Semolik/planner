@@ -3,7 +3,6 @@
         <NuxtLoadingIndicator />
 
         <div class="default-layout">
-            <Header />
             <app-aside :blocks="asideBlocks" v-if="authStore.logined">
             </app-aside>
             <div id="teleports"></div>
@@ -38,9 +37,6 @@ const asideBlocks = [
 ];
 </script>
 <style lang="scss">
-body {
-    padding-top: 60px;
-}
 .default-layout {
     display: flex;
 

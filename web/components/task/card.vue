@@ -29,6 +29,10 @@
                 </span>
             </div>
         </template>
+        {{ task }}
+        <div class="flex gap-1">
+            <UBadge color="error"> Нужен фотограф </UBadge>
+        </div>
     </nuxt-link>
 </template>
 <script setup>

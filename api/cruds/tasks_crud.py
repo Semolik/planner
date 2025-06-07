@@ -44,9 +44,14 @@ class TasksCRUD(BaseCRUD):
         result = await self.db.execute(query)
         return result.scalars().first()
 
-    async def update_task_state(self, task_state: TaskState, period_start: time, period_end: time, comment: str, is_completed: bool = False):
-        task_state.period_start = period_start
-        task_state.period_end = period_end
+    async def get_task_state_by_id(self, typed_task_state_id: uuid.UUID) -> TaskState:
+        query = select(TaskState).where(TaskState.id ==
+                                        typed_task_state_id)
+        result = await self.db.execute(query)
+        return result.scalars().first()
+
+    async def update_task_state(self, task_state: TaskState, comment: str, is_completed: bool = False):
+
         task_state.comment = comment
         task_state.is_completed = is_completed
         return await self.update(task_state)

@@ -224,18 +224,27 @@ class TypedTask(Base, AuditableMixin):
 class TaskState(Base):
     __tablename__ = "task_states"
 
+    id = Column(UUID(as_uuid=True), primary_key=True,
+                default=uuid.uuid4, index=True)
+
+    __table_args__ = (
+        UniqueConstraint(
+            'type_task_id', 'user_id',
+            name='uq_task_states_type_task_id_user_id'
+        ),
+    )
+
     type_task_id = Column(
         UUID(as_uuid=True),
         ForeignKey('typed_tasks.id', ondelete='CASCADE'),
-        primary_key=True
+        nullable=False
     )
     user_id = Column(
         UUID(as_uuid=True),
         ForeignKey('users.id', ondelete='CASCADE'),
-        primary_key=True
+        nullable=False
     )
-    period_start = Column(Time, nullable=False)
-    period_end = Column(Time, nullable=False)
+
     is_completed = Column(Boolean, nullable=False, default=False)
     comment = Column(Text, nullable=False, default="")
 
@@ -244,14 +253,42 @@ class TaskState(Base):
         foreign_keys=[type_task_id],
         uselist=False,
         overlaps="users",
-        cascade="all, delete-orphan",
-        single_parent=True
+        back_populates="task_states"
     )
     user = relationship(
         "User",
         foreign_keys=[user_id],
         uselist=False,
-        overlaps="users",
+        overlaps="users"
+    )
+    period = relationship(
+        "TaskStatePeriod",
+        back_populates="task_state",
+        cascade="all, delete-orphan",
+        single_parent=True
+    )
+
+
+class TaskStatePeriod(Base):
+    __tablename__ = 'task_states_periods'
+    __table_args__ = (
+        UniqueConstraint(
+            'task_state_id', 'period_start', 'period_end',
+            name='uq_task_state_periods_task_state_id_period_start_period_end'
+        ),
+    )
+    task_state_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey('task_states.id', ondelete='CASCADE'),
+        primary_key=True
+    )
+    period_start = Column(Time, nullable=False)
+    period_end = Column(Time, nullable=False)
+    task_state = relationship(
+        "TaskState",
+        foreign_keys=[task_state_id],
+        uselist=False,
+        back_populates="period",
         cascade="all, delete-orphan",
         single_parent=True
     )

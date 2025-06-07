@@ -139,11 +139,28 @@ class EventGroupRead(EventGroupBase):
         from_attributes = True
 
 
-class UpdateTypedTaskState(BaseModel):
-    is_completed: bool = False
-    comment: str
+class StatePeriod(BaseModel):
     period_start: time
     period_end: time
+
+    class Config:
+        from_attributes = True
+
+
+class CreateTypedTaskState(BaseModel):
+    comment: str
+    period: StatePeriod
+
+
+class UpdateTypedTaskState(CreateTypedTaskState):
+    is_completed: bool = False
+
+    class Config:
+        from_attributes = True
+
+
+class ReadTypedTaskState(CreateTypedTaskState):
+    id: uuid.UUID
 
     class Config:
         from_attributes = True
