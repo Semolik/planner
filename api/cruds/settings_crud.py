@@ -51,11 +51,14 @@ class SettingsCRUD(BaseCRUD):
             filter(lambda x: x.key == 'photographers_deadline', settings))
         copywriters_deadline = list(
             filter(lambda x: x.key == 'copywriters_deadline', settings))
+        default_event_level_id = list(
+            filter(lambda x: x.key == 'default_event_level_id', settings))
         return Settings(
             app_logo=app_logo,
             app_name=app_name[0].value,
             designers_deadline=int(designers_deadline[0].value),
             photographers_deadline=int(photographers_deadline[0].value),
-            copywriters_deadline=int(copywriters_deadline[0].value)
-
+            copywriters_deadline=int(copywriters_deadline[0].value),
+            default_event_level_id=uuid.UUID(
+                default_event_level_id[0].value) if default_event_level_id else None
         )

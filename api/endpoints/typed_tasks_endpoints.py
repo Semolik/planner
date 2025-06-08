@@ -58,8 +58,7 @@ async def assign_user_to_task(
     await task_crud.assign_user_to_task(
         typed_task=typed_task,
         user=current_user,
-        period_start=data.period_start,
-        period_end=data.period_end,
+
         comment=data.comment,
         is_completed=False
     )
@@ -92,8 +91,7 @@ async def assign_user_to_task(
     await task_crud.assign_user_to_task(
         typed_task=typed_task,
         user=user,
-        period_start=data.period_start,
-        period_end=data.period_end,
+
         comment=data.comment,
         is_completed=False
     )

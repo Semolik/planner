@@ -42,15 +42,32 @@ async def init_settings(session):
         (x for x in settings_list if x.key == 'levels_configured'), None)
     if not levels_configured or levels_configured.value.lower() != 'true':
         event_levels = (await session.execute(select(EventLevel))).scalars().all()
+
         for level in settings.EVENT_LEVELS:
             if not any(x.name == level for x in event_levels):
                 session.add(EventLevel(name=level))
                 logger.warning(
                     f"\033[93mДобавлен уровень события: {level}\033[0m")
+        await session.commit()
+
         if not levels_configured:
             session.add(AppSettings(key='levels_configured', value='true'))
         else:
             levels_configured.value = 'true'
+    default_event_level_id = next(
+        (x for x in settings_list if x.key == 'default_event_level_id'), None)
+    if not default_event_level_id:
+        db_event_levels = (await session.execute(select(EventLevel))).scalars().all()
+        if db_event_levels:
+            default_level = db_event_levels[1]
+            university_level = next(
+                (x for x in db_event_levels if x.name == 'Университетский'), None)
+            if university_level:
+                default_level = university_level
+            session.add(AppSettings(
+                key='default_event_level_id', value=str(default_level.id)))
+            logger.warning(
+                f"\033[93mУстановлен стандартный уровень события: {default_level.name}\033[0m")
     photographers_deadline = next(
         (x for x in settings_list if x.key == 'photographers_deadline'), None)
     if not photographers_deadline:
@@ -77,4 +94,5 @@ async def init_settings(session):
     if not vk_token:
         logger.error(
             "\033[93mТокен ВК не установлен\033[0m")
+
     await session.commit()

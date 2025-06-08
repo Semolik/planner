@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload, contains_eager
 
 from cruds.base_crud import BaseCRUD
 from models.user_models import User, UserRole
-from models.events_models import Event, Task, TypedTask, TaskState, TasksToken
+from models.events_models import Event, Task, TypedTask, TaskState, TasksToken, TaskStatePeriod
 from sqlalchemy import select, and_, or_
 from sqlalchemy.sql import exists
 from sqlalchemy.sql import case
@@ -20,18 +20,27 @@ class TasksCRUD(BaseCRUD):
         )
         return await self.create(task)
 
+    def get_typed_task_options(self):
+        return [
+            selectinload(TypedTask.users),
+            selectinload(TypedTask.task_states).selectinload(
+                TaskState.user).options(selectinload(User.institute)),
+            selectinload(TypedTask.parent_task).selectinload(Task.event),
+            selectinload(TypedTask.task_states).selectinload(TaskState.period)
+        ]
+
     async def get_typed_task(self, typed_task_id: uuid.UUID) -> TypedTask:
         query = select(TypedTask).where(TypedTask.id == typed_task_id).options(
-            selectinload(TypedTask.users), selectinload(TypedTask.task_states), selectinload(TypedTask.parent_task).selectinload(Task.event))
+            **self.get_typed_task_options()
+        )
         result = await self.db.execute(query)
         return result.scalars().first()
 
-    async def assign_user_to_task(self, typed_task: TypedTask, user: User, period_start: time, period_end: time, comment: str, is_completed: bool = False) -> TaskState:
+    async def assign_user_to_task(self, typed_task: TypedTask, user: User, comment: str, is_completed: bool = False) -> TaskState:
         task_state = TaskState(
             type_task_id=typed_task.id,
             user_id=user.id,
-            period_start=period_start,
-            period_end=period_end,
+
             comment=comment,
             is_completed=is_completed
         )
@@ -47,6 +56,12 @@ class TasksCRUD(BaseCRUD):
     async def get_task_state_by_id(self, typed_task_state_id: uuid.UUID) -> TaskState:
         query = select(TaskState).where(TaskState.id ==
                                         typed_task_state_id)
+        result = await self.db.execute(query)
+        return result.scalars().first()
+
+    async def get_task_state_period_by_task_state_id(self, task_state_id: uuid.UUID) -> TaskStatePeriod:
+        query = select(TaskStatePeriod).where(
+            TaskStatePeriod.task_state_id == task_state_id)
         result = await self.db.execute(query)
         return result.scalars().first()
 
@@ -258,3 +273,21 @@ class TasksCRUD(BaseCRUD):
         query = select(TasksToken)
         result = await self.db.execute(query)
         return result.scalars().all()
+
+    async def update_task_state_period(
+            self, task_state_id: uuid.UUID, period_start: time, period_end: time) -> TaskStatePeriod:
+        query = select(TaskStatePeriod).where(
+            TaskStatePeriod.task_state_id == task_state_id)
+        result = await self.db.execute(query)
+        task_state_period = result.scalars().first()
+        if not task_state_period:
+            task_state_period = TaskStatePeriod(
+                task_state_id=task_state_id,
+                period_start=period_start,
+                period_end=period_end
+            )
+            return await self.create(task_state_period)
+        else:
+            task_state_period.period_start = period_start
+            task_state_period.period_end = period_end
+            return await self.update(task_state_period)

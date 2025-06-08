@@ -215,9 +215,10 @@ class TypedTask(Base, AuditableMixin):
     users = relationship(
         "User",
         secondary="task_states",
-        primaryjoin="TypedTask.id == TaskState.type_task_id",
-        secondaryjoin="User.id == TaskState.user_id",
-        overlaps="task_states"
+        primaryjoin="and_(TypedTask.id == TaskState.type_task_id)",
+        secondaryjoin="and_(User.id == TaskState.user_id)",
+        overlaps="task_states",
+        viewonly=True
     )
 
 

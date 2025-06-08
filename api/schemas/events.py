@@ -149,7 +149,6 @@ class StatePeriod(BaseModel):
 
 class CreateTypedTaskState(BaseModel):
     comment: str
-    period: StatePeriod
 
 
 class UpdateTypedTaskState(CreateTypedTaskState):
@@ -161,6 +160,7 @@ class UpdateTypedTaskState(CreateTypedTaskState):
 
 class ReadTypedTaskState(CreateTypedTaskState):
     id: uuid.UUID
+    period: StatePeriod
 
     class Config:
         from_attributes = True

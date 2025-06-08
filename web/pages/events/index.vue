@@ -1,6 +1,11 @@
 <template>
     <div class="tasks-page" ref="eventsPage">
-        <app-button active v-if="authStore.isAdmin" color="primary">
+        <app-button
+            active
+            v-if="authStore.isAdmin"
+            color="primary"
+            :to="{ name: routesNames.eventsAdd }"
+        >
             Создать мероприятие
         </app-button>
         <div class="tasks">
@@ -10,6 +15,7 @@
 </template>
 
 <script setup>
+import { routesNames } from "@typed-router";
 import { useAuthStore } from "~/stores/auth";
 import { TasksService } from "~/client";
 const route = useRoute();

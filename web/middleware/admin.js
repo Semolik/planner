@@ -8,7 +8,7 @@ export default defineNuxtRouteMiddleware(async (context) => {
     try {
         await authStore.getUserData();
     } catch (e) {}
-    if (!logined.value || !authStore.roleEqualOrHigher(UserRole.ADMIN)) {
+    if (!logined.value || !userData.value?.is_superuser) {
         return navigateTo({ name: routesNames.login });
     }
 });
