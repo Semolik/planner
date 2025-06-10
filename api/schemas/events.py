@@ -24,9 +24,9 @@ class EventCreateOrUpdate(EventBase):
     photographer_description: str
     copywriter_description: str
     designer_description: str
-    days_to_complete_photographers: int
-    days_to_complete_copywriters: int
-    days_to_complete_designers: int
+    photographers_deadline: date | None = None
+    copywriters_deadline: date | None = None
+    designers_deadline: date | None = None
 
 
 class TaskBase(BaseModel):

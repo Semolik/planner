@@ -9,6 +9,7 @@ export type { OpenAPIConfig } from './core/OpenAPI';
 
 export type { Body_auth_jwt_login_auth_jwt_login_post } from './models/Body_auth_jwt_login_auth_jwt_login_post';
 export type { Body_set_app_logo_settings_app_logo_put } from './models/Body_set_app_logo_settings_app_logo_put';
+export type { CreateTypedTaskState } from './models/CreateTypedTaskState';
 export type { ErrorModel } from './models/ErrorModel';
 export type { EventCreateOrUpdate } from './models/EventCreateOrUpdate';
 export type { EventFullInfo } from './models/EventFullInfo';
@@ -28,7 +29,6 @@ export type { TaskWithoutEventRead } from './models/TaskWithoutEventRead';
 export type { TypedTaskRead } from './models/TypedTaskRead';
 export type { TypedTaskReadFull } from './models/TypedTaskReadFull';
 export type { TypedTaskState } from './models/TypedTaskState';
-export type { UpdateTypedTaskState } from './models/UpdateTypedTaskState';
 export type { UserCreate } from './models/UserCreate';
 export type { UserRead } from './models/UserRead';
 export type { UserReadShort } from './models/UserReadShort';

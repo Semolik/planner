@@ -4,8 +4,9 @@
 /* eslint-disable */
 export type SettingsUpdate = {
     app_name: string;
-    photographers_deadline: number;
-    copywriters_deadline: number;
-    designers_deadline: number;
+    photographers_deadline?: number;
+    copywriters_deadline?: number;
+    designers_deadline?: number;
+    default_event_level_id?: (string | null);
 };
 

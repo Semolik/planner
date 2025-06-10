@@ -1,5 +1,12 @@
 <template>
-    <nuxt-link :key="task.id" class="card">
+    <nuxt-link
+        :key="task.id"
+        class="card"
+        :to="{
+            name: routesNames.eventsEventId,
+            params: { event_id: task.event.id },
+        }"
+    >
         <div class="text-md font-semibold text-gray-800">
             {{ task.event ? task.event.name : task.name }}
         </div>
@@ -29,13 +36,14 @@
                 </span>
             </div>
         </template>
-        {{ task }}
+
         <div class="flex gap-1">
             <UBadge color="error"> Нужен фотограф </UBadge>
         </div>
     </nuxt-link>
 </template>
 <script setup>
+import { routesNames } from "@typed-router";
 const { task } = defineProps({
     task: {
         type: Object,

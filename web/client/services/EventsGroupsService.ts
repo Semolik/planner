@@ -28,6 +28,26 @@ export class EventsGroupsService {
         });
     }
     /**
+     * Search Event Groups
+     * @param query
+     * @returns EventGroupRead Successful Response
+     * @throws ApiError
+     */
+    public static searchEventGroupsEventsGroupsSearchGet(
+        query?: string,
+    ): CancelablePromise<Array<EventGroupRead>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/events/groups/search',
+            query: {
+                'query': query,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * Get Event Group
      * @param groupId
      * @returns EventGroupRead Successful Response

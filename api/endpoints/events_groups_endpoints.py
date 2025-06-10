@@ -22,6 +22,16 @@ async def create_event_group(
     return await EventsCRUD(session).get_event_group(group_id=db_event_group.id)
 
 
+@api_router.get("/search", response_model=list[EventGroupRead], dependencies=[Depends(current_user)])
+async def search_event_groups(
+    query: str = Query(None),
+    session=Depends(get_async_session),
+):
+
+    db_groups = await EventsCRUD(session).search_event_groups(query=query)
+    return db_groups
+
+
 @api_router.get("/{group_id}", response_model=EventGroupRead, dependencies=[Depends(current_user)])
 async def get_event_group(
     group_id: uuid.UUID = Path(...),

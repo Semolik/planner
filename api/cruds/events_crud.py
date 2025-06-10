@@ -3,7 +3,7 @@ from sqlalchemy.sql import and_
 from datetime import datetime
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import selectinload, joinedload
 
 from cruds.base_crud import BaseCRUD
@@ -182,3 +182,38 @@ class EventsCRUD(BaseCRUD):
         for association in associations:
             await self.delete(association)
             await self.delete(association.event)
+
+    async def search_event_groups(self, query: str | None, page: int = 1, per_page: int = 10) -> list[EventGroup]:
+
+        end = page * per_page
+        start = end - per_page
+        search_query = select(EventGroup)
+        if query:
+            search_query = search_query.where(
+                EventGroup.name.ilike(f"%{query}%")
+            )
+        search_query = (search_query.order_by(
+            # First, prioritize groups with future events
+            select(Event.date > datetime.now())
+            .where(Event.group_id == EventGroup.id)
+            .exists().desc(),
+            # Then order by latest event date
+            select(Event.date)
+            .where(Event.group_id == EventGroup.id)
+            .order_by(Event.date.desc())
+            .limit(1)
+            .scalar_subquery().desc().nulls_last(),
+            EventGroup.name
+        )
+            .slice(start, end)
+            .options(
+                selectinload(EventGroup.events)
+                .selectinload(Event.task)
+                .selectinload(Task.typed_tasks)
+                .selectinload(TypedTask.task_states)
+                .selectinload(TaskState.user)
+        )
+        )
+
+        result = await self.db.execute(search_query)
+        return result.scalars().all()

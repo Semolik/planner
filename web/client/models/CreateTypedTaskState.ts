@@ -2,10 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type UpdateTypedTaskState = {
-    is_completed?: boolean;
+export type CreateTypedTaskState = {
     comment: string;
-    period_start: string;
-    period_end: string;
 };
 

@@ -18,8 +18,8 @@ export type EventCreateOrUpdate = {
     photographer_description: string;
     copywriter_description: string;
     designer_description: string;
-    days_to_complete_photographers: number;
-    days_to_complete_copywriters: number;
-    days_to_complete_designers: number;
+    photographers_deadline?: (string | null);
+    copywriters_deadline?: (string | null);
+    designers_deadline?: (string | null);
 };
 

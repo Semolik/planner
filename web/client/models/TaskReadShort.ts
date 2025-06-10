@@ -7,6 +7,6 @@ export type TaskReadShort = {
     event_id?: (string | null);
     name: string;
     id: string;
-    event: EventRead;
+    event?: (EventRead | null);
 };
 

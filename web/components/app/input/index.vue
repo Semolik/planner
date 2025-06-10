@@ -91,6 +91,10 @@ const props = defineProps({
         type: Function,
         default: null,
     },
+    borderRadius: {
+        type: String,
+        default: "8px",
+    },
 });
 
 const emit = defineEmits(["update:modelValue", "validationState"]);
@@ -176,7 +180,7 @@ defineExpose({
         border: 1px solid $accent-red;
     }
     &__input {
-        border-radius: 8px;
+        border-radius: v-bind(borderRadius);
         border: 1px solid $border-color;
         padding: 0 10px;
         font-size: 16px;

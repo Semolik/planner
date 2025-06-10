@@ -20,15 +20,7 @@ async def create_event(event: EventCreateOrUpdate, db=Depends(get_async_session)
     if event.required_photographers < 1:
         raise HTTPException(
             status_code=400, detail="Количество фотографов должно быть больше 0")
-    if event.days_to_complete_copywriters < 1:
-        raise HTTPException(
-            status_code=400, detail="Количество дней на выполнение задания для копирайтеров должно быть больше 0")
-    if event.days_to_complete_designers < 1:
-        raise HTTPException(
-            status_code=400, detail="Количество дней на выполнение задания для дизайнеров должно быть больше 0")
-    if event.days_to_complete_photographers < 1:
-        raise HTTPException(
-            status_code=400, detail="Количество дней на выполнение задания для фотографов должно быть больше 0")
+
     if event.group_id is not None:
         group = await EventsCRUD(db).get_event_group(event.group_id)
         if group is None:
@@ -58,34 +50,32 @@ async def create_event(event: EventCreateOrUpdate, db=Depends(get_async_session)
         name="Освещение мероприятия",
         event_id=db_event.id,
     )
-    await TasksCRUD(db).create_typed_task(
-        task_id=task.id,
-        task_type=UserRole.PHOTOGRAPHER,
-        description=event.photographer_description,
-        for_single_user=False,
-        due_date=event.date +
-        timedelta(days=event.days_to_complete_photographers),
-    )
-    await TasksCRUD(db).create_typed_task(
-        task_id=task.id,
-        task_type=UserRole.COPYWRITER,
-        description=event.copywriter_description,
-        for_single_user=True,
-        due_date=event.date +
-        timedelta(days=event.days_to_complete_copywriters),
-    )
-    await TasksCRUD(db).create_typed_task(
-        task_id=task.id,
-        task_type=UserRole.DESIGNER,
-        description=event.designer_description,
-        for_single_user=True,
-        due_date=event.date +
-        timedelta(days=event.days_to_complete_designers),
-    )
-    db_event = await EventsCRUD(db).get_full_event(db_event.id)
-    task: Task = db_event.task
+    if event.photographers_deadline:
+        await TasksCRUD(db).create_typed_task(
+            task_id=task.id,
+            task_type=UserRole.PHOTOGRAPHER,
+            description=event.photographer_description,
+            for_single_user=False,
+            due_date=event.photographers_deadline,
+        )
+    if event.copywriters_deadline:
+        await TasksCRUD(db).create_typed_task(
+            task_id=task.id,
+            task_type=UserRole.COPYWRITER,
+            description=event.copywriter_description,
+            for_single_user=True,
+            due_date=event.copywriters_deadline,
+        )
+    if event.designers_deadline:
+        await TasksCRUD(db).create_typed_task(
+            task_id=task.id,
+            task_type=UserRole.DESIGNER,
+            description=event.designer_description,
+            for_single_user=True,
+            due_date=event.designers_deadline,
+        )
 
-    return db_event
+    return await EventsCRUD(db).get_full_event(db_event.id)
 
 
 @api_router.get("/token", response_model=uuid.UUID, dependencies=[Depends(current_superuser)])

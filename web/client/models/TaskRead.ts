@@ -8,7 +8,7 @@ export type TaskRead = {
     event_id?: (string | null);
     name: string;
     id: string;
-    event: EventRead;
+    event?: (EventRead | null);
     typed_tasks: Array<TypedTaskRead>;
 };
 
