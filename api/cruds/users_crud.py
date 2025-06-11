@@ -32,7 +32,7 @@ class UsersCRUD(BaseCRUD):
         if search:
             users = users.where(
                 or_(User.first_name.ilike(f"%{search}%"), User.last_name.ilike(
-                    f"%{search}%")), User.patronymic.ilike(f"%{search}%"), User.email.ilike(f"%{search}%"),
+                    f"%{search}%")), User.patronymic.ilike(f"%{search}%"),
                 User.phone.ilike(f"%{search}%"), User.group.ilike(f"%{search}%"))
         if only_superusers:
             users = users.where(User.is_superuser == True)

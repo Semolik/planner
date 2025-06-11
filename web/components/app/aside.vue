@@ -104,7 +104,7 @@ aside {
         display: flex;
         align-items: center;
         padding: 13px;
-
+        height: 60px;
         gap: 10px;
         border-bottom: 1px solid $border-color;
 
@@ -137,7 +137,6 @@ aside {
         gap: 10px;
 
         .dropdown-button {
-            // background-color: black;
             border: 1px solid black;
             color: black;
             padding: 8px;

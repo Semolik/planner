@@ -206,7 +206,6 @@
     </UModal>
 </template>
 <script setup>
-import "vue-virtual-scroller/dist/vue-virtual-scroller.css";
 import { useAppSettingsStore } from "~/stores/app-settings";
 import { EventsService, EventsGroupsService } from "~/client";
 import { routesNames } from "@typed-router";

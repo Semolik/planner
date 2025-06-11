@@ -4,7 +4,7 @@
             <slot name="top"></slot>
         </div>
         <div class="form-wrapper">
-            <form class="form" v-bind="$attrs">
+            <form class="form" v-bind="$attrs" @submit.prevent="emit('submit')">
                 <div class="headline" v-if="headline">
                     <div class="headline-text">
                         {{ headline }}
@@ -33,6 +33,7 @@ defineProps({
     },
     fullHeight: Boolean,
 });
+const emit = defineEmits(["submit"]);
 </script>
 <style scoped lang="scss">
 .form-container {
@@ -54,7 +55,7 @@ defineProps({
     }
     .form-top,
     .form-wrapper {
-        padding: 20px;
+        padding: 10px;
         @include md(true) {
             & {
                 padding: 10px;
