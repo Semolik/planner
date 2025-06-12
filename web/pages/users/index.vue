@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { routesNames } from "@typed-router";
 import { h, resolveComponent, ref } from "vue";
 definePageMeta({
     middleware: ["admin"],
@@ -10,7 +11,7 @@ import { UsersService, type UserReadWithEmail, UserRole } from "~/client";
 
 const UButton = resolveComponent("UButton");
 const UBadge = resolveComponent("UBadge");
-
+const Icon = resolveComponent("Icon");
 const UInput = resolveComponent("UInput");
 
 const { $toast } = useNuxtApp();
@@ -26,25 +27,10 @@ const order = ref<"asc" | "desc">("asc");
 const deleteUserModalOpen = ref(false);
 const selectedUser = ref<UserReadWithEmail | null>(null);
 
-// Цвета для ролей
-const roleColors: Record<UserRole, string> = {
-    [UserRole.PHOTOGRAPHER]: "amber",
-    [UserRole.COPYWRITER]: "blue",
-    [UserRole.DESIGNER]: "rose",
-};
-const deleteUser = async () => {
-    if (!selectedUser.value) return;
-
-    try {
-        await UsersService.deleteUserUsersUserIdDelete(selectedUser.value.id);
-
-        $toast.success("Пользователь успешно удален");
-        deleteUserModalOpen.value = false;
-        selectedUser.value = null;
-        reloadUsers();
-    } catch (error) {
-        $toast.error(HandleOpenApiError(error).message);
-    }
+const roleTranslations: Record<UserRole, string> = {
+    [UserRole.PHOTOGRAPHER]: "Фотограф",
+    [UserRole.COPYWRITER]: "Копирайтер",
+    [UserRole.DESIGNER]: "Дизайнер",
 };
 
 const columns: TableColumn<UserReadWithEmail>[] = [
@@ -124,33 +110,34 @@ const columns: TableColumn<UserReadWithEmail>[] = [
         cell: ({ row }) => {
             const roles = row.original.roles || [];
 
-            if (roles.length === 0) {
-                return h(
-                    UBadge,
-                    {
-                        color: "gray",
-                        variant: "subtle",
-                    },
-                    () => "Нет ролей"
-                );
-            }
-
-            return h(
-                "div",
-                { class: "flex flex-wrap gap-1" },
-                roles.map((role) =>
+            return h("div", { class: "flex flex-wrap gap-1" }, [
+                ...(row.original.is_superuser
+                    ? [
+                          h(
+                              UBadge,
+                              {
+                                  key: "admin",
+                                  class: "capitalize",
+                                  variant: "subtle",
+                                  color: "info",
+                              },
+                              () => "Администратор"
+                          ),
+                      ]
+                    : []),
+                ...roles.map((role) =>
                     h(
                         UBadge,
                         {
                             key: role,
-                            color: roleColors[role] || "gray",
-                            variant: "soft",
                             class: "capitalize",
+                            variant: "subtle",
+                            color: "neutral",
                         },
-                        () => role.replace("_", " ").toLowerCase()
+                        () => roleTranslations[role] || role
                     )
-                )
-            );
+                ),
+            ]);
         },
     },
     {
@@ -171,27 +158,41 @@ const columns: TableColumn<UserReadWithEmail>[] = [
     {
         id: "actions",
         enableHiding: false,
+        header: "Действия",
+
         cell: ({ row }) => {
             return h("div", { class: "text-right flex gap-1 justify-end" }, [
-                h(UButton, {
-                    color: "neutral",
-                    variant: "ghost",
-                    icon: "material-symbols:edit-outline",
-                    "aria-label": "Редактировать",
-                    onClick: () => {
-                        navigateTo(`/users/${row.original.id}`);
+                h(
+                    "div",
+                    {
+                        class: "flex w-9 h-9 items-center justify-center bg-black rounded-xl hover:bg-gray-800 transition-colors cursor-pointer",
+                        onClick: () => {
+                            navigateTo(`/users/${row.original.id}`);
+                        },
                     },
-                }),
-                h(UButton, {
-                    color: "neutral",
-                    variant: "ghost",
-                    icon: "material-symbols:delete-outline",
-                    "aria-label": "Удалить",
-                    onClick: async () => {
-                        selectedUser.value = row.original;
-                        deleteUserModalOpen.value = true;
+                    [
+                        h(Icon, {
+                            name: "material-symbols:edit-outline",
+                            class: "text-white",
+                        }),
+                    ]
+                ),
+                h(
+                    "div",
+                    {
+                        class: "flex w-9 h-9 items-center justify-center bg-red-600 rounded-xl hover:bg-red-700 transition-colors cursor-pointer",
+                        onClick: () => {
+                            selectedUser.value = row.original;
+                            deleteUserModalOpen.value = true;
+                        },
                     },
-                }),
+                    [
+                        h(Icon, {
+                            name: "material-symbols:delete-outline",
+                            class: "text-white",
+                        }),
+                    ]
+                ),
             ]);
         },
     },
@@ -282,7 +283,11 @@ onMounted(() => {
                 placeholder="Поиск по фамилии..."
                 icon="material-symbols:search"
             />
-            <app-button active class="!min-h-0 ml-auto">
+            <app-button
+                active
+                class="!min-h-0 ml-auto !text-sm"
+                :to="{ name: routesNames.usersAdd }"
+            >
                 Добавить пользователя
             </app-button>
         </div>
@@ -296,27 +301,12 @@ onMounted(() => {
             />
         </div>
     </div>
-    <UModal
+
+    <user-delete-modal
         v-model:open="deleteUserModalOpen"
-        v-if="selectedUser"
-        title="Удаление пользователя"
-    >
-        <template #body>
-            <p>
-                Вы уверены, что хотите удалить пользователя
-                <strong>{{ useFullName(selectedUser) }} </strong>? Это действие
-                нельзя будет отменить.
-            </p>
-            <div class="grid grid-cols-2 gap-2 mt-4">
-                <app-button active @click="deleteUserModalOpen = false">
-                    Отмена
-                </app-button>
-                <app-button active red @click="deleteUser">
-                    Удалить
-                </app-button>
-            </div>
-        </template>
-    </UModal>
+        :user="selectedUser"
+        @deleted="reloadUsers"
+    />
 </template>
 <style scoped lang="scss">
 .head {

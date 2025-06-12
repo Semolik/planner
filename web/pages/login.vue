@@ -5,7 +5,6 @@
 </template>
 <script setup>
 const onLogin = () => {
-    console.log("onLogin");
     const router = useRouter();
     router.push("/");
 };

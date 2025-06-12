@@ -391,12 +391,6 @@ const createEvent = async () => {
 }
 </style>
 <style scoped lang="scss">
-.event-form-label {
-    font-size: 14px;
-    color: $text-color;
-    text-decoration: none;
-    margin-left: 3px;
-}
 .button {
     background-color: black;
     color: white;

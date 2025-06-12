@@ -36,7 +36,8 @@ class User(SQLAlchemyBaseUserTableUUID, Base, AuditableMixin):
     updated_at = Column(DateTime, server_default=func.now(),
                         onupdate=func.now(), nullable=False)
 
-    roles_objects = relationship("UserRoleAssociation", back_populates="user")
+    roles_objects = relationship(
+        "UserRoleAssociation", back_populates="user", cascade="all, delete-orphan")
 
     @property
     def roles(self):
@@ -53,10 +54,13 @@ class UserRoleAssociation(Base):
     __tablename__ = "user_roles"
 
     user_id = Column(UUID(as_uuid=True), ForeignKey(
-        'users.id'), primary_key=True)
+        'users.id'
+    ), primary_key=True)
     role = Column(Enum(UserRole), primary_key=True)
 
-    user = relationship("User", back_populates="roles_objects")
+    user = relationship(
+        "User", back_populates="roles_objects", foreign_keys=[user_id]
+    )
 
 
 class Institute(Base):

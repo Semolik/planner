@@ -23,40 +23,49 @@ const { noPadding } = defineProps({
 });
 const authStore = useAuthStore();
 
-const asideBlocks = [
-    {
-        name: null,
-        items: [
-            {
-                name: "Главная",
-                path: routesNames.index,
-                icon: "material-symbols:home-rounded",
-            },
-            {
-                name: "Мероприятия",
-                path: routesNames.events,
-                icon: "material-symbols:list-rounded",
-            },
-        ],
-    },
-];
-if (authStore.isAdmin) {
-    asideBlocks.push({
-        name: "Администрирование",
-        items: [
-            {
-                name: "Институты",
-                path: routesNames.institutes,
-                icon: "material-symbols:account-balance-rounded",
-            },
-            {
-                name: "Пользователи",
-                path: routesNames.users,
-                icon: "material-symbols:person-rounded",
-            },
-        ],
-    });
-}
+const asideBlocks = computed(() => {
+    const blocks = [
+        {
+            name: null,
+            items: [
+                {
+                    name: "Главная",
+                    path: routesNames.index,
+                    icon: "material-symbols:home-rounded",
+                },
+                {
+                    name: "Профиль",
+                    path: routesNames.usersMe,
+                    icon: "material-symbols:person-rounded",
+                },
+                {
+                    name: "Мероприятия",
+                    path: routesNames.events,
+                    icon: "material-symbols:list-rounded",
+                },
+            ],
+        },
+    ];
+    if (authStore.isAdmin) {
+        blocks.push({
+            name: "Администрирование",
+            items: [
+                {
+                    name: "Институты",
+                    path: routesNames.institutes,
+                    icon: "material-symbols:account-balance-rounded",
+                },
+                {
+                    name: "Пользователи",
+                    path: routesNames.users,
+                    icon: "material-symbols:person-rounded",
+                },
+            ],
+        });
+    }
+
+    return blocks;
+});
 </script>
 <style lang="scss">
 .default-layout {

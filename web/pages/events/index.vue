@@ -10,11 +10,7 @@
                         class="task-card"
                     />
                 </div>
-                <div v-if="loading" class="loading-more">
-                    Loading more tasks...
-                </div>
             </div>
-            <div v-else class="loading">Loading...</div>
         </div>
     </page-container>
 </template>

@@ -35,3 +35,12 @@ body {
     background: $quinary-bg;
     border-radius: 10px;
 }
+.event-form-label {
+    font-size: 14px;
+    color: $text-color;
+    text-decoration: none;
+    margin-left: 3px;
+}
+.bg-\(--ui-bg-elevated\) {
+    background-color: white;
+}

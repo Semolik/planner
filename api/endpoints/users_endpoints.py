@@ -33,15 +33,6 @@ async def update_handler(db, user: User, user_data: UserUpdate, current_user: Us
     return await users_crud.get_user_by_id(user.id)
 
 
-@api_router.put("/me", response_model=UserRead)
-async def update_user_me(
-    user: UserUpdate,
-    db=Depends(get_async_session),
-    current_user: User = Depends(current_user)
-):
-    return await update_handler(db=db, user=current_user, user_data=user, current_user=current_user)
-
-
 @api_router.put("/{user_id}", response_model=UserReadWithEmail)
 async def update_user(
     user: UserUpdate,
