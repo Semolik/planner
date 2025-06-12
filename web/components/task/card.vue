@@ -3,8 +3,8 @@
         :key="task.id"
         class="card"
         :to="{
-            name: routesNames.eventsEventId,
-            params: { event_id: task.event.id },
+            name: routesNames.tasksTaskId,
+            params: { task_id: task.id },
         }"
     >
         <div class="text-md font-semibold text-gray-800">
@@ -15,7 +15,7 @@
                 <div class="text-sm text-gray-500 flex items-center gap-1">
                     <Icon name="material-symbols:calendar-today-rounded" />
 
-                    {{ getDateString(task.event.date) }}
+                    {{ getDateString(task.event.date) }} ({{ daysLeft }})
                 </div>
 
                 <div class="text-sm text-gray-500 flex items-center gap-1">
@@ -57,6 +57,28 @@ const startTime = computed(() => {
 const endTime = computed(() => {
     if (!task.event) return;
     return task.event.end_time.split(":").slice(0, 2).join(":");
+});
+const daysLeft = computed(() => {
+    if (!task.event) return;
+    const eventDate = new Date(task.event.date);
+    const today = new Date();
+    const diffTime = eventDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays > 0) {
+        return `через ${diffDays} ${usePluralize(diffDays, [
+            "день",
+            "дня",
+            "дней",
+        ])}`;
+    } else if (diffDays < 0) {
+        return `${Math.abs(diffDays)} ${usePluralize(Math.abs(diffDays), [
+            "день",
+            "дня",
+            "дней",
+        ])} назад`;
+    } else {
+        return "Сегодня";
+    }
 });
 </script>
 <style scoped lang="scss">

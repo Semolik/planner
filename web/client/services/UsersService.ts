@@ -10,36 +10,6 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class UsersService {
     /**
-     * Users:Current User
-     * @returns UserReadWithEmail Successful Response
-     * @throws ApiError
-     */
-    public static usersCurrentUserUsersMeGet(): CancelablePromise<UserReadWithEmail> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/users/me',
-        });
-    }
-    /**
-     * Update User Me
-     * @param requestBody
-     * @returns UserRead Successful Response
-     * @throws ApiError
-     */
-    public static updateUserMeUsersMePut(
-        requestBody: UserUpdate,
-    ): CancelablePromise<UserRead> {
-        return __request(OpenAPI, {
-            method: 'PUT',
-            url: '/users/me',
-            body: requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
      * Update User
      * @param userId
      * @param requestBody
@@ -101,6 +71,17 @@ export class UsersService {
             errors: {
                 422: `Validation Error`,
             },
+        });
+    }
+    /**
+     * Users:Current User
+     * @returns UserReadWithEmail Successful Response
+     * @throws ApiError
+     */
+    public static usersCurrentUserUsersMeGet(): CancelablePromise<UserReadWithEmail> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/users/me',
         });
     }
     /**

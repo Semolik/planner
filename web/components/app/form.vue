@@ -1,5 +1,11 @@
 <template>
-    <div :class="['form-container', { 'full-height': fullHeight }]">
+    <div
+        :class="[
+            'form-container',
+            { 'full-height': fullHeight },
+            { 'no-padding': noPadding },
+        ]"
+    >
         <div class="form-top">
             <slot name="top"></slot>
         </div>
@@ -32,6 +38,10 @@ defineProps({
         default: "400px",
     },
     fullHeight: Boolean,
+    noPadding: {
+        type: Boolean,
+        default: false,
+    },
 });
 const emit = defineEmits(["submit"]);
 </script>
@@ -83,7 +93,11 @@ const emit = defineEmits(["submit"]);
         display: flex;
         flex-direction: column;
     }
-
+    &.no-padding {
+        .form {
+            padding: 0;
+        }
+    }
     .form {
         color: $text-color;
         width: 100%;

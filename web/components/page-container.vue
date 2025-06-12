@@ -1,5 +1,5 @@
 <template>
-    <div class="page-container">
+    <div class="page-container" :class="{ 'full-height': fullHeight }">
         <UBreadcrumb :items="items" v-if="items" />
         <div class="content">
             <slot />
@@ -11,6 +11,10 @@ defineProps({
     items: {
         type: Array,
     },
+    fullHeight: {
+        type: Boolean,
+        default: false,
+    },
 });
 </script>
 <style scoped lang="scss">
@@ -20,7 +24,12 @@ defineProps({
     padding: 10px;
     width: 100%;
     gap: 10px;
+
     box-sizing: border-box;
+
+    &.full-height {
+        height: 100%;
+    }
 
     .header {
         font-size: 24px;

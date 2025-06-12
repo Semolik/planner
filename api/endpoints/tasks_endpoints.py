@@ -5,7 +5,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Header
 from cruds.tasks_crud import TasksCRUD
 from cruds.users_crud import UsersCRUD
-from core.users_controller import current_superuser,  optional_current_user
+from core.users_controller import current_superuser,  optional_current_user, current_user
 from db.session import get_async_session
 from models.user_models import User, UserRole
 
@@ -52,3 +52,15 @@ async def set_tasks_token(role: UserRole, db=Depends(get_async_session)):
     token = uuid.uuid4()
     await TasksCRUD(db).set_tasks_token(role=role, token=str(token))
     return token
+
+
+@api_router.get('/{task_id}', response_model=TaskRead, dependencies=[Depends(current_user)])
+async def get_task_by_id(
+    task_id: uuid.UUID,
+    current_user: User = Depends(current_user),
+    db=Depends(get_async_session)
+):
+    task = await TasksCRUD(db).get_task_by_id(task_id=task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task

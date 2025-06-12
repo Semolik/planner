@@ -1,102 +1,131 @@
 <template>
-    <app-form full-height headline="Создание мероприятия">
-        <app-input v-model="name" label="Название мероприятия" required white />
-        <app-input
-            v-model="date"
-            type="date"
-            label="Дата мероприятия"
-            required
-            white
-        />
-        <div class="flex gap-1">
-            <app-input
-                v-model="timeStart"
-                type="time"
-                label="Время начала"
-                required
-                white
-            />
-            <app-input
-                v-model="timeEnd"
-                type="time"
-                label="Время окончания"
-                required
-                white
-            />
-        </div>
-        <app-input v-model="location" label="Место проведения" required white />
-        <app-input
-            v-model="organizer"
-            label="Контакт организатора"
-            required
-            white
-        />
-
-        <div class="flex flex-col gap-1 w-full">
-            <div class="event-form-label">Уровень мероприятия</div>
-            <client-only>
-                <USelectMenu
-                    v-model="event_level"
-                    :items="eventLevels"
-                    class="select-menu"
-                    color="neutral"
-                    size="lg"
-                    :content="{
-                        align: 'start',
-                        side: 'bottom',
-                        sideOffset: 8,
-                    }"
-                    :search-input="{
-                        placeholder: 'Поиск',
-                    }"
+    <app-form full-height headline="Создание мероприятия" max-width="900px">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
+            <div class="flex flex-col gap-2 w-full">
+                <app-input
+                    v-model="name"
+                    label="Название мероприятия"
+                    required
+                    white
                 />
-            </client-only>
-        </div>
-        <div class="flex gap-1 text-center">
-            <div
-                class="button group-select"
-                @click="
-                    () => {
-                        if (selectedGroup && !searchGroup.id) {
-                            createGroupOpen = true;
-                        } else {
-                            selectGroupOpen = true;
-                        }
-                    }
-                "
-            >
-                {{
-                    selectedGroup
-                        ? (selectedGroup.id ? `Группа` : `Новая группа`) +
-                          ": " +
-                          selectedGroup.name
-                        : "Добавить в группу"
-                }}
-            </div>
-            <app-button
-                red
-                active
-                @click="
-                    () => {
-                        selectedGroup = null;
-                        resetCreation();
-                    }
-                "
-                v-if="selectedGroup"
-            >
-                <div class="flex items-center justify-center">
-                    <Icon name="material-symbols:delete" />
+                <app-input
+                    v-model="date"
+                    type="date"
+                    label="Дата мероприятия"
+                    required
+                    white
+                />
+                <div class="flex gap-1">
+                    <app-input
+                        v-model="timeStart"
+                        type="time"
+                        label="Время начала"
+                        required
+                        white
+                    />
+                    <app-input
+                        v-model="timeEnd"
+                        type="time"
+                        label="Время окончания"
+                        required
+                        white
+                    />
                 </div>
-            </app-button>
+                <app-input
+                    v-model="location"
+                    label="Место проведения"
+                    required
+                    white
+                />
+            </div>
+            <div class="flex flex-col">
+                <app-input
+                    v-model="description"
+                    label="Описание мероприятия"
+                    type="textarea"
+                    white
+                    rows="3"
+                    class="max-h-[150px]"
+                />
+                <div class="flex flex-col gap-1 w-full">
+                    <div class="event-form-label">Уровень мероприятия</div>
+                    <client-only>
+                        <USelectMenu
+                            v-model="event_level"
+                            :items="eventLevels"
+                            class="select-menu"
+                            color="neutral"
+                            size="lg"
+                            :content="{
+                                align: 'start',
+                                side: 'bottom',
+                                sideOffset: 8,
+                            }"
+                            :search-input="{
+                                placeholder: 'Поиск',
+                            }"
+                        />
+                    </client-only>
+                    <app-input
+                        v-model="organizer"
+                        label="Контакт организатора"
+                        required
+                        white
+                    />
+                </div>
+            </div>
         </div>
-        <UCollapsible
-            v-model:open="tasksSettingsOpen"
-            class="flex flex-col gap-[10px]"
-        >
-            <div :class="['button', { active: tasksSettingsOpen }]">
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
+            <div class="flex gap-1 text-center">
+                <div
+                    class="button group-select"
+                    @click="
+                        () => {
+                            if (selectedGroup && !searchGroup.id) {
+                                createGroupOpen = true;
+                            } else {
+                                selectGroupOpen = true;
+                            }
+                        }
+                    "
+                >
+                    {{
+                        selectedGroup
+                            ? (selectedGroup.id ? `Группа` : `Новая группа`) +
+                              ": " +
+                              selectedGroup.name
+                            : "Добавить в группу"
+                    }}
+                </div>
+                <app-button
+                    red
+                    active
+                    @click="
+                        () => {
+                            selectedGroup = null;
+                            resetCreation();
+                        }
+                    "
+                    v-if="selectedGroup"
+                >
+                    <div class="flex items-center justify-center">
+                        <Icon name="material-symbols:delete" />
+                    </div>
+                </app-button>
+            </div>
+            <div
+                :class="['button', { active: tasksSettingsOpen }]"
+                @click="tasksSettingsOpen = !tasksSettingsOpen"
+            >
                 <span class="text"> Настройки подзадач </span>
                 <Icon name="i-lucide-chevron-down" />
             </div>
+        </div>
+        <UCollapsible
+            v-model:open="tasksSettingsOpen"
+            class="flex flex-col gap-[10px] hide-if-child-empty"
+        >
             <template #content>
                 <div
                     class="flex flex-col gap-[10px] p-2 border border-solid rounded-[10px]"
@@ -119,6 +148,7 @@
                 </div>
             </template>
         </UCollapsible>
+
         <app-button :active="buttonActive" @click="createEvent">
             Создать мероприятие
         </app-button>
@@ -224,6 +254,7 @@ const searchGroupsResult = ref([]);
 
 const name = ref("");
 const date = ref("");
+const description = ref("");
 const timeStart = ref("");
 const timeEnd = ref("");
 const currentDate = ref(new Date().toISOString().slice(0, 10));
@@ -353,7 +384,7 @@ const createEvent = async () => {
             organizer: organizer.value,
             required_photographers: 1,
             group_id: selectedGroup.value ? selectedGroup.value.id : null,
-            description: "",
+            description: description.value,
             level_id: event_level.value.id,
             photographer_description: "",
             copywriter_description: "",
@@ -406,6 +437,7 @@ const createEvent = async () => {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    position: relative;
     &.active .iconify {
         transform: rotate(-180deg);
     }
@@ -460,5 +492,8 @@ const createEvent = async () => {
         justify-content: center;
         height: 100%;
     }
+}
+.hide-if-child-empty:has(> :empty) {
+    display: none;
 }
 </style>

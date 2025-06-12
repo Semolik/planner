@@ -3,8 +3,8 @@
         <NuxtLoadingIndicator />
 
         <div class="default-layout">
-            <app-aside :blocks="asideBlocks" v-if="authStore.logined">
-            </app-aside>
+            <app-aside :blocks="asideBlocks" v-if="authStore.logined" />
+
             <div id="teleports"></div>
             <div :class="['default-layout__content', { padding: !noPadding }]">
                 <slot />
@@ -14,6 +14,7 @@
 </template>
 <script setup>
 import { routesNames } from "@typed-router";
+
 import { useAuthStore } from "~/stores/auth";
 const { noPadding } = defineProps({
     noPadding: {
@@ -39,9 +40,14 @@ const asideBlocks = computed(() => {
                     icon: "material-symbols:person-rounded",
                 },
                 {
-                    name: "Мероприятия",
-                    path: routesNames.events,
+                    name: "Мероприятия и задачи",
+                    path: routesNames.tasks,
                     icon: "material-symbols:list-rounded",
+                },
+                {
+                    name: "Группы мероприятий",
+                    path: routesNames.eventsGroups,
+                    icon: "material-symbols:folder-rounded",
                 },
             ],
         },

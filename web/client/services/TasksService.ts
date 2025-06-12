@@ -70,4 +70,24 @@ export class TasksService {
             },
         });
     }
+    /**
+     * Get Task By Id
+     * @param taskId
+     * @returns TaskRead Successful Response
+     * @throws ApiError
+     */
+    public static getTaskByIdTasksTaskIdGet(
+        taskId: string,
+    ): CancelablePromise<TaskRead> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/tasks/{task_id}',
+            path: {
+                'task_id': taskId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
 }

@@ -21,17 +21,15 @@ class TasksCRUD(BaseCRUD):
         return await self.create(task)
 
     def get_typed_task_options(self):
-        return [
-            selectinload(TypedTask.users),
-            selectinload(TypedTask.task_states).selectinload(
+        return [selectinload(TypedTask.users),
+                selectinload(TypedTask.task_states).selectinload(
                 TaskState.user).options(selectinload(User.institute)),
-            selectinload(TypedTask.parent_task).selectinload(Task.event),
-            selectinload(TypedTask.task_states).selectinload(TaskState.period)
-        ]
+                selectinload(TypedTask.parent_task).selectinload(Task.event),
+                selectinload(TypedTask.task_states).selectinload(TaskState.period)]
 
     async def get_typed_task(self, typed_task_id: uuid.UUID) -> TypedTask:
         query = select(TypedTask).where(TypedTask.id == typed_task_id).options(
-            **self.get_typed_task_options()
+            *self.get_typed_task_options()
         )
         result = await self.db.execute(query)
         return result.scalars().first()
@@ -291,3 +289,12 @@ class TasksCRUD(BaseCRUD):
             task_state_period.period_start = period_start
             task_state_period.period_end = period_end
             return await self.update(task_state_period)
+
+    async def get_task_by_id(self, task_id: uuid.UUID) -> Task:
+        query = select(Task).where(Task.id == task_id).options(
+            selectinload(Task.typed_tasks).options(
+                *self.get_typed_task_options()
+            ),
+        )
+        result = await self.db.execute(query)
+        return result.scalars().first()
