@@ -68,6 +68,7 @@
                                     @click="
                                         () => {
                                             selectedTypedTask = typed_task;
+                                            selectedUser = userData;
                                             setMeToTaskModalActive = true;
                                         }
                                     "
@@ -82,6 +83,7 @@
                                     outline
                                     @click="
                                         () => {
+                                            selectedUser = userData;
                                             selectedTypedTask = typed_task;
                                             removeMeFromTaskModalActive = true;
                                         }
@@ -104,11 +106,13 @@
                                     Назначить исполнителя
                                 </app-button>
                             </div>
-                            <div class="users">
+
+                            <div class="users" v-auto-animate>
                                 <div
                                     class="user-item"
                                     v-for="status in typed_task.task_states"
                                     :key="status.user.id"
+                                    @click="() => openStateModal(status)"
                                 >
                                     <div class="user-item-info">
                                         <div class="name">
@@ -136,13 +140,15 @@
                                             <Icon
                                                 name="material-symbols:check"
                                                 v-if="
-                                                    status.state === 'completed'
+                                                    status.state ===
+                                                    State.COMPLETED
                                                 "
                                             />
                                             <Icon
                                                 name="material-symbols:hourglass-top"
                                                 v-else-if="
-                                                    status.state === 'pending'
+                                                    status.state ===
+                                                    State.PENDING
                                                 "
                                             />
                                             <Icon
@@ -198,29 +204,37 @@
                         : `C ${minutesToTime(selectedRange[0])} до ${minutesToTime(selectedRange[1])}`
                 }}
             </div>
-
-            <div
-                class="mb-4"
+            <template
                 v-if="selectedTypedTask.task_type === UserRole.PHOTOGRAPHER"
             >
-                <USwitch
-                    v-model="isFullEventTime"
-                    label="На всё время мероприятия"
-                    color="neutral"
-                />
-            </div>
+                <div class="mb-4">
+                    <USwitch
+                        v-model="isFullEventTime"
+                        label="На всё время мероприятия"
+                        color="neutral"
+                    />
+                </div>
 
-            <TimeRangeSlider
-                v-if="!isFullEventTime && task.event"
-                v-model="selectedRange"
-                :min-time="task.event.start_time"
-                :max-time="task.event.end_time"
-                :step="15"
-            />
+                <TimeRangeSlider
+                    v-if="!isFullEventTime && task.event"
+                    v-model="selectedRange"
+                    :min-time="task.event.start_time"
+                    :max-time="task.event.end_time"
+                    :step="15"
+                    @change="resetIfFillPeriod"
+                />
+            </template>
 
             <div class="grid grid-cols-2 gap-2 mt-4">
                 <app-button
-                    @click="submitAssignment"
+                    @click="
+                        async () => {
+                            await setUserToTypedTask(
+                                selectedUser,
+                                selectedTypedTask.task_type
+                            );
+                        }
+                    "
                     :active="submitAssignmentButtonActive"
                 >
                     Подтвердить
@@ -237,11 +251,19 @@
 
     <UModal
         v-model:open="removeMeFromTaskModalActive"
-        title="Отказаться от задачи"
+        :title="
+            isAssigningSelf ? 'Отказаться от подзадачи' : 'Снять с подзадачи'
+        "
     >
         <template #body>
             <div class="text-md">
-                Вы уверены, что хотите отказаться от подзадачи
+                {{
+                    isAssigningSelf
+                        ? `Вы уверены, что хотите отказаться от подзадачи`
+                        : `Вы уверены, что хотите снять пользователя ${useFullName(
+                              selectedUser
+                          )} с подзадачи`
+                }}
                 {{ typedTasksLabelsModal[selectedTypedTask.task_type] }}?
             </div>
             <div class="grid grid-cols-2 gap-2 mt-4">
@@ -251,7 +273,7 @@
                     @click="
                         () =>
                             removeUserFromTypedTask(
-                                authStore.userData,
+                                selectedUser,
                                 selectedTypedTask.task_type
                             )
                     "
@@ -267,6 +289,92 @@
             </div>
         </template>
     </UModal>
+    <UModal v-model:open="stateModalOpened" title="Статус подзадачи">
+        <template #body v-if="selectedState">
+            <div class="flex flex-col gap-2">
+                <div class="text-md">
+                    <strong>Пользователь:</strong>
+                    {{ useFullName(selectedState.user) }}
+                </div>
+
+                <template
+                    v-if="
+                        selectedState.user.id === userData.id ||
+                        authStore.isAdmin
+                    "
+                >
+                    <div class="flex flex-col gap-1">
+                        <strong>Период:</strong>
+                        <UTabs
+                            :model-value="isFullEventTime ? 'full' : 'period'"
+                            @update:model-value="
+                                (value) => {
+                                    isFullEventTime = value === 'full';
+                                }
+                            "
+                            :content="false"
+                            v-if="
+                                getStateType(selectedState) ===
+                                UserRole.PHOTOGRAPHER
+                            "
+                            :items="[
+                                {
+                                    label: 'На всё время мероприятия',
+                                    value: 'full',
+                                },
+                                { label: 'Выбрать период', value: 'period' },
+                            ]"
+                            color="neutral"
+                        />
+                    </div>
+
+                    <TimeRangeSlider
+                        v-if="!isFullEventTime && task.event"
+                        v-model="selectedRange"
+                        :min-time="task.event.start_time"
+                        :max-time="task.event.end_time"
+                        :step="15"
+                        @change="resetIfFillPeriod"
+                    />
+                    <div class="flex flex-col gap-1">
+                        <strong>Статус:</strong>
+                        <UTabs
+                            v-model="selectedStateEditable.state"
+                            :items="stateTabs"
+                            color="neutral"
+                            :content="false"
+                        />
+                    </div>
+                </template>
+                <template v-else>
+                    <div class="text-md">
+                        <strong>Статус:</strong>
+                        {{ statusLabels[selectedState.state] }}
+                    </div>
+                </template>
+                <app-button
+                    :active="updateStateButtonActive"
+                    @click="updateState"
+                >
+                    Обновить статус
+                </app-button>
+                <app-button
+                    active
+                    v-if="
+                        authStore.isAdmin ||
+                        selectedState.user.id === userData.id
+                    "
+                    @click="() => showDeleteStateModal(selectedState)"
+                >
+                    {{
+                        selectedState.user.id === userData.id
+                            ? "Отказаться от задачи"
+                            : "Снять с задачи"
+                    }}
+                </app-button>
+            </div>
+        </template>
+    </UModal>
 </template>
 
 <script setup>
@@ -276,6 +384,7 @@ import {
     UserRole,
     TypedTasksService,
     TypedTasksStatesService,
+    State,
 } from "~/client";
 import { useAuthStore } from "~/stores/auth";
 
@@ -284,6 +393,7 @@ definePageMeta({
 });
 
 const authStore = useAuthStore();
+const { userData } = storeToRefs(authStore);
 const selectedTypedTask = ref(null);
 const selectedUser = ref(null);
 const isFullEventTime = ref(true);
@@ -307,11 +417,127 @@ useSeoMeta({
 });
 
 const isAssigningSelf = computed(() => {
-    return (
-        selectedUser.value?.id === authStore.userData.id || !selectedUser.value
-    );
+    return selectedUser.value?.id === userData.value?.id;
 });
+const stateModalOpened = ref(false);
+const selectedState = ref(null);
+const selectedStateEditable = ref(null);
+const openStateModal = (state) => {
+    selectedState.value = state;
+    selectedStateEditable.value = { ...state };
+    stateModalOpened.value = true;
+    if (state.period) {
+        selectedRange.value = [
+            timeToMinutes(state.period.period_start),
+            timeToMinutes(state.period.period_end),
+        ];
+        isFullEventTime.value = false;
+    }
+};
+const updateState = async () => {
+    if (!selectedState.value) return;
 
+    try {
+        if (isFullEventTime.value) {
+            if (selectedState.value.period) {
+                await TypedTasksStatesService.deleteTypedTaskStatePeriodTasksTypedTasksStatesTypedTaskStateIdPeriodDelete(
+                    selectedState.value.id
+                );
+            }
+        } else {
+            await TypedTasksStatesService.createTypedTaskStatePeriodTasksTypedTasksStatesTypedTaskStateIdPeriodPut(
+                selectedState.value.id,
+                {
+                    period_start: minutesToTime(selectedRange.value[0]) + ":00",
+                    period_end: minutesToTime(selectedRange.value[1]) + ":00",
+                }
+            );
+        }
+        selectedState.value =
+            await TypedTasksStatesService.updateUserTypedTaskStateTasksTypedTasksStatesTypedTaskStateIdPut(
+                selectedState.value.id,
+                {
+                    state: selectedStateEditable.value.state,
+                    comment: "",
+                }
+            );
+        task.value.typed_tasks = task.value.typed_tasks.map((tt) => {
+            if (tt.task_type === getStateType(selectedState.value)) {
+                return {
+                    ...tt,
+                    task_states: tt.task_states.map((s) =>
+                        s.id === selectedState.value.id
+                            ? selectedState.value
+                            : s
+                    ),
+                };
+            }
+            return tt;
+        });
+        stateModalOpened.value = false;
+    } catch (error) {
+        $toast.error(HandleOpenApiError(error).message);
+        return;
+    }
+};
+watch(
+    isFullEventTime,
+    (newValue) => {
+        if (!task.value.event) return;
+        if (newValue) {
+            selectedRange.value = [
+                timeToMinutes(task.value.event.start_time),
+                timeToMinutes(task.value.event.end_time),
+            ];
+        }
+    },
+    {
+        immediate: true,
+    }
+);
+const resetIfFillPeriod = () => {
+    console.log("resetIfFillPeriod", selectedRange.value);
+    if (!task.value.event) return;
+    if (
+        selectedRange.value[0] === timeToMinutes(task.value.event.start_time) &&
+        selectedRange.value[1] === timeToMinutes(task.value.event.end_time)
+    ) {
+        isFullEventTime.value = true;
+    }
+};
+const updateStateButtonActive = computed(() => {
+    if (!selectedState.value) return false;
+
+    const current = selectedState.value;
+    const editable = selectedStateEditable.value;
+
+    if (editable.state !== current.state) return true;
+
+    const hadPeriod = !!current.period;
+    const hasPeriod = !isFullEventTime.value;
+
+    if (
+        hasPeriod &&
+        selectedRange.value[0] === timeToMinutes(task.value.event.start_time) &&
+        selectedRange.value[1] === timeToMinutes(task.value.event.end_time)
+    ) {
+        return false;
+    }
+    if (hadPeriod !== hasPeriod) {
+        return true;
+    }
+    if (hasPeriod && hadPeriod) {
+        const currentStart = timeToMinutes(current.period.period_start);
+        const currentEnd = timeToMinutes(current.period.period_end);
+
+        return (
+            selectedRange.value[0] !== currentStart ||
+            selectedRange.value[1] !== currentEnd
+        );
+    }
+
+    return false;
+});
 const excludeUsers = computed(() => {
     if (!selectedTypedTask.value) return [];
     const typed_task = task.value.typed_tasks.find(
@@ -319,7 +545,14 @@ const excludeUsers = computed(() => {
     );
     return typed_task?.task_states.map((state) => state.user) || [];
 });
-
+const getStateType = (state) => {
+    if (state.task_type) {
+        return state.task_type;
+    }
+    return task.value.typed_tasks.find((tt) =>
+        tt.task_states.some((s) => s.id === state.id)
+    )?.task_type;
+};
 const showTakeInWorkButton = computed(() => {
     const photographerTypedTask = task.value.typed_tasks.find(
         (typed_task) => typed_task.task_type === UserRole.PHOTOGRAPHER
@@ -335,7 +568,7 @@ const typedTasksCurrentUser = computed(() => {
     return task.value.typed_tasks.map((typed_task) => ({
         ...typed_task,
         has_my_state: typed_task.task_states.some(
-            (state) => state.user.id === authStore.userData.id
+            (state) => state.user.id === userData.value?.id
         ),
     }));
 });
@@ -355,7 +588,7 @@ const typed_tasks = computed(() => {
     }
 
     return typedTasksCurrentUser.value.filter(
-        (typed_task) => typed_task.task_type in authStore.userData.roles
+        (typed_task) => typed_task.task_type in userData.value.roles
     );
 });
 
@@ -370,14 +603,30 @@ const typedTasksLabelsModal = {
     [UserRole.DESIGNER]: "Дизайнера",
     [UserRole.COPYWRITER]: "Копирайтера",
 };
+const statusLabels = {
+    [State.CANCELED]: "Отменено",
+    [State.PENDING]: "В работе",
+    [State.COMPLETED]: "Выполнено",
+};
+const stateTabs = Object.entries(statusLabels).map(([key, label]) => ({
+    label,
+    value: key,
+}));
 
 const selectUserModalActive = ref(false);
 const setMeToTaskModalActive = ref(false);
 const removeMeFromTaskModalActive = ref(false);
+const showDeleteStateModal = (selectedState) => {
+    stateModalOpened.value = false;
+    selectedTypedTask.value = task.value.typed_tasks.find((tt) =>
+        tt.task_states.some((s) => s.id === selectedState.id)
+    );
+    selectedUser.value = selectedState.user;
+    removeMeFromTaskModalActive.value = true;
+};
 
 const submitAssignmentButtonActive = computed(() => {
     if (!isFullEventTime.value) {
-        // время начала и конца должно быть выбрано (не совпадать с началом и концом мероприятия)
         if (
             selectedRange.value[0] ===
                 timeToMinutes(task.value.event.start_time) &&
@@ -388,21 +637,12 @@ const submitAssignmentButtonActive = computed(() => {
     }
     return true;
 });
-const submitAssignment = async () => {
-    const user = isAssigningSelf.value
-        ? authStore.userData
-        : selectedUser.value;
-
-    await setUserToTypedTask(user, selectedTypedTask.value.task_type);
-};
 
 const setUserToTypedTask = async (user, task_type) => {
     if (!user || !task_type) return;
-
     const typed_task = task.value.typed_tasks.find(
         (tt) => tt.task_type === task_type
     );
-
     if (!typed_task) return;
 
     try {
@@ -414,7 +654,10 @@ const setUserToTypedTask = async (user, task_type) => {
                     comment: "",
                 }
             );
-        if (!isFullEventTime.value) {
+        if (
+            !isFullEventTime.value &&
+            typed_task.task_type === UserRole.PHOTOGRAPHER
+        ) {
             task_state.period = {
                 period_start: minutesToTime(selectedRange.value[0]) + ":00",
                 period_end: minutesToTime(selectedRange.value[1]) + ":00",
@@ -586,6 +829,7 @@ function minutesToTime(minutes) {
                 .users {
                     display: flex;
                     flex-direction: column;
+                    gap: 8px;
                     .user-item {
                         display: flex;
                         align-items: center;

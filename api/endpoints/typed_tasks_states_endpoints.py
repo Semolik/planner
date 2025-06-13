@@ -1,4 +1,4 @@
-from schemas.events import ReadTypedTaskState, StatePeriod, UpdateTypedTaskState
+from schemas.events import TypedTaskState, StatePeriod, UpdateTypedTaskState
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from cruds.tasks_crud import TasksCRUD
@@ -11,7 +11,7 @@ api_router = APIRouter(prefix="/tasks/typed-tasks/states",
                        tags=["typed tasks states"])
 
 
-@api_router.put('/{typed_task_state_id}', response_model=ReadTypedTaskState)
+@api_router.put('/{typed_task_state_id}', response_model=TypedTaskState)
 async def update_user_typed_task_state(
     typed_task_state_id: uuid.UUID,
     data: UpdateTypedTaskState,

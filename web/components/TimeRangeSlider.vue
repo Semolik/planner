@@ -8,6 +8,7 @@
             :step="step"
             :min-steps-between-thumbs="1"
             color="neutral"
+            @change="(value) => emit('change')"
         />
         <div
             class="flex justify-between text-sm text-gray-500 dark:text-gray-400"
@@ -42,6 +43,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: "update:modelValue", value: number[]): void;
+    (e: "change"): void;
 }>();
 
 function timeToMinutes(timeStr: string): number {

@@ -312,9 +312,7 @@ class TaskStatePeriod(Base):
         "TaskState",
         foreign_keys=[task_state_id],
         uselist=False,
-        back_populates="period",
-        cascade="all, delete-orphan",
-        single_parent=True
+        back_populates="period"
     )
 
 

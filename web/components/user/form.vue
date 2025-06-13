@@ -140,7 +140,7 @@
 </template>
 <script setup>
 import { UsersService, InstitutesService, AuthService } from "@/client";
-const { userId, createMode } = defineProps({
+const { userId, createMode, viewMode } = defineProps({
     userId: {
         type: String,
         required: false,
@@ -253,7 +253,7 @@ const submit = async () => {
                 birth_date: birthDate.value,
                 phone: phone.value,
                 group: group.value,
-                roles: selectedRoles,
+                roles: selectedRoles.value,
                 username: username.value,
                 password: password.value,
                 is_active: isActive.value,
@@ -284,6 +284,7 @@ const submit = async () => {
             );
         }
     } catch (e) {
+        console.error(e);
         $toast.error(HandleOpenApiError(e).message);
     }
 };
