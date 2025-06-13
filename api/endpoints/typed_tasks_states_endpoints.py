@@ -26,7 +26,7 @@ async def update_user_typed_task_state(
     if current_user.id != task_state.user_id and not current_user.is_superuser:
         raise HTTPException(
             status_code=403, detail="Нет доступа")
-    task_state = await task_crud.update_task_state(task_state=task_state, comment=data.comment, is_completed=data.is_completed)
+    task_state = await task_crud.update_task_state(task_state=task_state, comment=data.comment, state=data.state)
     return task_state
 
 

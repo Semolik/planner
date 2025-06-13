@@ -10,6 +10,7 @@
             { light: light },
             { red },
             { outline: outline },
+            { mini: mini },
         ]"
         v-bind="$attrs"
     >
@@ -33,6 +34,7 @@
             { light: light },
             { red },
             { outline: outline },
+            { mini: mini },
         ]"
         :type="type"
         v-bind="$attrs"
@@ -91,6 +93,10 @@ defineProps({
         type: Boolean,
         default: false,
     },
+    mini: {
+        type: Boolean,
+        default: false,
+    },
 });
 </script>
 <style lang="scss">
@@ -117,6 +123,12 @@ a.app-button.light.router-link-exact-active {
     overflow: hidden;
     user-select: none;
     text-decoration: none;
+
+    &.mini {
+        min-height: 0px;
+
+        font-size: 14px;
+    }
 
     &.outline {
         background-color: transparent !important;

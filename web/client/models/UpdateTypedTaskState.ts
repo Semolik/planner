@@ -3,11 +3,8 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { State } from './State';
-import type { UserReadShort } from './UserReadShort';
-export type TypedTaskState = {
-    id: string;
-    user: UserReadShort;
-    state: State;
+export type UpdateTypedTaskState = {
     comment: string;
+    state: State;
 };
 

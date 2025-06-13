@@ -1,4 +1,4 @@
-from schemas.events import CreateTypedTaskState, TypedTaskReadFull, UpdateTypedTaskState
+from schemas.events import CreateTypedTaskState, TypedTaskReadFull, TypedTaskState, UpdateTypedTaskState
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from cruds.tasks_crud import TasksCRUD
@@ -28,43 +28,11 @@ async def validate_typed_task_state(
     if not user.is_superuser and typed_task.task_type not in user.roles:
         raise HTTPException(
             status_code=400, detail=f"У {'пользователя' if current_user.id != user.id else 'вас'} нет статуса {typed_task.task_type}")
-    if data.period and data.period.period_start >= data.period.period_end:
-        raise HTTPException(
-            status_code=400, detail="Время начала должно быть раньше времени окончания")
+
     return typed_task
 
 
-@api_router.post('/{typed_task_id}/user/me', status_code=204)
-async def assign_user_to_task(
-    typed_task_id: uuid.UUID,
-
-    data: CreateTypedTaskState,
-    db=Depends(get_async_session),
-    current_user=Depends(current_user)
-):
-
-    typed_task = await validate_typed_task_state(
-        typed_task_id=typed_task_id,
-        user=current_user,
-        data=data,
-        current_user=current_user,
-        db=db
-    )
-    task_crud = TasksCRUD(db)
-    task_state = await task_crud.get_task_state(typed_task=typed_task, user=current_user)
-    if task_state:
-        raise HTTPException(
-            status_code=400, detail=f"Вы уже зарегистрированы на задачу")
-    await task_crud.assign_user_to_task(
-        typed_task=typed_task,
-        user=current_user,
-
-        comment=data.comment,
-        is_completed=False
-    )
-
-
-@api_router.post('/{typed_task_id}/user/{user_id}', status_code=204)
+@api_router.post('/{typed_task_id}/user/{user_id}', status_code=201, response_model=TypedTaskState)
 async def assign_user_to_task(
     typed_task_id: uuid.UUID,
     user_id: uuid.UUID,
@@ -88,12 +56,13 @@ async def assign_user_to_task(
     if task_state:
         raise HTTPException(
             status_code=400, detail=f"{'Пользователь' if current_user.id != user.id else 'Вы'} уже зарегистрирован{'ы' if current_user.id == user.id else ''} на задачу")
-    await task_crud.assign_user_to_task(
+    task_state = await task_crud.assign_user_to_task(
         typed_task=typed_task,
         user=user,
-
         comment=data.comment,
-        is_completed=False
+    )
+    return await task_crud.get_task_state_by_id(
+        typed_task_state_id=task_state.id
     )
 
 

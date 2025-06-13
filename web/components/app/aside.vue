@@ -57,7 +57,14 @@
                 </nuxt-link>
             </div>
         </div>
-        <slot name="bottom" />
+        <div class="aside-block mt-auto">
+            <div class="items">
+                <div class="aside-item logout" @click="logout">
+                    <Icon name="material-symbols:logout-rounded" />
+                    Выйти
+                </div>
+            </div>
+        </div>
     </aside>
 </template>
 <script setup>
@@ -80,12 +87,12 @@ const mounted = ref(false);
 onMounted(() => {
     mounted.value = true;
 });
-const items = [
-    {
-        label: "Settings",
-        icon: "i-lucide-cog",
-    },
-];
+const logout = () => {
+    const router = useRouter();
+    router.push("/login").then(() => {
+        authStore.logout();
+    });
+};
 </script>
 <style lang="scss" scoped>
 aside {
@@ -195,6 +202,12 @@ aside {
                 border-radius: 10px;
                 color: $text-color-secondary;
                 border: 1px solid $text-color-secondary;
+                cursor: pointer;
+                &.logout {
+                    &:hover {
+                        background-color: $tertiary-bg;
+                    }
+                }
 
                 &.router-link-exact-active {
                     color: white;

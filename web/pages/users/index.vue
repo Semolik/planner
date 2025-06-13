@@ -285,7 +285,8 @@ onMounted(() => {
             />
             <app-button
                 active
-                class="!min-h-0 ml-auto !text-sm"
+                mini
+                class="ml-auto"
                 :to="{ name: routesNames.usersAdd }"
             >
                 Добавить пользователя

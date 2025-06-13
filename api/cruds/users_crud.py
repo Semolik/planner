@@ -3,7 +3,7 @@ from sqlalchemy import delete, insert, select, or_, nulls_first
 from sqlalchemy.orm import selectinload
 
 from cruds.base_crud import BaseCRUD
-from models.user_models import User, UserRoleAssociation
+from models.user_models import User, UserRole, UserRoleAssociation
 from schemas.users import UserUpdate
 from core.users_controller import get_user_manager_context
 
@@ -20,7 +20,7 @@ class UsersCRUD(BaseCRUD):
         return result.scalars().first()
 
     async def get_users(self, order_by: str = "last_name", order: str = "asc", search: str = None, page: int = 1, superusers_to_top: bool = False, only_superusers: bool = False,
-                        page_size: int = 20) -> list[User]:
+                        filter_role: UserRole = None, page_size: int = 20) -> list[User]:
         order_query = getattr(User, order_by).asc(
         ) if order == "asc" else getattr(User, order_by).desc()
         users = select(User)
@@ -29,6 +29,9 @@ class UsersCRUD(BaseCRUD):
                 User.is_superuser.desc()), order_query)
         else:
             users = users.order_by(order_query)
+        if filter_role:
+            users = users.outerjoin(UserRoleAssociation, UserRoleAssociation.user_id == User.id).where(
+                or_(UserRoleAssociation.role == filter_role, User.is_superuser == True))
         if search:
             users = users.where(
                 or_(User.first_name.ilike(f"%{search}%"), User.last_name.ilike(

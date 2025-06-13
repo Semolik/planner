@@ -17,6 +17,7 @@ export type EventFullInfo = {
     description: string;
     id: string;
     level: string;
+    is_passed?: boolean;
     task: TaskWithoutEventRead;
 };
 

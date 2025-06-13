@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload, contains_eager
 
 from cruds.base_crud import BaseCRUD
 from models.user_models import User, UserRole
-from models.events_models import Event, Task, TypedTask, TaskState, TasksToken, TaskStatePeriod
+from models.events_models import Event, State, Task, TypedTask, TaskState, TasksToken, TaskStatePeriod
 from sqlalchemy import select, and_, or_
 from sqlalchemy.sql import exists
 from sqlalchemy.sql import case
@@ -34,13 +34,12 @@ class TasksCRUD(BaseCRUD):
         result = await self.db.execute(query)
         return result.scalars().first()
 
-    async def assign_user_to_task(self, typed_task: TypedTask, user: User, comment: str, is_completed: bool = False) -> TaskState:
+    async def assign_user_to_task(self, typed_task: TypedTask, user: User, comment: str) -> TaskState:
         task_state = TaskState(
             type_task_id=typed_task.id,
             user_id=user.id,
 
             comment=comment,
-            is_completed=is_completed
         )
         await self.create(task_state)
         return task_state
@@ -63,10 +62,10 @@ class TasksCRUD(BaseCRUD):
         result = await self.db.execute(query)
         return result.scalars().first()
 
-    async def update_task_state(self, task_state: TaskState, comment: str, is_completed: bool = False):
+    async def update_task_state(self, task_state: TaskState, comment: str, state: State) -> TaskState:
 
         task_state.comment = comment
-        task_state.is_completed = is_completed
+        task_state.state = state
         return await self.update(task_state)
 
     async def create_typed_task(self, task_id: uuid.UUID, task_type: UserRole,  for_single_user: bool, due_date: datetime | None = None, description: str | None = None) -> TypedTask:
@@ -244,7 +243,7 @@ class TasksCRUD(BaseCRUD):
     async def get_user_open_tasks(self, user_id: uuid.UUID, task_types: list[UserRole]) -> list[tuple[Task, TypedTask]]:
         query = select(Task, TypedTask).join(TypedTask, Task.id == TypedTask.task_id).join(
             TaskState, TypedTask.id == TaskState.type_task_id).where(
-            TaskState.is_completed == False, TypedTask.task_type.in_(task_types), TaskState.user_id == user_id)
+            TaskState.state == State.PENDING, TypedTask.task_type.in_(task_types), TaskState.user_id == user_id)
         result = await self.db.execute(query)
         return result.all()
 

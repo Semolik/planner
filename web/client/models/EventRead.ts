@@ -16,5 +16,6 @@ export type EventRead = {
     description: string;
     id: string;
     level: string;
+    is_passed?: boolean;
 };
 

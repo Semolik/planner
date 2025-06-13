@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, date, time
 import uuid
+from models.events_models import State
 from schemas.users import UserReadShort, UserRole
 
 
@@ -39,7 +40,7 @@ class TaskCreate(TaskBase):
 
 
 class TaskStateBase(UserReadShort):
-    is_completed: bool
+    state: State
     comment: str
     period_start: time
     period_end: time
@@ -51,6 +52,7 @@ class TaskStateBase(UserReadShort):
 class EventRead(EventBase):
     id: uuid.UUID
     level: str
+    is_passed: bool = False
 
     class Config:
         from_attributes = True
@@ -66,8 +68,9 @@ class EventReadShort(EventRead):
 
 
 class TypedTaskState(BaseModel):
+    id: uuid.UUID
     user: UserReadShort
-    is_completed: bool
+    state: State
     comment: str
 
     class Config:
@@ -152,7 +155,7 @@ class CreateTypedTaskState(BaseModel):
 
 
 class UpdateTypedTaskState(CreateTypedTaskState):
-    is_completed: bool = False
+    state: State
 
     class Config:
         from_attributes = True

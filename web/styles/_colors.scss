@@ -16,7 +16,7 @@ $accent-hover: color.mix(white, $accent, 20%);
 $accent-hover-2: color.mix(white, $accent, 40%);
 $accent-light-hover: color.mix(white, $accent-light, 20%);
 
-$accent-red: hsl(0, 100%, 50%);
+$accent-red: hsl(0, 100%, 60%);
 $accent-red-hover: color.mix(white, $accent-red, 20%);
 $accent-red-light: color.mix(white, $accent-red, 80%);
 
@@ -24,3 +24,5 @@ $text-color: rgb(0, 0, 0);
 $text-color-secondary: rgb(51, 51, 51);
 $text-color-tertiary: rgb(100, 100, 100);
 $border-color: rgba(0, 0, 0, 0.075);
+$accent-warning: hsl(40, 100%, 60%);
+$accent-success: hsl(153, 80%, 60%);

@@ -1,5 +1,5 @@
 from cruds.institutes_crud import InstitutesCRUD
-from models.user_models import User
+from models.user_models import User, UserRole
 from typing import List, Literal, Union
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -77,6 +77,7 @@ async def get_users(
     order: Literal["asc", "desc"] = "asc",
     superusers_to_top: bool = False,
     only_superusers: bool = False,
+    filter_role: UserRole = None,
     db=Depends(get_async_session),
     current_user: User = Depends(optional_current_user)
 ):
@@ -86,7 +87,8 @@ async def get_users(
         search=search,
         page=page,
         superusers_to_top=superusers_to_top,
-        only_superusers=only_superusers
+        only_superusers=only_superusers,
+        filter_role=filter_role
     )
     if current_user and current_user.is_superuser:
         return TypeAdapter(List[UserReadWithEmail]).validate_python(users)

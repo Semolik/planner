@@ -4,6 +4,7 @@
 /* eslint-disable */
 import type { UserRead } from '../models/UserRead';
 import type { UserReadWithEmail } from '../models/UserReadWithEmail';
+import type { UserRole } from '../models/UserRole';
 import type { UserUpdate } from '../models/UserUpdate';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -92,6 +93,7 @@ export class UsersService {
      * @param order
      * @param superusersToTop
      * @param onlySuperusers
+     * @param filterRole
      * @returns any Successful Response
      * @throws ApiError
      */
@@ -102,6 +104,7 @@ export class UsersService {
         order: 'asc' | 'desc' = 'asc',
         superusersToTop: boolean = false,
         onlySuperusers: boolean = false,
+        filterRole?: UserRole,
     ): CancelablePromise<Array<(UserRead | UserReadWithEmail)>> {
         return __request(OpenAPI, {
             method: 'GET',
@@ -113,6 +116,7 @@ export class UsersService {
                 'order': order,
                 'superusers_to_top': superusersToTop,
                 'only_superusers': onlySuperusers,
+                'filter_role': filterRole,
             },
             errors: {
                 422: `Validation Error`,

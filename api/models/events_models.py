@@ -1,12 +1,16 @@
+import enum
 import uuid
+
 from pytest import Session
 from sqlalchemy.orm import relationship, column_property, object_session
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy import Column, Enum, Integer, String, ForeignKey, Text, Boolean, UniqueConstraint, TIMESTAMP, Date, Time, select
+from sqlalchemy import Column, Enum, Integer, String, ForeignKey, Text, Boolean, UniqueConstraint, TIMESTAMP, Date, Time, and_, select
 from sqlalchemy.sql import func
 from models.user_models import UserRole
 from models.audit_models import AuditLog, AuditableMixin, register_audit_events
 from db.session import Base
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy import case
 
 
 class EventLevel(Base):
@@ -42,6 +46,14 @@ class Event(Base, AuditableMixin):
     level = column_property(
         select(EventLevel.name).where(EventLevel.id ==
                                       level_id).correlate_except(EventLevel).scalar_subquery()
+    )
+
+    is_passed = column_property(
+        case(
+            (date < func.current_date(), True),
+            (date == func.current_date(), end_time < func.current_time()),
+            else_=False
+        )
     )
     field_labels = {
         "name": "Название",
@@ -222,6 +234,12 @@ class TypedTask(Base, AuditableMixin):
     )
 
 
+class State(enum.Enum):
+    PENDING = "pending"
+    CANCELED = "canceled"
+    COMPLETED = "completed"
+
+
 class TaskState(Base):
     __tablename__ = "task_states"
 
@@ -246,7 +264,11 @@ class TaskState(Base):
         nullable=False
     )
 
-    is_completed = Column(Boolean, nullable=False, default=False)
+    state = Column(
+        Enum(State),
+        nullable=False,
+        default=State.PENDING
+    )
     comment = Column(Text, nullable=False, default="")
 
     typed_task = relationship(
