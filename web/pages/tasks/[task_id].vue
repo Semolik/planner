@@ -5,7 +5,6 @@
                 <div class="head">
                     {{ task.event ? task.event.name : task.name }}
                 </div>
-
                 <template v-if="task.event">
                     <div class="badges">
                         <UBadge
@@ -48,7 +47,6 @@
                             {{ task.event.description }}
                         </div>
                     </div>
-
                     <div
                         class="section"
                         v-for="typed_task in typed_tasks"
@@ -116,6 +114,24 @@
                                         <div class="name">
                                             {{ useFullName(status.user) }}
                                         </div>
+                                        <div
+                                            class="period"
+                                            v-if="status.period"
+                                        >
+                                            {{
+                                                status.period.period_start
+                                                    .split(":")
+                                                    .slice(0, 2)
+                                                    .join(":")
+                                            }}
+                                            -
+                                            {{
+                                                status.period.period_end
+                                                    .split(":")
+                                                    .slice(0, 2)
+                                                    .join(":")
+                                            }}
+                                        </div>
                                         <div :class="['state', status.state]">
                                             <Icon
                                                 name="material-symbols:check"
@@ -155,26 +171,57 @@
         :filter-role="selectedTypedTask.task_type"
         :exclude-users="excludeUsers"
         @select="
-            (user) => setUserToTypedTask(user, selectedTypedTask.task_type)
+            (user) => {
+                selectedUser = user;
+                setMeToTaskModalActive = true;
+            }
         "
         exclude-user-badge-text="Уже назначен"
     />
-    <UModal v-model:open="setMeToTaskModalActive" title="Взять в работу">
+
+    <UModal
+        v-model:open="setMeToTaskModalActive"
+        title="Назначение задачи"
+        v-if="selectedTypedTask"
+    >
         <template #body>
-            <div class="text-md">
-                Вы уверены, что хотите взять в работу подзадачу
+            <div class="text-md mb-4">
+                {{
+                    isAssigningSelf
+                        ? `Вы уверены, что хотите взять в работу подзадачу`
+                        : `Вы уверены, что хотите назначить пользователя на подзадачу`
+                }}
                 {{ typedTasksLabelsModal[selectedTypedTask.task_type] }}?
+                {{
+                    isFullEventTime
+                        ? ""
+                        : `C ${minutesToTime(selectedRange[0])} до ${minutesToTime(selectedRange[1])}`
+                }}
             </div>
+
+            <div
+                class="mb-4"
+                v-if="selectedTypedTask.task_type === UserRole.PHOTOGRAPHER"
+            >
+                <USwitch
+                    v-model="isFullEventTime"
+                    label="На всё время мероприятия"
+                    color="neutral"
+                />
+            </div>
+
+            <TimeRangeSlider
+                v-if="!isFullEventTime && task.event"
+                v-model="selectedRange"
+                :min-time="task.event.start_time"
+                :max-time="task.event.end_time"
+                :step="15"
+            />
+
             <div class="grid grid-cols-2 gap-2 mt-4">
                 <app-button
-                    @click="
-                        () =>
-                            setUserToTypedTask(
-                                authStore.userData,
-                                selectedTypedTask.task_type
-                            )
-                    "
-                    active
+                    @click="submitAssignment"
+                    :active="submitAssignmentButtonActive"
                 >
                     Подтвердить
                 </app-button>
@@ -187,6 +234,7 @@
             </div>
         </template>
     </UModal>
+
     <UModal
         v-model:open="removeMeFromTaskModalActive"
         title="Отказаться от задачи"
@@ -220,6 +268,7 @@
         </template>
     </UModal>
 </template>
+
 <script setup>
 import { routesNames } from "@typed-router";
 import {
@@ -229,13 +278,26 @@ import {
     TypedTasksStatesService,
 } from "~/client";
 import { useAuthStore } from "~/stores/auth";
+
 definePageMeta({
     middleware: ["user"],
 });
+
 const authStore = useAuthStore();
 const selectedTypedTask = ref(null);
+const selectedUser = ref(null);
+const isFullEventTime = ref(true);
+
 const { task_id } = useRoute().params;
 const task = ref(await TasksService.getTaskByIdTasksTaskIdGet(task_id));
+const selectedRange = ref(
+    task.value.event
+        ? [
+              timeToMinutes(task.value.event.start_time),
+              timeToMinutes(task.value.event.end_time),
+          ]
+        : [0, 0]
+);
 const { $toast } = useNuxtApp();
 
 useSeoMeta({
@@ -243,29 +305,32 @@ useSeoMeta({
         ? `Мероприятие: ${task.value.event.name}`
         : `Задача: ${task.value.name}`,
 });
+
+const isAssigningSelf = computed(() => {
+    return (
+        selectedUser.value?.id === authStore.userData.id || !selectedUser.value
+    );
+});
+
 const excludeUsers = computed(() => {
     if (!selectedTypedTask.value) return [];
-
-    for (const typed_task of task.value.typed_tasks) {
-        if (typed_task.task_type === selectedTypedTask.value.task_type) {
-            return typed_task.task_states.map((state) => state.user);
-        }
-    }
-    return [];
+    const typed_task = task.value.typed_tasks.find(
+        (tt) => tt.task_type === selectedTypedTask.value.task_type
+    );
+    return typed_task?.task_states.map((state) => state.user) || [];
 });
+
 const showTakeInWorkButton = computed(() => {
     const photographerTypedTask = task.value.typed_tasks.find(
         (typed_task) => typed_task.task_type === UserRole.PHOTOGRAPHER
     );
-    if (
+    return !(
         photographerTypedTask &&
         task.value.event &&
         task.value.event.is_passed
-    ) {
-        return false;
-    }
-    return true;
+    );
 });
+
 const typedTasksCurrentUser = computed(() => {
     return task.value.typed_tasks.map((typed_task) => ({
         ...typed_task,
@@ -274,10 +339,12 @@ const typedTasksCurrentUser = computed(() => {
         ),
     }));
 });
+
 const typed_tasks = computed(() => {
     if (authStore.isAdmin) {
         return typedTasksCurrentUser.value;
     }
+
     if (
         !showTakeInWorkButton.value &&
         typedTasksCurrentUser.value.some(
@@ -286,6 +353,7 @@ const typed_tasks = computed(() => {
     ) {
         return [];
     }
+
     return typedTasksCurrentUser.value.filter(
         (typed_task) => typed_task.task_type in authStore.userData.roles
     );
@@ -296,19 +364,147 @@ const typedTasksLabels = {
     [UserRole.DESIGNER]: "Дизайнер",
     [UserRole.COPYWRITER]: "Копирайтер",
 };
+
 const typedTasksLabelsModal = {
     [UserRole.PHOTOGRAPHER]: "Фотографа",
     [UserRole.DESIGNER]: "Дизайнера",
     [UserRole.COPYWRITER]: "Копирайтера",
 };
+
 const selectUserModalActive = ref(false);
 const setMeToTaskModalActive = ref(false);
 const removeMeFromTaskModalActive = ref(false);
-const stateMessages = {
-    completed: "Завершено",
-    pending: "Ожидает подтверждения",
-    canceled: "Отклонено",
+
+const submitAssignmentButtonActive = computed(() => {
+    if (!isFullEventTime.value) {
+        // время начала и конца должно быть выбрано (не совпадать с началом и концом мероприятия)
+        if (
+            selectedRange.value[0] ===
+                timeToMinutes(task.value.event.start_time) &&
+            selectedRange.value[1] === timeToMinutes(task.value.event.end_time)
+        ) {
+            return false;
+        }
+    }
+    return true;
+});
+const submitAssignment = async () => {
+    const user = isAssigningSelf.value
+        ? authStore.userData
+        : selectedUser.value;
+
+    await setUserToTypedTask(user, selectedTypedTask.value.task_type);
 };
+
+const setUserToTypedTask = async (user, task_type) => {
+    if (!user || !task_type) return;
+
+    const typed_task = task.value.typed_tasks.find(
+        (tt) => tt.task_type === task_type
+    );
+
+    if (!typed_task) return;
+
+    try {
+        const task_state =
+            await TypedTasksService.assignUserToTaskTasksTypedTasksTypedTaskIdUserUserIdPost(
+                typed_task.id,
+                user.id,
+                {
+                    comment: "",
+                }
+            );
+        if (!isFullEventTime.value) {
+            task_state.period = {
+                period_start: minutesToTime(selectedRange.value[0]) + ":00",
+                period_end: minutesToTime(selectedRange.value[1]) + ":00",
+            };
+            await TypedTasksStatesService.createTypedTaskStatePeriodTasksTypedTasksStatesTypedTaskStateIdPeriodPut(
+                task_state.id,
+                task_state.period
+            );
+        }
+        selectUserModalActive.value = false;
+        setMeToTaskModalActive.value = false;
+        selectedUser.value = null;
+        isFullEventTime.value = true;
+
+        task.value.typed_tasks = task.value.typed_tasks.map((tt) => {
+            if (tt.id === typed_task.id) {
+                return {
+                    ...tt,
+                    task_states: [...tt.task_states, task_state],
+                };
+            }
+            return tt;
+        });
+    } catch (error) {
+        $toast.error(HandleOpenApiError(error).message);
+        console.error(error);
+    }
+};
+
+const removeUserFromTypedTask = async (user, task_type) => {
+    if (!user || !task_type) return;
+
+    const typed_task = task.value.typed_tasks.find(
+        (tt) => tt.task_type === task_type
+    );
+
+    if (!typed_task) return;
+
+    const state = typed_task.task_states.find((s) => s.user.id === user.id);
+
+    if (!state) return;
+
+    try {
+        await TypedTasksStatesService.deleteTypedTaskStateTasksTypedTasksStatesTypedTaskStateIdDelete(
+            state.id
+        );
+
+        task.value.typed_tasks = task.value.typed_tasks.map((tt) => {
+            if (tt.id === typed_task.id) {
+                return {
+                    ...tt,
+                    task_states: tt.task_states.filter(
+                        (s) => s.user.id !== user.id
+                    ),
+                };
+            }
+            return tt;
+        });
+    } catch (error) {
+        $toast.error(HandleOpenApiError(error).message);
+        console.error(error);
+    }
+
+    removeMeFromTaskModalActive.value = false;
+};
+
+const getWaitingTime = (event) => {
+    if (!event) return "";
+    const eventDate = new Date(event.date);
+    const today = new Date();
+    const diffTime = eventDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays > 0) {
+        return `через ${diffDays} ${usePluralize(diffDays, [
+            "день",
+            "дня",
+            "дней",
+        ])}`;
+    } else if (diffDays < 0) {
+        return `${Math.abs(diffDays)} ${usePluralize(Math.abs(diffDays), [
+            "день",
+            "дня",
+            "дней",
+        ])} назад`;
+    } else {
+        return "Сегодня";
+    }
+};
+
 const sections = [
     {
         label: "Мероприятия и задачи",
@@ -326,6 +522,7 @@ const sections = [
         },
     },
 ];
+
 const dateTextFormat = (date) => {
     const options = { year: "numeric", month: "long", day: "numeric" };
     return new Date(date).toLocaleDateString(undefined, options);
@@ -336,100 +533,24 @@ const getTime = (time) => {
     const [hours, minutes] = time.split(":");
     return `${hours}:${minutes}`;
 };
-const setUserToTypedTask = async (user, task_type) => {
-    if (!user || !task_type) return;
-    const typed_task = task.value.typed_tasks.find(
-        (tt) => tt.task_type === task_type
-    );
-    if (!typed_task) return;
-    try {
-        const task_state =
-            await TypedTasksService.assignUserToTaskTasksTypedTasksTypedTaskIdUserUserIdPost(
-                typed_task.id,
-                user.id,
-                { comment: "" }
-            );
+function timeToMinutes(timeStr) {
+    const [hours, minutes] = timeStr.split(":").map(Number);
+    return hours * 60 + minutes;
+}
 
-        selectUserModalActive.value = false;
-        setMeToTaskModalActive.value = false;
-
-        task.value.typed_tasks = task.value.typed_tasks.map((tt) => {
-            if (tt.id === typed_task.id) {
-                return {
-                    ...tt,
-                    task_states: [...tt.task_states, task_state],
-                };
-            }
-            return tt;
-        });
-    } catch (error) {
-        $toast.error(HandleOpenApiError(error).message);
-        console.error(error);
-    }
-};
-const removeUserFromTypedTask = async (user, task_type) => {
-    if (!user || !task_type) return;
-    const typed_task = task.value.typed_tasks.find(
-        (tt) => tt.task_type === task_type
-    );
-    if (!typed_task) return;
-    const state = typed_task.task_states.find(
-        (state) => state.user.id === user.id
-    );
-    if (!state) return;
-    try {
-        await TypedTasksStatesService.deleteTypedTaskStateTasksTypedTasksStatesTypedTaskStateIdDelete(
-            state.id
-        );
-
-        task.value.typed_tasks = task.value.typed_tasks.map((tt) => {
-            if (tt.id === typed_task.id) {
-                return {
-                    ...tt,
-                    task_states: tt.task_states.filter(
-                        (state) => state.user.id !== user.id
-                    ),
-                };
-            }
-            return tt;
-        });
-    } catch (error) {
-        $toast.error(HandleOpenApiError(error).message);
-        console.error(error);
-    }
-    removeMeFromTaskModalActive.value = false;
-};
-
-const getWaitingTime = (event) => {
-    if (!event) return "";
-    const eventDate = new Date(event.date);
-    const today = new Date();
-    const diffTime = eventDate - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    if (diffDays > 0) {
-        return `через ${diffDays} ${usePluralize(diffDays, [
-            "день",
-            "дня",
-            "дней",
-        ])}`;
-    } else if (diffDays < 0) {
-        return `${Math.abs(diffDays)} ${usePluralize(Math.abs(diffDays), [
-            "день",
-            "дня",
-            "дней",
-        ])} назад`;
-    } else {
-        return "Сегодня";
-    }
-};
+function minutesToTime(minutes) {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+}
 </script>
+
 <style scoped lang="scss">
 .task-card-container {
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100%;
-
     .task-card {
         width: 100%;
         max-width: 500px;
@@ -448,7 +569,6 @@ const getWaitingTime = (event) => {
             gap: 8px;
             flex-wrap: wrap;
         }
-
         .section {
             display: flex;
             flex-direction: column;
@@ -473,26 +593,24 @@ const getWaitingTime = (event) => {
                         padding: 10px;
                         border-radius: 10px;
                         border: 1px solid $tertiary-bg;
-
                         cursor: pointer;
                         &:hover {
                             border-color: $text-color;
                         }
-
                         &.excluded {
                             cursor: not-allowed;
                         }
                         .user-item-info {
                             display: flex;
                             align-items: center;
-                            justify-content: space-between;
+
                             width: 100%;
                             gap: 5px;
                             min-width: 0;
-
                             .name {
                                 font-size: 16px;
                                 color: $text-color-secondary;
+                                margin-right: auto;
                                 white-space: nowrap;
                                 overflow: hidden;
                                 text-overflow: ellipsis;
@@ -500,16 +618,21 @@ const getWaitingTime = (event) => {
                                 display: block;
                                 text-align: center;
                             }
+                            .period {
+                                font-size: 14px;
+                                background-color: black;
+                                color: white;
+                                padding: 2px 10px;
+                                border-radius: 10px;
+                            }
                             .state {
                                 display: flex;
                                 align-items: center;
                                 justify-content: center;
                                 width: 30px;
                                 height: 30px;
-
                                 gap: 5px;
                                 border-radius: 10px;
-
                                 &.completed {
                                     background-color: $accent-success;
                                     color: black;

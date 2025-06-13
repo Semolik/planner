@@ -52,13 +52,26 @@ class TasksCRUD(BaseCRUD):
 
     async def get_task_state_by_id(self, typed_task_state_id: uuid.UUID) -> TaskState:
         query = select(TaskState).where(TaskState.id ==
-                                        typed_task_state_id)
+                                        typed_task_state_id).options(
+            selectinload(TaskState.user).options(selectinload(User.institute)),
+            selectinload(TaskState.period),
+            selectinload(TaskState.typed_task).selectinload(
+                TypedTask.users).selectinload(User.roles_objects),
+            selectinload(TaskState.typed_task).selectinload(
+                TypedTask.parent_task).selectinload(Task.event),
+        )
         result = await self.db.execute(query)
         return result.scalars().first()
 
     async def get_task_state_period_by_task_state_id(self, task_state_id: uuid.UUID) -> TaskStatePeriod:
         query = select(TaskStatePeriod).where(
-            TaskStatePeriod.task_state_id == task_state_id)
+            TaskStatePeriod.task_state_id == task_state_id).options(
+            selectinload(TaskStatePeriod.task_state).selectinload(
+                TaskState.user).options(selectinload(User.institute)),
+            selectinload(TaskStatePeriod.task_state).selectinload(
+                TaskState.period)
+
+        )
         result = await self.db.execute(query)
         return result.scalars().first()
 
@@ -174,11 +187,12 @@ class TasksCRUD(BaseCRUD):
                     selectinload(TypedTask.task_states).options(
                         selectinload(TaskState.user).options(
                             selectinload(User.institute)
-                        )
+                        ),
+                        selectinload(TaskState.period)
                     ),
                     selectinload(TypedTask.users).options(
                         selectinload(User.roles_objects)
-                    )
+                    ),
                 ),
                 selectinload(Task.event),
             )

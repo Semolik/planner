@@ -67,11 +67,20 @@ class EventReadShort(EventRead):
         from_attributes = True
 
 
+class StatePeriod(BaseModel):
+    period_start: time
+    period_end: time
+
+    class Config:
+        from_attributes = True
+
+
 class TypedTaskState(BaseModel):
     id: uuid.UUID
     user: UserReadShort
     state: State
     comment: str
+    period: StatePeriod | None = None
 
     class Config:
         from_attributes = True
@@ -137,14 +146,6 @@ class EventGroupCreate(EventGroupBase):
 class EventGroupRead(EventGroupBase):
     id: uuid.UUID
     events: List[EventFullInfo]
-
-    class Config:
-        from_attributes = True
-
-
-class StatePeriod(BaseModel):
-    period_start: time
-    period_end: time
 
     class Config:
         from_attributes = True

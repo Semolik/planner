@@ -288,7 +288,8 @@ class TaskState(Base):
         "TaskStatePeriod",
         back_populates="task_state",
         cascade="all, delete-orphan",
-        single_parent=True
+        single_parent=True,
+        uselist=False
     )
 
 

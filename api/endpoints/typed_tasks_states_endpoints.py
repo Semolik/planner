@@ -1,9 +1,9 @@
-from schemas.events import CreateTypedTaskState, ReadTypedTaskState, StatePeriod, TypedTaskReadFull, UpdateTypedTaskState
+from schemas.events import ReadTypedTaskState, StatePeriod, UpdateTypedTaskState
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from cruds.tasks_crud import TasksCRUD
-from cruds.users_crud import UsersCRUD
-from core.users_controller import current_superuser, current_user
+
+from core.users_controller import current_user
 from db.session import get_async_session, AsyncSession
 from models.user_models import User
 
@@ -47,7 +47,7 @@ async def create_typed_task_state_period(
             status_code=403, detail="Нет доступа")
 
     period = await task_crud.update_task_state_period(
-        task_state=task_state, period_start=period.period_start, period_end=period.period_end)
+        task_state_id=task_state.id, period_start=period.period_start, period_end=period.period_end)
     return period
 
 
