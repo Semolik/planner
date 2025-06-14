@@ -1,9 +1,9 @@
-from schemas.events import CreateTypedTaskState, TypedTaskReadFull, TypedTaskState, UpdateTypedTaskState
+from schemas.events import CreateTypedTask, CreateTypedTaskState, TypedTaskReadFull, TypedTaskState, UpdateTypedTask, UpdateTypedTaskState
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from cruds.tasks_crud import TasksCRUD
 from cruds.users_crud import UsersCRUD
-from core.users_controller import current_user
+from core.users_controller import current_user, current_superuser
 from db.session import get_async_session, AsyncSession
 from models.user_models import User
 
@@ -66,11 +66,42 @@ async def assign_user_to_task(
     )
 
 
-@api_router.get('/{typed_task_id}', response_model=TypedTaskReadFull)
-async def get_typed_task(typed_task_id: uuid.UUID, current_user: User = Depends(current_user), db=Depends(get_async_session)):
+@api_router.get('/{typed_task_id}', response_model=TypedTaskReadFull, dependencies=[Depends(current_user)])
+async def get_typed_task(typed_task_id: uuid.UUID,  db=Depends(get_async_session)):
     task_crud = TasksCRUD(db)
     typed_task = await task_crud.get_typed_task(typed_task_id)
     if typed_task is None:
         raise HTTPException(
             status_code=404, detail="Типизированная задача не найдена")
     return typed_task
+
+
+@api_router.delete('/{typed_task_id}', status_code=204, dependencies=[Depends(current_superuser)])
+async def delete_typed_task(typed_task_id: uuid.UUID, db=Depends(get_async_session)):
+    task_crud = TasksCRUD(db)
+    typed_task = await task_crud.get_typed_task(typed_task_id)
+    if typed_task is None:
+        raise HTTPException(
+            status_code=404, detail="Типизированная задача не найдена")
+    await task_crud.delete(typed_task)
+
+
+@api_router.put('/{typed_task_id}', response_model=TypedTaskReadFull, dependencies=[Depends(current_superuser)])
+async def update_typed_task(
+    typed_task_id: uuid.UUID,
+    data: UpdateTypedTask,
+    db=Depends(get_async_session)
+):
+    task_crud = TasksCRUD(db)
+    typed_task = await task_crud.get_typed_task(typed_task_id)
+    if typed_task is None:
+        raise HTTPException(
+            status_code=404, detail="Типизированная задача не найдена")
+    updated_typed_task = await task_crud.update_typed_task(
+        typed_task=typed_task,
+        description=data.description,
+        link=data.link,
+        due_date=data.due_date,
+        for_single_user=data.for_single_user
+    )
+    return updated_typed_task

@@ -1,11 +1,12 @@
 from sqlalchemy.sql import and_, exists
 from sqlalchemy.sql import and_
-from datetime import datetime
+from datetime import datetime, time
 import uuid
 
 from sqlalchemy import or_, select
 from sqlalchemy.orm import selectinload, joinedload
 
+from cruds.tasks_crud import TasksCRUD
 from cruds.base_crud import BaseCRUD
 from models.user_models import User, UserRole
 from models.events_models import Event
@@ -41,10 +42,7 @@ class EventsCRUD(BaseCRUD):
             .where(Event.id == event_id)
             .options(
                 selectinload(Event.task)
-                .selectinload(Task.typed_tasks)
-                .selectinload(TypedTask.task_states)
-                .selectinload(TaskState.user)
-            )
+                .selectinload(Task.typed_tasks).options(*TasksCRUD(self.db).get_typed_task_options()))
         )
 
     async def get_full_event(self, event_id: uuid.UUID) -> Event:
@@ -52,11 +50,20 @@ class EventsCRUD(BaseCRUD):
         result = await self.db.execute(query)
         return result.scalars().first()
 
-    async def update_event(self, event: Event, name: str, date: datetime, location: str, organizer: str) -> Event:
+    async def update_event(self, event: Event, name: str, date: datetime, location: str, organizer: str, level_id: uuid.UUID,
+                           start_time: time, end_time: time = None, name_approved: bool = False,
+                           required_photographers: int = 0, description: str = "", group_id: uuid.UUID = None) -> Event:
         event.name = name
         event.date = date
         event.location = location
         event.organizer = organizer
+        event.start_time = start_time
+        event.end_time = end_time if end_time else start_time
+        event.name_approved = name_approved
+        event.required_photographers = required_photographers
+        event.description = description
+        event.level_id = level_id
+        event.group_id = group_id
         return await self.update(event)
 
     async def create_event_group(self, name: str, description: str = None, organizer: str = None, link: str = None) -> EventGroup:

@@ -2,8 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { EventCreateOrUpdate } from '../models/EventCreateOrUpdate';
+import type { EventCreate } from '../models/EventCreate';
 import type { EventFullInfo } from '../models/EventFullInfo';
+import type { EventUpdate } from '../models/EventUpdate';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -15,7 +16,7 @@ export class EventsService {
      * @throws ApiError
      */
     public static createEventEventsPost(
-        requestBody: EventCreateOrUpdate,
+        requestBody: EventCreate,
     ): CancelablePromise<EventFullInfo> {
         return __request(OpenAPI, {
             method: 'POST',
@@ -67,7 +68,7 @@ export class EventsService {
      */
     public static updateEventEventsEventIdPut(
         eventId: string,
-        requestBody: EventCreateOrUpdate,
+        requestBody: EventUpdate,
     ): CancelablePromise<EventFullInfo> {
         return __request(OpenAPI, {
             method: 'PUT',

@@ -1,6 +1,6 @@
 from datetime import time
 from typing import Annotated, Union
-from schemas.events import TaskRead
+from schemas.events import CreateTypedTask, TaskRead, TypedTaskReadFull
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Header
 from cruds.tasks_crud import TasksCRUD
@@ -57,10 +57,44 @@ async def set_tasks_token(role: UserRole, db=Depends(get_async_session)):
 @api_router.get('/{task_id}', response_model=TaskRead, dependencies=[Depends(current_user)])
 async def get_task_by_id(
     task_id: uuid.UUID,
-    current_user: User = Depends(current_user),
+    db=Depends(get_async_session)
+):
+    task = await TasksCRUD(db).get_task_by_id(task_id=task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Задача не найдена")
+    return task
+
+
+@api_router.post('/{task_id}/typed-tasks', dependencies=[Depends(current_superuser)], status_code=201, response_model=TypedTaskReadFull)
+async def create_typed_task(
+    task_id: uuid.UUID,
+    data: CreateTypedTask,
+    db=Depends(get_async_session)
+):
+    task = await TasksCRUD(db).get_task_by_id(task_id=task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Задача не найдена")
+    if data.task_type in [typed_task.task_type for typed_task in task.typed_tasks]:
+        raise HTTPException(
+            status_code=400, detail=f"Типизированная задача с типом {data.task_type} уже существует для этой задачи")
+    typed_task = await TasksCRUD(db).create_typed_task(
+        task_id=task.id,
+        task_type=data.task_type,
+        description=data.description,
+        link=data.link,
+        due_date=data.due_date,
+        for_single_user=data.for_single_user
+    )
+    return await TasksCRUD(db).get_typed_task(typed_task_id=typed_task.id)
+
+
+@api_router.delete('/{task_id}', dependencies=[Depends(current_superuser)], status_code=204)
+async def delete_task(
+    task_id: uuid.UUID,
+
     db=Depends(get_async_session)
 ):
     task = await TasksCRUD(db).get_task_by_id(task_id=task_id)
     if task is None:
         raise HTTPException(status_code=404, detail="Task not found")
-    return task
+    await TasksCRUD(db).delete(task)

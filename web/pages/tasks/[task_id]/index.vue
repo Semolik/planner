@@ -186,8 +186,24 @@
                     </div>
                 </template>
                 <div v-if="authStore.isAdmin" class="grid grid-cols-2 gap-2">
-                    <app-button active mini> Редактировать </app-button>
-                    <app-button active red mini> Удалить </app-button>
+                    <app-button
+                        active
+                        mini
+                        :to="{
+                            name: routesNames.tasksTaskIdEdit.index,
+                            params: { task_id: task.id },
+                        }"
+                    >
+                        Редактировать
+                    </app-button>
+                    <app-button
+                        active
+                        red
+                        mini
+                        @click="deleteModalOpened = true"
+                    >
+                        Удалить
+                    </app-button>
                 </div>
             </div>
         </div>
@@ -270,7 +286,6 @@
             </div>
         </template>
     </UModal>
-
     <UModal
         v-model:open="removeMeFromTaskModalActive"
         :title="
@@ -393,6 +408,30 @@
                             ? "Отказаться от задачи"
                             : "Снять с задачи"
                     }}
+                </app-button>
+            </div>
+        </template>
+    </UModal>
+    <UModal
+        v-model:open="deleteModalOpened"
+        :title="`Удалить ${task.event ? 'мероприятие' : 'задачу'}`"
+    >
+        <template #body>
+            <div class="text-md">
+                Вы действительно хотите удалить
+                {{ task.event ? "мероприятие" : "задачу" }} "{{
+                    task.event ? task.event.name : task.name
+                }}"?
+            </div>
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <app-button active red @click="deleteTask">
+                    Подтвердить
+                </app-button>
+                <app-button
+                    @click="deleteModalOpened = false"
+                    class="cursor-pointer"
+                >
+                    Отмена
                 </app-button>
             </div>
         </template>
@@ -585,7 +624,6 @@ const showTakeInWorkButton = computed(() => {
         task.value.event.is_passed
     );
 });
-
 const typedTasksCurrentUser = computed(() => {
     return task.value.typed_tasks.map((typed_task) => ({
         ...typed_task,
@@ -638,6 +676,7 @@ const stateTabs = Object.entries(statusLabels).map(([key, label]) => ({
 const selectUserModalActive = ref(false);
 const setMeToTaskModalActive = ref(false);
 const removeMeFromTaskModalActive = ref(false);
+const deleteModalOpened = ref(false);
 const showDeleteStateModal = (selectedState) => {
     stateModalOpened.value = false;
     selectedTypedTask.value = task.value.typed_tasks.find((tt) =>
@@ -780,7 +819,14 @@ const getTypedTaskDeadlineClass = (typed_task) => {
     if (diff < 24 * 60 * 60 * 1000) return "text-yellow-500";
     return "text-gray-500";
 };
-
+const deleteTask = async () => {
+    try {
+        await TasksService.deleteTaskTasksTaskIdDelete(task_id);
+        useRouter().push({ name: routesNames.tasks });
+    } catch (e) {
+        $toast.error(HandleOpenApiError(e).message);
+    }
+};
 const showTypedTaskDeadlineString = (typed_task) => {
     return (
         typed_task.task_states.length === 0 ||

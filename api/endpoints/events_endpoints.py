@@ -1,5 +1,5 @@
 from models.events_models import Task
-from schemas.events import EventFullInfo, EventCreateOrUpdate
+from schemas.events import EventFullInfo, EventCreate, EventUpdate
 import uuid
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException
@@ -13,7 +13,7 @@ api_router = APIRouter(prefix="/events", tags=["events"])
 
 
 @api_router.post("", response_model=EventFullInfo, dependencies=[Depends(current_superuser)])
-async def create_event(event: EventCreateOrUpdate, db=Depends(get_async_session)):
+async def create_event(event: EventCreate, db=Depends(get_async_session)):
     if event.start_time > event.end_time:
         raise HTTPException(
             status_code=400, detail="Время начала не может быть позже времени окончания")
@@ -101,18 +101,41 @@ async def get_event_history(event_id: uuid.UUID, db=Depends(get_async_session)):
 
 
 @api_router.put("/{event_id}", response_model=EventFullInfo, dependencies=[Depends(current_superuser)])
-async def update_event(event_id: uuid.UUID, event: EventCreateOrUpdate, db=Depends(get_async_session)):
+async def update_event(event_id: uuid.UUID, event: EventUpdate, db=Depends(get_async_session)):
     db_event = await EventsCRUD(db).get_full_event(event_id)
     if db_event is None:
         raise HTTPException(status_code=404, detail="Мероприятие не найдено")
+    db_level = await EventsCRUD(db).get_event_level(level_id=event.level_id)
+    if db_level is None:
+        raise HTTPException(
+            status_code=404, detail="Уровень мероприятия не найден")
+    if event.required_photographers < 1:
+        raise HTTPException(
+            status_code=400, detail="Количество фотографов должно быть больше 0")
+    if event.start_time > event.end_time:
+        raise HTTPException(
+            status_code=400, detail="Время начала не может быть позже времени окончания")
+    if event.group_id is not None:
+        group = await EventsCRUD(db).get_event_group(event.group_id)
+        if group is None:
+            raise HTTPException(
+                status_code=404, detail="Группа мероприятий не найдена")
+
     db_event = await EventsCRUD(db).update_event(
         event=db_event,
         name=event.name,
         date=event.date,
         location=event.location,
         organizer=event.organizer,
+        start_time=event.start_time,
+        end_time=event.end_time,
+        name_approved=event.name_approved,
+        required_photographers=event.required_photographers,
+        description=event.description,
+        level_id=event.level_id,
+        group_id=event.group_id
     )
-    return db_event
+    return await EventsCRUD(db).get_full_event(db_event.id)
 
 
 @api_router.delete("/{event_id}", status_code=204, dependencies=[Depends(current_superuser)])

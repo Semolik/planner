@@ -20,8 +20,11 @@ class EventBase(BaseModel):
     description: str
 
 
-class EventCreateOrUpdate(EventBase):
-    level_id: Optional[uuid.UUID] = None
+class EventUpdate(EventBase):
+    level_id: uuid.UUID
+
+
+class EventCreate(EventUpdate):
     photographer_description: str
     copywriter_description: str
     designer_description: str
@@ -52,6 +55,7 @@ class TaskStateBase(UserReadShort):
 class EventRead(EventBase):
     id: uuid.UUID
     level: str
+    level_id: uuid.UUID
     is_passed: bool = False
 
     class Config:
@@ -95,14 +99,20 @@ class TypedTaskState(UpdateTypedTaskState):
         from_attributes = True
 
 
-class TypedTaskRead(BaseModel):
-    id: uuid.UUID
-    task_type: UserRole
+class UpdateTypedTask(BaseModel):
     description: str
     link: str
     for_single_user: bool
+    due_date: datetime
+
+
+class CreateTypedTask(UpdateTypedTask):
+    task_type: UserRole
+
+
+class TypedTaskRead(CreateTypedTask):
+    id: uuid.UUID
     task_states: List[TypedTaskState]
-    due_date: datetime | None = None
 
 
 class TaskReadShortWithoutEvent(TaskBase):

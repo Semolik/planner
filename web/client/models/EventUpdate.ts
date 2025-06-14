@@ -2,7 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type EventRead = {
+export type EventUpdate = {
     name: string;
     date: string;
     start_time: string;
@@ -14,9 +14,6 @@ export type EventRead = {
     required_photographers: number;
     group_id?: (string | null);
     description: string;
-    id: string;
-    level: string;
     level_id: string;
-    is_passed?: boolean;
 };
 

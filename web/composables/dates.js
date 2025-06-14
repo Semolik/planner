@@ -9,3 +9,8 @@ export function addDays(date, days) {
     result.setDate(result.getDate() + days);
     return result;
 }
+export const addDaysToDate = (date, days) => {
+    const deadlineDate = new Date(date);
+    deadlineDate.setDate(deadlineDate.getDate() + days);
+    return deadlineDate.toISOString().split("T")[0];
+};

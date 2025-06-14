@@ -214,7 +214,7 @@ class TypedTask(Base, AuditableMixin):
         foreign_keys=[task_id],
         uselist=False,
         back_populates="typed_tasks",
-        cascade="all, delete-orphan",
+
         single_parent=True
     )
 

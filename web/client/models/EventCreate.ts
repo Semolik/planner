@@ -2,7 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type EventCreateOrUpdate = {
+export type EventCreate = {
     name: string;
     date: string;
     start_time: string;
@@ -14,7 +14,7 @@ export type EventCreateOrUpdate = {
     required_photographers: number;
     group_id?: (string | null);
     description: string;
-    level_id?: (string | null);
+    level_id: string;
     photographer_description: string;
     copywriter_description: string;
     designer_description: string;

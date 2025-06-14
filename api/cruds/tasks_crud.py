@@ -81,19 +81,20 @@ class TasksCRUD(BaseCRUD):
         task_state.state = state
         return await self.update(task_state)
 
-    async def create_typed_task(self, task_id: uuid.UUID, task_type: UserRole,  for_single_user: bool, due_date: datetime | None = None, description: str | None = None) -> TypedTask:
+    async def create_typed_task(self, task_id: uuid.UUID, task_type: UserRole,  for_single_user: bool, due_date: datetime | None = None, description: str | None = None, link: str = "") -> TypedTask:
         typed_task = TypedTask(
             task_id=task_id,
             task_type=task_type,
             description=description,
             due_date=due_date,
+            link=link,
             for_single_user=for_single_user,
         )
         return await self.create(typed_task)
 
-    async def update_typed_task(self, typed_task: TypedTask, task_type: UserRole,  for_single_user: bool, due_date: datetime | None = None, description: str | None = None) -> TypedTask:
-        typed_task.task_type = task_type
+    async def update_typed_task(self, typed_task: TypedTask,  for_single_user: bool, due_date: datetime | None = None, description: str | None = None, link: str = "") -> TypedTask:
         typed_task.description = description
+        typed_task.link = link
         typed_task.due_date = due_date
         typed_task.for_single_user = for_single_user
         return await self.update(typed_task)
@@ -305,6 +306,7 @@ class TasksCRUD(BaseCRUD):
 
     async def get_task_by_id(self, task_id: uuid.UUID) -> Task:
         query = select(Task).where(Task.id == task_id).options(
+            selectinload(Task.event),
             selectinload(Task.typed_tasks).options(
                 *self.get_typed_task_options()
             ),

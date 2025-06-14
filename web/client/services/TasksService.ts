@@ -2,7 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { CreateTypedTask } from '../models/CreateTypedTask';
 import type { TaskRead } from '../models/TaskRead';
+import type { TypedTaskReadFull } from '../models/TypedTaskReadFull';
 import type { UserRole } from '../models/UserRole';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -85,6 +87,50 @@ export class TasksService {
             path: {
                 'task_id': taskId,
             },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Delete Task
+     * @param taskId
+     * @returns void
+     * @throws ApiError
+     */
+    public static deleteTaskTasksTaskIdDelete(
+        taskId: string,
+    ): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/tasks/{task_id}',
+            path: {
+                'task_id': taskId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Create Typed Task
+     * @param taskId
+     * @param requestBody
+     * @returns TypedTaskReadFull Successful Response
+     * @throws ApiError
+     */
+    public static createTypedTaskTasksTaskIdTypedTasksPost(
+        taskId: string,
+        requestBody: CreateTypedTask,
+    ): CancelablePromise<TypedTaskReadFull> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/tasks/{task_id}/typed-tasks',
+            path: {
+                'task_id': taskId,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
             errors: {
                 422: `Validation Error`,
             },

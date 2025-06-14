@@ -2,8 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { ReadTypedTaskState } from '../models/ReadTypedTaskState';
 import type { StatePeriod } from '../models/StatePeriod';
+import type { TypedTaskState } from '../models/TypedTaskState';
 import type { UpdateTypedTaskState } from '../models/UpdateTypedTaskState';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -13,13 +13,13 @@ export class TypedTasksStatesService {
      * Update User Typed Task State
      * @param typedTaskStateId
      * @param requestBody
-     * @returns ReadTypedTaskState Successful Response
+     * @returns TypedTaskState Successful Response
      * @throws ApiError
      */
     public static updateUserTypedTaskStateTasksTypedTasksStatesTypedTaskStateIdPut(
         typedTaskStateId: string,
         requestBody: UpdateTypedTaskState,
-    ): CancelablePromise<ReadTypedTaskState> {
+    ): CancelablePromise<TypedTaskState> {
         return __request(OpenAPI, {
             method: 'PUT',
             url: '/tasks/typed-tasks/states/{typed_task_state_id}',

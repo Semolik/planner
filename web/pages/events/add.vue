@@ -77,43 +77,11 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
-            <div class="flex gap-1 text-center">
-                <div
-                    class="button group-select"
-                    @click="
-                        () => {
-                            if (selectedGroup && !searchGroup.id) {
-                                createGroupOpen = true;
-                            } else {
-                                selectGroupOpen = true;
-                            }
-                        }
-                    "
-                >
-                    {{
-                        selectedGroup
-                            ? (selectedGroup.id ? `Группа` : `Новая группа`) +
-                              ": " +
-                              selectedGroup.name
-                            : "Добавить в группу"
-                    }}
-                </div>
-                <app-button
-                    red
-                    active
-                    @click="
-                        () => {
-                            selectedGroup = null;
-                            resetCreation();
-                        }
-                    "
-                    v-if="selectedGroup"
-                >
-                    <div class="flex items-center justify-center">
-                        <Icon name="material-symbols:delete" />
-                    </div>
-                </app-button>
-            </div>
+            <event-group-selector
+                v-model="selectedGroup"
+                v-model:open="selectGroupOpen"
+            />
+
             <div
                 :class="['button', { active: tasksSettingsOpen }]"
                 @click="tasksSettingsOpen = !tasksSettingsOpen"
@@ -153,87 +121,6 @@
             Создать мероприятие
         </app-button>
     </app-form>
-    <UModal
-        v-model:open="selectGroupOpen"
-        title="Выбор группы мероприятий"
-        :ui="{
-            content: contentClass,
-            body: 'flex-1 overflow-y-auto p-3 sm:p-3',
-        }"
-    >
-        <template #body>
-            <div class="flex flex-col gap-2 h-full">
-                <app-input
-                    v-model="searchGroup"
-                    placeholder="Введите название группы"
-                    border-radius="10px"
-                />
-                <div class="groups-list" v-auto-animate>
-                    <div
-                        :class="[
-                            'group',
-                            { selected: selectedGroup?.id === group.id },
-                        ]"
-                        v-for="group in searchGroupsResult"
-                        :key="group.id"
-                        @click="
-                            selectedGroup = group;
-                            selectGroupOpen = false;
-                        "
-                    >
-                        {{ group.name }}
-                    </div>
-                    <div class="empty" v-if="searchGroupsResult.length === 0">
-                        Группы не найдены
-                    </div>
-                </div>
-
-                <app-button active @click="createGroupOpen = true">
-                    Создать группу
-                </app-button>
-            </div>
-        </template>
-    </UModal>
-    <UModal
-        v-model:open="createGroupOpen"
-        title="Создание группы мероприятий"
-        :ui="{
-            content: contentClass,
-            body: 'flex-1 overflow-y-auto p-3 sm:p-3',
-        }"
-    >
-        <template #body>
-            <form
-                class="flex flex-col gap-2 h-full"
-                @submit.prevent="saveGroupCreation"
-            >
-                <app-input
-                    v-model="createGroupName"
-                    label="Название группы"
-                    required
-                    border-radius="10px"
-                />
-                <app-input
-                    v-model="createGroupDescription"
-                    label="Описание группы"
-                    type="textarea"
-                    border-radius="10px"
-                />
-                <app-input
-                    v-model="createGroupOrganizer"
-                    label="Контакт организатора группы"
-                    border-radius="10px"
-                />
-                <app-button
-                    :active="createGroupButtonActive"
-                    type="submit"
-                    class="mt-auto"
-                >
-                    Создать группу
-                </app-button>
-            </form>
-        </template>
-    </UModal>
 </template>
 <script setup>
 import { useAppSettingsStore } from "~/stores/app-settings";
@@ -243,14 +130,9 @@ const appSettingsStore = useAppSettingsStore();
 definePageMeta({
     middleware: ["admin"],
 });
-const appConfig = useAppConfig();
-const modalUi = appConfig.ui;
-const contentClass =
-    modalUi.modal.variants.fullscreen.false.content + " h-full !max-h-[500px]";
+
 const tasksSettingsOpen = ref(false);
 const selectGroupOpen = ref(false);
-const searchGroup = ref("");
-const searchGroupsResult = ref([]);
 
 const name = ref("");
 const date = ref("");
@@ -264,31 +146,6 @@ const createPhotographersSubTask = ref(true);
 const createCopywritersSubTask = ref(true);
 const createDesignersSubTask = ref(true);
 
-const createGroupOpen = ref(false);
-const createGroupName = ref("");
-const createGroupDescription = ref("");
-const createGroupOrganizer = ref("");
-
-const createGroupButtonActive = computed(
-    () => createGroupName.value.length > 0
-);
-const saveGroupCreation = () => {
-    if (!createGroupButtonActive.value) return;
-    selectedGroup.value = {
-        id: null,
-        name: createGroupName.value,
-        description: createGroupDescription.value,
-        organizer: createGroupOrganizer.value,
-        link: "",
-    };
-    createGroupOpen.value = false;
-    selectGroupOpen.value = false;
-};
-const resetCreation = () => {
-    createGroupName.value = "";
-    createGroupDescription.value = "";
-    createGroupOrganizer.value = "";
-};
 const eventLevels = appSettingsStore.eventsLevels.map((level) => ({
     id: level.id,
     label: level.name,
@@ -298,23 +155,7 @@ const event_level = ref(
         (level) => level.id === appSettingsStore.settings.default_event_level_id
     )
 );
-watch(
-    searchGroup,
-    async (value) => {
-        try {
-            searchGroupsResult.value =
-                await EventsGroupsService.searchEventGroupsEventsGroupsSearchGet(
-                    value
-                );
-        } catch (error) {
-            console.error("Failed to fetch event groups:", error);
-        }
-    },
-    { immediate: true }
-);
-watch(selectGroupOpen, () => {
-    searchGroup.value = "";
-});
+
 const selectedGroup = ref(null);
 const buttonActive = computed(() => {
     return (
@@ -335,7 +176,12 @@ watch(timeStart, (value) => {
         if (endTime.getHours() < 23) {
             endTime.setHours(endTime.getHours() + 1);
         } else {
-            endTime.setHours(0);
+            if (endTime.getMinutes() < 59) {
+                endTime.setMinutes(endTime.getMinutes() + 1);
+            } else {
+                endTime.setHours(0);
+                endTime.setMinutes(0);
+            }
         }
         timeEnd.value = endTime.toTimeString().slice(0, 5);
     }
@@ -349,16 +195,17 @@ watch(timeEnd, (value) => {
         if (startTime.getHours() > 0) {
             startTime.setHours(startTime.getHours() - 1);
         } else {
-            startTime.setHours(23);
+            if (startTime.getMinutes() > 0) {
+                startTime.setMinutes(startTime.getMinutes() - 1);
+            } else {
+                startTime.setHours(23);
+                startTime.setMinutes(59);
+            }
         }
         timeStart.value = startTime.toTimeString().slice(0, 5);
     }
 });
-const getDeadlineDateString = (days) => {
-    const deadlineDate = new Date(date.value);
-    deadlineDate.setDate(deadlineDate.getDate() + days);
-    return deadlineDate.toISOString().split("T")[0];
-};
+
 const { $toast } = useNuxtApp();
 
 const createEvent = async () => {
@@ -390,17 +237,20 @@ const createEvent = async () => {
             copywriter_description: "",
             designer_description: "",
             photographers_deadline: createPhotographersSubTask.value
-                ? getDeadlineDateString(
+                ? addDaysToDate(
+                      date.value,
                       appSettingsStore.settings.photographers_deadline
                   )
                 : null,
             copywriters_deadline: createCopywritersSubTask.value
-                ? getDeadlineDateString(
+                ? addDaysToDate(
+                      date.value,
                       appSettingsStore.settings.copywriters_deadline
                   )
                 : null,
             designers_deadline: createDesignersSubTask.value
-                ? getDeadlineDateString(
+                ? addDaysToDate(
+                      date.value,
                       appSettingsStore.settings.photographers_deadline +
                           appSettingsStore.settings.designers_deadline
                   )
@@ -409,8 +259,8 @@ const createEvent = async () => {
         const router = useRouter();
         $toast.success("Мероприятие успешно создано");
         router.push({
-            name: routesNames.eventsEventId,
-            params: { event_id: event.id },
+            name: routesNames.tasksTaskId,
+            params: { task_id: event.task.id },
         });
     } catch (error) {
         $toast.error(HandleOpenApiError(error).message);
