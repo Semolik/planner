@@ -401,7 +401,8 @@ const createEvent = async () => {
                 : null,
             designers_deadline: createDesignersSubTask.value
                 ? getDeadlineDateString(
-                      appSettingsStore.settings.designers_deadline
+                      appSettingsStore.settings.photographers_deadline +
+                          appSettingsStore.settings.designers_deadline
                   )
                 : null,
         });

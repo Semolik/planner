@@ -53,7 +53,25 @@
                         :key="typed_task.id"
                     >
                         <div class="section-head">
-                            {{ typedTasksLabels[typed_task.task_type] }}
+                            <div class="flex justify-between items-center">
+                                <span
+                                    >{{
+                                        typedTasksLabels[typed_task.task_type]
+                                    }}
+                                </span>
+                                <span
+                                    v-if="
+                                        showTypedTaskDeadlineString(typed_task)
+                                    "
+                                    class="text-sm font-normal"
+                                    :class="
+                                        getTypedTaskDeadlineClass(typed_task)
+                                    "
+                                >
+                                    Дедлайн
+                                    {{ getTypedTaskDeadline(typed_task) }}
+                                </span>
+                            </div>
                         </div>
                         <div class="section-content">
                             <div class="flex gap-1">
@@ -167,6 +185,10 @@
                         </div>
                     </div>
                 </template>
+                <div v-if="authStore.isAdmin" class="grid grid-cols-2 gap-2">
+                    <app-button active mini> Редактировать </app-button>
+                    <app-button active red mini> Удалить </app-button>
+                </div>
             </div>
         </div>
     </page-container>
@@ -723,10 +745,8 @@ const removeUserFromTypedTask = async (user, task_type) => {
 
     removeMeFromTaskModalActive.value = false;
 };
-
-const getWaitingTime = (event) => {
-    if (!event) return "";
-    const eventDate = new Date(event.date);
+const getTimeDiff = (date) => {
+    const eventDate = new Date(date);
     const today = new Date();
     const diffTime = eventDate - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -747,7 +767,30 @@ const getWaitingTime = (event) => {
         return "Сегодня";
     }
 };
+const getWaitingTime = (event) => {
+    if (!event) return "";
+    return getTimeDiff(event.date);
+};
+const getTypedTaskDeadline = (typed_task) => {
+    return getTimeDiff(typed_task.due_date);
+};
+const getTypedTaskDeadlineClass = (typed_task) => {
+    const diff = new Date(typed_task.due_date) - new Date();
+    if (diff < 0) return "text-red-500";
+    if (diff < 24 * 60 * 60 * 1000) return "text-yellow-500";
+    return "text-gray-500";
+};
 
+const showTypedTaskDeadlineString = (typed_task) => {
+    return (
+        typed_task.task_states.length === 0 ||
+        !typed_task.task_states.every(
+            (state) =>
+                state.state === State.COMPLETED ||
+                state.state === State.CANCELED
+        )
+    );
+};
 const sections = [
     {
         label: "Мероприятия и задачи",
