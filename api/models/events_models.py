@@ -116,35 +116,25 @@ class EventGroup(Base, AuditableMixin):
     link = Column(Text, nullable=False, default="")
     events = relationship(
         "Event",
-        primaryjoin="EventGroup.id == EventGroupAssociation.group_id",
-        secondary="event_group_associations",
-        back_populates="group"
+        back_populates="group",
+        foreign_keys=[Event.group_id],
+        cascade="all, delete-orphan",
+        single_parent=True
     )
-
-
-class EventGroupAssociation(Base):
-    __tablename__ = "event_group_associations"
-
-    event_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey('events.id', ondelete='CASCADE'),
-        primary_key=True
+    period_start = column_property(
+        select(func.min(Event.date)).where(
+            Event.group_id == id
+        ).correlate_except(Event).scalar_subquery()
     )
-    group_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey('event_groups.id', ondelete='CASCADE'),
-        primary_key=True
+    period_end = column_property(
+        select(func.max(Event.date)).where(
+            Event.group_id == id
+        ).correlate_except(Event).scalar_subquery()
     )
-
-    event = relationship(
-        "Event",
-        foreign_keys=[event_id],
-        overlaps="groups,event_group_associations,events"
-    )
-    group = relationship(
-        "EventGroup",
-        foreign_keys=[group_id],
-        overlaps="events,event_group_associations"
+    events_count = column_property(
+        select(func.count(Event.id)).where(
+            Event.group_id == id
+        ).correlate_except(Event).scalar_subquery()
     )
 
 

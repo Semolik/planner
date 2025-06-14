@@ -4,6 +4,7 @@
 /* eslint-disable */
 import type { EventGroupCreate } from '../models/EventGroupCreate';
 import type { EventGroupRead } from '../models/EventGroupRead';
+import type { EventGroupReadShort } from '../models/EventGroupReadShort';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -30,17 +31,23 @@ export class EventsGroupsService {
     /**
      * Search Event Groups
      * @param query
-     * @returns EventGroupRead Successful Response
+     * @param page
+     * @param filter
+     * @returns EventGroupReadShort Successful Response
      * @throws ApiError
      */
     public static searchEventGroupsEventsGroupsSearchGet(
         query?: string,
-    ): CancelablePromise<Array<EventGroupRead>> {
+        page: number = 1,
+        filter: 'all' | 'active' | 'passed' = 'all',
+    ): CancelablePromise<Array<EventGroupReadShort>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/events/groups/search',
             query: {
                 'query': query,
+                'page': page,
+                'filter': filter,
             },
             errors: {
                 422: `Validation Error`,
@@ -86,52 +93,6 @@ export class EventsGroupsService {
             },
             query: {
                 'remove_events': removeEvents,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Add Event To Group
-     * @param groupId
-     * @param eventId
-     * @returns void
-     * @throws ApiError
-     */
-    public static addEventToGroupEventsGroupsGroupIdEventsEventIdPost(
-        groupId: string,
-        eventId: string,
-    ): CancelablePromise<void> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/events/groups/{group_id}/events/{event_id}',
-            path: {
-                'group_id': groupId,
-                'event_id': eventId,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Remove Event From Group
-     * @param groupId
-     * @param eventId
-     * @returns void
-     * @throws ApiError
-     */
-    public static removeEventFromGroupEventsGroupsGroupIdEventsEventIdDelete(
-        groupId: string,
-        eventId: string,
-    ): CancelablePromise<void> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/events/groups/{group_id}/events/{event_id}',
-            path: {
-                'group_id': groupId,
-                'event_id': eventId,
             },
             errors: {
                 422: `Validation Error`,

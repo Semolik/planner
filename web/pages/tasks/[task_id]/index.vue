@@ -649,11 +649,24 @@ const typed_tasks = computed(() => {
     );
 });
 
-const typedTasksLabels = {
-    [UserRole.PHOTOGRAPHER]: "Фотографы",
-    [UserRole.DESIGNER]: "Дизайнер",
-    [UserRole.COPYWRITER]: "Копирайтер",
-};
+const typedTasksLabels = computed(() => {
+    const labels = {};
+    for (const typed_task of task.value.typed_tasks) {
+        const role = typed_task.task_type;
+        labels[role] = typed_task.for_single_user
+            ? {
+                  [UserRole.PHOTOGRAPHER]: "Фотограф",
+                  [UserRole.DESIGNER]: "Дизайнер",
+                  [UserRole.COPYWRITER]: "Копирайтер",
+              }[role]
+            : {
+                  [UserRole.PHOTOGRAPHER]: "Фотографы",
+                  [UserRole.DESIGNER]: "Дизайнеры",
+                  [UserRole.COPYWRITER]: "Копирайтеры",
+              }[role];
+    }
+    return labels;
+});
 
 const typedTasksLabelsModal = {
     [UserRole.PHOTOGRAPHER]: "Фотографа",

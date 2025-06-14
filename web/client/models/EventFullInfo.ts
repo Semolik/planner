@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { EventGroupReadShort } from './EventGroupReadShort';
 import type { TaskWithoutEventRead } from './TaskWithoutEventRead';
 export type EventFullInfo = {
     name: string;
@@ -19,6 +20,7 @@ export type EventFullInfo = {
     level: string;
     level_id: string;
     is_passed?: boolean;
+    group?: (EventGroupReadShort | null);
     task: TaskWithoutEventRead;
 };
 

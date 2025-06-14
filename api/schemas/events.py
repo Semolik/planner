@@ -52,11 +52,33 @@ class TaskStateBase(UserReadShort):
         from_attributes = True
 
 
+class EventGroupBase(BaseModel):
+    name: str
+    description: str
+    organizer: str
+    link: str
+
+
+class EventGroupCreate(EventGroupBase):
+    pass
+
+
+class EventGroupReadShort(EventGroupBase):
+    id: uuid.UUID
+    events_count: int
+    period_start: date | None = None
+    period_end: date | None = None
+
+    class Config:
+        from_attributes = True
+
+
 class EventRead(EventBase):
     id: uuid.UUID
     level: str
     level_id: uuid.UUID
     is_passed: bool = False
+    group: EventGroupReadShort | None = None
 
     class Config:
         from_attributes = True
@@ -156,19 +178,8 @@ class EventFullInfo(EventRead):
         from_attributes = True
 
 
-class EventGroupBase(BaseModel):
-    name: str
-    description: str
-    organizer: str
-    link: str
+class EventGroupRead(EventGroupReadShort):
 
-
-class EventGroupCreate(EventGroupBase):
-    pass
-
-
-class EventGroupRead(EventGroupBase):
-    id: uuid.UUID
     events: List[EventFullInfo]
 
     class Config:

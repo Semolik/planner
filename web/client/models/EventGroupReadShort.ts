@@ -2,8 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { EventFullInfo } from './EventFullInfo';
-export type EventGroupRead = {
+export type EventGroupReadShort = {
     name: string;
     description: string;
     organizer: string;
@@ -12,6 +11,5 @@ export type EventGroupRead = {
     events_count: number;
     period_start?: (string | null);
     period_end?: (string | null);
-    events: Array<EventFullInfo>;
 };
 

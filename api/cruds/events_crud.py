@@ -1,16 +1,17 @@
+from typing import Literal
 from sqlalchemy.sql import and_, exists
 from sqlalchemy.sql import and_
 from datetime import datetime, time
 import uuid
 
-from sqlalchemy import or_, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.orm import selectinload, joinedload
 
 from cruds.tasks_crud import TasksCRUD
 from cruds.base_crud import BaseCRUD
 from models.user_models import User, UserRole
 from models.events_models import Event
-from models.events_models import Task, TypedTask, TaskState, EventGroup, EventGroupAssociation, EventLevel
+from models.events_models import Task, TypedTask, TaskState, EventGroup, EventLevel
 
 
 class EventsCRUD(BaseCRUD):
@@ -93,22 +94,6 @@ class EventsCRUD(BaseCRUD):
         result = await self.db.execute(query)
         return result.scalars().first()
 
-    async def add_event_to_group(self, group_id: uuid.UUID, event_id: uuid.UUID):
-        event_group_association = EventGroupAssociation(
-            group_id=group_id,
-            event_id=event_id
-        )
-        await self.create(event_group_association)
-        return event_group_association
-
-    async def get_event_group_association(self, group_id: uuid.UUID, event_id: uuid.UUID):
-        query = select(EventGroupAssociation).where(
-            EventGroupAssociation.group_id == group_id,
-            EventGroupAssociation.event_id == event_id
-        )
-        result = await self.db.execute(query)
-        return result.scalars().first()
-
     def _get_event_options(self):
         return (
             joinedload(Event.task)
@@ -181,16 +166,10 @@ class EventsCRUD(BaseCRUD):
         return await self.update(level)
 
     async def delete_group_events(self, group_id: uuid.UUID):
-        query = select(EventGroupAssociation).where(
-            EventGroupAssociation.group_id == group_id).options(
-                EventGroupAssociation.event)
-        result = await self.db.execute(query)
-        associations = result.scalars().all()
-        for association in associations:
-            await self.delete(association)
-            await self.delete(association.event)
+        query = delete(Event).where(Event.group_id == group_id)
+        await self.db.execute(query)
 
-    async def search_event_groups(self, query: str | None, page: int = 1, per_page: int = 10) -> list[EventGroup]:
+    async def search_event_groups(self, query: str | None, page: int = 1, per_page: int = 10, filter: Literal['all', 'active', 'passed'] = 'all') -> list[EventGroup]:
 
         end = page * per_page
         start = end - per_page

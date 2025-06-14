@@ -43,8 +43,6 @@ async def create_event(event: EventCreate, db=Depends(get_async_session)):
         group_id=event.group_id,
         level_id=event.level_id
     )
-    if event.group_id is not None:
-        await EventsCRUD(db).add_event_to_group(group_id=event.group_id, event_id=db_event.id)
 
     task = await TasksCRUD(db).create_task(
         name="Освещение мероприятия",

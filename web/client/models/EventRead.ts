@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { EventGroupReadShort } from './EventGroupReadShort';
 export type EventRead = {
     name: string;
     date: string;
@@ -18,5 +19,6 @@ export type EventRead = {
     level: string;
     level_id: string;
     is_passed?: boolean;
+    group?: (EventGroupReadShort | null);
 };
 

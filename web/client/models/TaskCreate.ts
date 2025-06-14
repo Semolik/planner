@@ -2,9 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { CreateTypedTask } from './CreateTypedTask';
+import type { UpdateTypedTask } from './UpdateTypedTask';
 export type TaskCreate = {
     name: string;
-    typed_tasks?: Record<string, (CreateTypedTask | null)>;
+    typed_tasks?: Record<string, (UpdateTypedTask | null)>;
 };
 

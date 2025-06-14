@@ -161,7 +161,7 @@ definePageMeta({
 const { task_id } = useRoute().params;
 const task = ref(await TasksService.getTaskByIdTasksTaskIdGet(task_id));
 const selectGroupOpen = ref(false);
-const selectedGroup = ref(null);
+const selectedGroup = ref(task.value.event ? task.value.event.group : null);
 
 const currentDate = ref(new Date().toISOString().slice(0, 10));
 
