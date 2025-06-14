@@ -4,6 +4,27 @@
             <div v-for="(label, role) in labels" :key="role" class="task-role">
                 <div class="header">
                     <div class="label">{{ label[0] }}</div>
+                    <div class="badges" v-if="typedTasks[role]">
+                        <div class="badge">
+                            дедлайн {{ typedTasks[role].due_date_string }}
+                        </div>
+                        <div
+                            class="badge"
+                            v-if="typedTasks[role].task_states.length > 0"
+                        >
+                            {{ typedTasks[role].task_states.length }}
+                            {{
+                                usePluralize(
+                                    typedTasks[role].task_states.length,
+                                    [
+                                        "исполнитель",
+                                        "исполнителя",
+                                        "исполнителей",
+                                    ]
+                                )
+                            }}
+                        </div>
+                    </div>
                     <div class="actions">
                         <div
                             class="button"
@@ -25,7 +46,7 @@
                             <Icon name="material-symbols:delete" />
                         </div>
                         <div
-                            class="button add"
+                            class="button"
                             v-else
                             @click="openCreateModal(role)"
                         >
@@ -122,9 +143,18 @@ const labels = {
 
 const typedTasks = computed(() => {
     return Object.keys(labels).reduce((acc, role) => {
-        const filtered = task.value.typed_tasks.filter(
-            (t) => t.task_type === role
-        );
+        const filtered = task.value.typed_tasks
+            .filter((t) => t.task_type === role)
+            .map((t) => ({
+                ...t,
+                due_date_string: t.due_date
+                    ? new Date(t.due_date).toLocaleDateString("ru-RU", {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                      })
+                    : "",
+            }));
         acc[role] = filtered.length > 0 ? filtered[0] : null;
         return acc;
     }, {});
@@ -174,12 +204,14 @@ watch([() => editModalOpened.value, currentEditRole], ([isOpen, role]) => {
                     date,
                     appSettingsStore.settings.photographers_deadline
                 );
+                form.value.forSingleUser = false;
                 break;
             case UserRole.COPYWRITER:
                 form.value.dueDate = addDaysToDate(
                     date,
                     appSettingsStore.settings.copywriters_deadline
                 );
+                form.value.forSingleUser = true;
                 break;
             case UserRole.DESIGNER:
                 form.value.dueDate = addDaysToDate(
@@ -187,6 +219,7 @@ watch([() => editModalOpened.value, currentEditRole], ([isOpen, role]) => {
                     appSettingsStore.settings.photographers_deadline +
                         appSettingsStore.settings.designers_deadline
                 );
+                form.value.forSingleUser = false;
                 break;
         }
     }
@@ -323,11 +356,24 @@ async function deleteTypedTask(role) {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-
+                gap: 10px;
                 .label {
                     margin-left: 10px;
+                    margin-bottom: 4px;
                 }
+                .badges {
+                    display: flex;
+                    gap: 8px;
+                    width: 100%;
 
+                    .badge {
+                        padding: 0px 10px;
+                        background-color: black;
+                        color: white;
+                        border-radius: 10px;
+                        font-size: 14px;
+                    }
+                }
                 .actions {
                     display: flex;
                     gap: 8px;
@@ -355,13 +401,6 @@ async function deleteTypedTask(role) {
                             }
                             &:hover {
                                 background-color: $accent-red-hover;
-                            }
-                        }
-
-                        &.add {
-                            background-color: #10b981;
-                            &:hover {
-                                background-color: #059669;
                             }
                         }
                     }
