@@ -47,144 +47,141 @@
                             {{ task.event.description }}
                         </div>
                     </div>
-                    <div
-                        class="section"
-                        v-for="typed_task in typed_tasks"
-                        :key="typed_task.id"
-                    >
-                        <div class="section-head">
-                            <div class="flex justify-between items-center">
-                                <span
-                                    >{{
-                                        typedTasksLabels[typed_task.task_type]
-                                    }}
-                                </span>
-                                <span
-                                    v-if="
-                                        showTypedTaskDeadlineString(typed_task)
-                                    "
-                                    class="text-sm font-normal"
-                                    :class="
-                                        getTypedTaskDeadlineClass(typed_task)
-                                    "
-                                >
-                                    Дедлайн
-                                    {{ getTypedTaskDeadline(typed_task) }}
-                                </span>
-                            </div>
+                </template>
+                <div
+                    class="section"
+                    v-for="typed_task in typed_tasks"
+                    :key="typed_task.id"
+                >
+                    <div class="section-head">
+                        <div class="flex justify-between items-center">
+                            <span
+                                >{{ typedTasksLabels[typed_task.task_type] }}
+                            </span>
+                            <span
+                                v-if="showTypedTaskDeadlineString(typed_task)"
+                                class="text-sm font-normal"
+                                :class="getTypedTaskDeadlineClass(typed_task)"
+                            >
+                                Дедлайн
+                                {{ getTypedTaskDeadline(typed_task) }}
+                            </span>
                         </div>
-                        <div class="section-content">
-                            <div class="flex gap-1">
-                                <app-button
-                                    active
-                                    mini
-                                    v-if="
-                                        showTakeInWorkButton &&
-                                        !typed_task.has_my_state
-                                    "
-                                    class="w-full"
-                                    @click="
-                                        () => {
-                                            selectedTypedTask = typed_task;
-                                            selectedUser = userData;
-                                            setMeToTaskModalActive = true;
-                                        }
-                                    "
-                                >
-                                    Взять в работу
-                                </app-button>
-                                <app-button
-                                    active
-                                    mini
-                                    class="w-full"
-                                    v-else-if="typed_task.has_my_state"
-                                    outline
-                                    @click="
-                                        () => {
-                                            selectedUser = userData;
-                                            selectedTypedTask = typed_task;
-                                            removeMeFromTaskModalActive = true;
-                                        }
-                                    "
-                                >
-                                    Отказаться от задачи
-                                </app-button>
-                                <app-button
-                                    active
-                                    mini
-                                    class="w-full"
-                                    v-if="authStore.isAdmin"
-                                    @click="
-                                        () => {
-                                            selectedTypedTask = typed_task;
-                                            selectUserModalActive = true;
-                                        }
-                                    "
-                                >
-                                    Назначить исполнителя
-                                </app-button>
-                            </div>
+                    </div>
 
-                            <div class="users" v-auto-animate>
-                                <div
-                                    class="user-item"
-                                    v-for="status in typed_task.task_states"
-                                    :key="status.user.id"
-                                    @click="() => openStateModal(status)"
-                                >
-                                    <div class="user-item-info">
-                                        <div class="name">
-                                            {{ useFullName(status.user) }}
-                                        </div>
-                                        <div
-                                            class="period"
-                                            v-if="status.period"
-                                        >
-                                            {{
-                                                status.period.period_start
-                                                    .split(":")
-                                                    .slice(0, 2)
-                                                    .join(":")
-                                            }}
-                                            -
-                                            {{
-                                                status.period.period_end
-                                                    .split(":")
-                                                    .slice(0, 2)
-                                                    .join(":")
-                                            }}
-                                        </div>
-                                        <div :class="['state', status.state]">
-                                            <Icon
-                                                name="material-symbols:check"
-                                                v-if="
-                                                    status.state ===
-                                                    State.COMPLETED
-                                                "
-                                            />
-                                            <Icon
-                                                name="material-symbols:hourglass-top"
-                                                v-else-if="
-                                                    status.state ===
-                                                    State.PENDING
-                                                "
-                                            />
-                                            <Icon
-                                                name="material-symbols:close-rounded"
-                                                v-else
-                                            />
-                                        </div>
+                    <div class="section-content">
+                        <div
+                            class="section-description"
+                            v-if="typed_task.description"
+                        >
+                            {{ typed_task.description }}
+                        </div>
+                        <div class="flex gap-1">
+                            <app-button
+                                active
+                                mini
+                                v-if="
+                                    showTakeInWorkButton &&
+                                    !typed_task.has_my_state
+                                "
+                                class="w-full"
+                                @click="
+                                    () => {
+                                        selectedTypedTask = typed_task;
+                                        selectedUser = userData;
+                                        setMeToTaskModalActive = true;
+                                    }
+                                "
+                            >
+                                Взять в работу
+                            </app-button>
+                            <app-button
+                                active
+                                mini
+                                class="w-full"
+                                v-else-if="typed_task.has_my_state"
+                                outline
+                                @click="
+                                    () => {
+                                        selectedUser = userData;
+                                        selectedTypedTask = typed_task;
+                                        removeMeFromTaskModalActive = true;
+                                    }
+                                "
+                            >
+                                Отказаться от задачи
+                            </app-button>
+                            <app-button
+                                active
+                                mini
+                                class="w-full"
+                                v-if="authStore.isAdmin"
+                                @click="
+                                    () => {
+                                        selectedTypedTask = typed_task;
+                                        selectUserModalActive = true;
+                                    }
+                                "
+                            >
+                                Назначить исполнителя
+                            </app-button>
+                        </div>
+
+                        <div class="users" v-auto-animate>
+                            <div
+                                class="user-item"
+                                v-for="status in typed_task.task_states"
+                                :key="status.user.id"
+                                @click="() => openStateModal(status)"
+                            >
+                                <div class="user-item-info">
+                                    <div class="name">
+                                        {{ useFullName(status.user) }}
+                                    </div>
+                                    <div class="period" v-if="status.period">
+                                        {{
+                                            status.period.period_start
+                                                .split(":")
+                                                .slice(0, 2)
+                                                .join(":")
+                                        }}
+                                        -
+                                        {{
+                                            status.period.period_end
+                                                .split(":")
+                                                .slice(0, 2)
+                                                .join(":")
+                                        }}
+                                    </div>
+                                    <div :class="['state', status.state]">
+                                        <Icon
+                                            name="material-symbols:check"
+                                            v-if="
+                                                status.state === State.COMPLETED
+                                            "
+                                        />
+                                        <Icon
+                                            name="material-symbols:hourglass-top"
+                                            v-else-if="
+                                                status.state === State.PENDING
+                                            "
+                                        />
+                                        <Icon
+                                            name="material-symbols:close-rounded"
+                                            v-else
+                                        />
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="section">
-                        <div class="section-head">
-                            Уровень мероприятия: {{ task.event.level }}
-                        </div>
+                </div>
+                <div class="section" v-if="task.event">
+                    <div class="section-head">
+                        Уровень мероприятия: {{ task.event.level }}
                     </div>
-                </template>
+                </div>
+
                 <div v-if="authStore.isAdmin" class="grid grid-cols-2 gap-2">
                     <app-button
                         active
@@ -915,6 +912,12 @@ function minutesToTime(minutes) {
                 display: flex;
                 flex-direction: column;
                 gap: 8px;
+
+                .section-description {
+                    font-size: 14px;
+                    color: $text-color-secondary;
+                }
+
                 .users {
                     display: flex;
                     flex-direction: column;

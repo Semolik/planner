@@ -29,6 +29,7 @@
                         <nuxt-link
                             class="link"
                             @click.stop.prevent="dropdownOpen = false"
+                            :to="{ name: routesNames.tasksAdd }"
                         >
                             задачу
                         </nuxt-link>

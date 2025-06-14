@@ -233,6 +233,15 @@ class TypedTask(Base, AuditableMixin):
         viewonly=True
     )
 
+    field_labels = {
+        "task_id": "Задача",
+        "task_type": "Тип задачи",
+        "description": "Описание",
+        "for_single_user": "Для одного пользователя",
+        "link": "Ссылка на задачу",
+        "due_date": "Срок выполнения"
+    }
+
 
 class State(enum.Enum):
     PENDING = "pending"

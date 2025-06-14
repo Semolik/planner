@@ -27,6 +27,7 @@ export type { Settings } from './models/Settings';
 export type { SettingsUpdate } from './models/SettingsUpdate';
 export { State } from './models/State';
 export type { StatePeriod } from './models/StatePeriod';
+export type { TaskCreate } from './models/TaskCreate';
 export type { TaskRead } from './models/TaskRead';
 export type { TaskReadShort } from './models/TaskReadShort';
 export type { TaskWithoutEventRead } from './models/TaskWithoutEventRead';

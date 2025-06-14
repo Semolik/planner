@@ -85,7 +85,7 @@
     </UModal>
 
     <UModal
-        v-if="editModalOpened"
+        v-if="currentEditRole"
         v-model:open="editModalOpened"
         :title="`${isEditing ? 'Подзадача' : 'Создать подзадачу для'}  ${
             labels[currentEditRole][1]

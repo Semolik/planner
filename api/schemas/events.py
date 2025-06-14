@@ -110,6 +110,11 @@ class CreateTypedTask(UpdateTypedTask):
     task_type: UserRole
 
 
+class TaskCreate(BaseModel):
+    name: str
+    typed_tasks: dict[UserRole, UpdateTypedTask | None] = {}
+
+
 class TypedTaskRead(CreateTypedTask):
     id: uuid.UUID
     task_states: List[TypedTaskState]

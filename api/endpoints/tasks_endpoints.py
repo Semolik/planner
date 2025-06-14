@@ -1,6 +1,6 @@
 from datetime import time
 from typing import Annotated, Union
-from schemas.events import CreateTypedTask, TaskRead, TypedTaskReadFull
+from schemas.events import CreateTypedTask, TaskCreate, TaskRead, TypedTaskReadFull
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Header
 from cruds.tasks_crud import TasksCRUD
@@ -98,3 +98,25 @@ async def delete_task(
     if task is None:
         raise HTTPException(status_code=404, detail="Task not found")
     await TasksCRUD(db).delete(task)
+
+
+@api_router.post('/', dependencies=[Depends(current_superuser)], status_code=201, response_model=TaskRead)
+async def create_task(
+    data: TaskCreate,
+    db=Depends(get_async_session)
+):
+    task = await TasksCRUD(db).create_task(
+        name=data.name,
+        event_id=None,
+    )
+    for role, typed_task_data in data.typed_tasks.items():
+        if typed_task_data is not None:
+            await TasksCRUD(db).create_typed_task(
+                task_id=task.id,
+                task_type=role,
+                description=typed_task_data.description,
+                link=typed_task_data.link,
+                due_date=typed_task_data.due_date,
+                for_single_user=typed_task_data.for_single_user
+            )
+    return await TasksCRUD(db).get_task_by_id(task_id=task.id)

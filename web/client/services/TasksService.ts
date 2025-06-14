@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { CreateTypedTask } from '../models/CreateTypedTask';
+import type { TaskCreate } from '../models/TaskCreate';
 import type { TaskRead } from '../models/TaskRead';
 import type { TypedTaskReadFull } from '../models/TypedTaskReadFull';
 import type { UserRole } from '../models/UserRole';
@@ -129,6 +130,25 @@ export class TasksService {
             path: {
                 'task_id': taskId,
             },
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Create Task
+     * @param requestBody
+     * @returns TaskRead Successful Response
+     * @throws ApiError
+     */
+    public static createTaskTasksPost(
+        requestBody: TaskCreate,
+    ): CancelablePromise<TaskRead> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/tasks/',
             body: requestBody,
             mediaType: 'application/json',
             errors: {
