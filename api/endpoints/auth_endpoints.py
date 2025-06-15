@@ -1,10 +1,14 @@
-from core.users_controller import auth_backend, fastapi_users
-from schemas.users import UserCreate, UserReadShortWithEmail, UserRead
+import requests
+from core.users_controller import auth_backend, fastapi_users, get_jwt_strategy
+from schemas.users import UserCreate, UserReadShortWithEmail, UserRead, VKAuthParams
 from core.users_controller import current_superuser, create_user, optional_current_user
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from cruds.users_crud import UsersCRUD
 from cruds.institutes_crud import InstitutesCRUD
 from db.session import get_async_session
+from core.config import settings
+
+from fastapi.logger import logger
 
 
 api_router = APIRouter(prefix="/auth", tags=["auth"])
@@ -45,3 +49,42 @@ async def register_user(user: UserCreate, db=Depends(get_async_session), current
         print("\033[93mАдминистратор создан\033[0m")
     print(user)
     return await users_crud.get_user_by_id(user.id)
+
+
+@api_router.post("/vk/callback")
+async def vk_callback(
+        body: VKAuthParams,
+        db=Depends(get_async_session)):
+    response = requests.post(
+        "https://id.vk.com/oauth2/auth", data={
+            "grant_type": "authorization_code",
+            "code_verifier": body.code_verifier,
+            "code": body.code,
+            "client_id": settings.VK_APP,
+            "device_id": body.device_id,
+            "state": body.state,
+            "redirect_uri": settings.HOST,
+        })
+    if response.json().get('error'):
+        logger.error(f"VK auth error: {response.json()}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Ошибка авторизации'
+        )
+    user_request = requests.post('https://id.vk.com/oauth2/user_info', data={
+        "client_id": settings.VK_APP,
+        "access_token": response.json()['access_token']
+    })
+    user = user_request.json()['user']
+    vk_user_id = int(user['user_id'])
+    db_user = await UsersCRUD(db).get_user_by_vk_id(vk_user_id)
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Пользователь не найден'
+        )
+    response = await auth_backend.login(
+        strategy=get_jwt_strategy(),
+        user=db_user
+    )
+    return response

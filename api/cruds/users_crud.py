@@ -14,6 +14,11 @@ class UsersCRUD(BaseCRUD):
             selectinload(User.institute), selectinload(User.roles_objects)))
         return query.scalars().first()
 
+    async def get_user_by_vk_id(self, vk_id: int) -> User:
+        query = select(User).where(User.vk_id == vk_id)
+        result = await self.db.execute(query)
+        return result.scalars().first()
+
     async def get_user_by_username(self, username: str) -> User:
         user = select(User).where(User.username == username)
         result = await self.db.execute(user)

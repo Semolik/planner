@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     COPYWRITERS_DEADLINE_DEFAULT: int = 4  # Количество дней на создание текста
     # Количество дней на создание обложки на альбом (дни после выгрузки репортажа)
     DESIGNERS_DEADLINE_DEFAULT: int = 2
+    VK_APP: int
+    HOST: str
 
     @property
     def POSTGRES_URI(self) -> PostgresDsn:

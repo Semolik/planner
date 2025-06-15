@@ -44,6 +44,7 @@ export type { UserReadWithEmail } from './models/UserReadWithEmail';
 export { UserRole } from './models/UserRole';
 export type { UserUpdate } from './models/UserUpdate';
 export type { ValidationError } from './models/ValidationError';
+export type { VKAuthParams } from './models/VKAuthParams';
 
 export { AuthService } from './services/AuthService';
 export { EventsService } from './services/EventsService';

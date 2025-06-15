@@ -1,5 +1,7 @@
 import asyncio
 from utilities.vk import VKUtils
+from fastapi.middleware.cors import CORSMiddleware
+from core.config import settings
 from endpoints.settings_endpoints import api_router as settings_router
 from endpoints.institutes_endpoints import api_router as institutes_router
 from endpoints.files_endpoints import api_router as files_router
@@ -45,3 +47,10 @@ async def lifespan_wrapper(app):
     # loop = asyncio.get_event_loop()
     # await VKUtils().start_bot(loop)
 app.router.lifespan_context = lifespan_wrapper
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.BACKEND_CORS_ORIGINS_LIST,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["Content-Type", "Set-Cookie"]
+)

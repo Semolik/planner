@@ -84,3 +84,10 @@ class UserReadWithEmail(UserRead, BaseUserUsername):
 class UserUpdate(UserCreate, BaseUserUsername):
     password: str | None = None
     institute_id: uuid.UUID | None = None
+
+
+class VKAuthParams(BaseModel):
+    code: str
+    code_verifier: str
+    device_id: str
+    state: str

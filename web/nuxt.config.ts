@@ -16,6 +16,9 @@ export default defineNuxtConfig({
     ui: {
         colorMode: false,
     },
+    devServer: {
+        port: 80,
+    },
     viewport: {
         breakpoints: {
             xs: 360,
@@ -24,6 +27,12 @@ export default defineNuxtConfig({
             lg: 992,
             xl: 1200,
             xxl: 1400,
+        },
+    },
+    runtimeConfig: {
+        public: {
+            vkAppId: 0,
+            apiBaseUrl: "",
         },
     },
     icon: {

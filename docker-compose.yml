@@ -8,6 +8,8 @@ services:
       - ./uploads/images:/uploads/images
     env_file:
       - .env
+    environment:
+      - HOST=http://localhost
     restart: always
     command: uvicorn main:app --host 0.0.0.0 --reload --port 8000
     depends_on:

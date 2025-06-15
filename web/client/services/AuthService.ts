@@ -5,6 +5,7 @@
 import type { Body_auth_jwt_login_auth_jwt_login_post } from '../models/Body_auth_jwt_login_auth_jwt_login_post';
 import type { UserCreate } from '../models/UserCreate';
 import type { UserRead } from '../models/UserRead';
+import type { VKAuthParams } from '../models/VKAuthParams';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -55,6 +56,25 @@ export class AuthService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/auth/register',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Vk Callback
+     * @param requestBody
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static vkCallbackAuthVkCallbackPost(
+        requestBody: VKAuthParams,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/auth/vk/callback',
             body: requestBody,
             mediaType: 'application/json',
             errors: {
