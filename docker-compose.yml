@@ -6,6 +6,7 @@ services:
     volumes:
       - ./api:/usr/src
       - ./uploads/images:/uploads/images
+      - ./uploads/files:/uploads/files
     env_file:
       - .env
     environment:

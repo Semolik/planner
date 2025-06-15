@@ -4,6 +4,9 @@
 <script setup>
 import { useAuthStore } from "~/stores/auth";
 const authStore = useAuthStore();
+useSeoMeta({
+    title: "Мой профиль",
+});
 definePageMeta({
     middleware: ["user"],
 });

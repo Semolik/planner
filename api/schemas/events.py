@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, date, time
 import uuid
+from schemas.files import ImageInfo, File
 from models.events_models import State
 from schemas.users import UserReadShort, UserRole
 from pydantic import Field
@@ -160,6 +161,8 @@ class TypedTaskReadFull(TypedTaskRead):
 
 class TaskRead(TaskReadShort):
     typed_tasks: List[TypedTaskRead]
+    images: List[ImageInfo]
+    files: List[File]
 
     class Config:
         from_attributes = True

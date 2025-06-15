@@ -1,5 +1,21 @@
 <template>
     <page-container header="Tasks">
+        <app-input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Поиск по задачам и мероприятиям"
+        />
+        <div class="filters">
+            <div
+                class="filter-item"
+                v-for="filter in filters"
+                :class="{ active: filter.active }"
+                @click="selectFilter(filter)"
+            >
+                <Icon :name="filter.icon" />
+                <span>{{ filter.label }}</span>
+            </div>
+        </div>
         <div class="tasks-page" ref="container">
             <div v-if="gridInitialized" ref="scroller" class="scroller">
                 <div class="tasks-grid">
@@ -23,6 +39,7 @@ useSeoMeta({
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const searchQuery = ref("");
 
 if (!route.query.token && !authStore.logined) {
     router.push("/login");
@@ -37,7 +54,19 @@ const page = ref(1);
 const hasMore = ref(true);
 const gridColumns = ref(3);
 const gap = ref(10);
-
+const filters = ref([
+    { label: "Все", icon: "material-symbols:all-inclusive", active: true },
+    {
+        label: "Выполненные",
+        icon: "material-symbols:check-circle",
+        active: false,
+    },
+    { label: "Не выполненные", icon: "material-symbols:cancel", active: false },
+]);
+const selectFilter = (filter) => {
+    filters.value.forEach((f) => (f.active = false));
+    filter.active = true;
+};
 const loadEvents = async () => {
     if (loading.value || !hasMore.value) return;
 
@@ -76,7 +105,6 @@ const calculateGrid = () => {
     }
 };
 
-// Настройка бесконечного скролла
 useInfiniteScroll(
     scroller,
     async () => {
@@ -127,6 +155,27 @@ onUnmounted(() => {
         align-items: center;
         padding: 20px;
         color: #666;
+    }
+}
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+
+    .filter-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        color: $text-color;
+        border: 1px solid $text-color;
+
+        &.active {
+            background-color: $text-color;
+            color: white;
+        }
     }
 }
 </style>

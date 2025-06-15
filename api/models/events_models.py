@@ -143,7 +143,7 @@ class Task(Base):
     name = Column(String, nullable=False)
     event_id = Column(
         UUID(as_uuid=True),
-        ForeignKey('events.id', ondelete='CASCADE'),  # Ensure CASCADE here
+        ForeignKey('events.id', ondelete='CASCADE'),
         nullable=True
     )
 
@@ -159,6 +159,64 @@ class Task(Base):
     typed_tasks = relationship(
         "TypedTask",
         back_populates="parent_task",
+        cascade="all, delete-orphan",
+        single_parent=True
+    )
+    files = relationship(
+        "File",
+        secondary="task_files",
+        overlaps="task_files",
+        viewonly=True
+    )
+    images = relationship(
+        "Image",
+        secondary="task_images",
+        overlaps="task_images",
+        viewonly=True
+    )
+
+
+class TaskFile(Base):
+    __tablename__ = "task_files"
+
+    task_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey('tasks.id', ondelete='CASCADE'),
+        primary_key=True
+    )
+    file_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey('files.id', ondelete='CASCADE'),
+        primary_key=True
+    )
+    file = relationship(
+        "File",
+        foreign_keys=[file_id],
+        uselist=False,
+        overlaps="task_files",
+        cascade="all, delete-orphan",
+        single_parent=True
+    )
+
+
+class TaskImage(Base):
+    __tablename__ = "task_images"
+
+    task_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey('tasks.id', ondelete='CASCADE'),
+        primary_key=True
+    )
+    image_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey('images.id', ondelete='CASCADE'),
+        primary_key=True
+    )
+    image = relationship(
+        "Image",
+        foreign_keys=[image_id],
+        uselist=False,
+        overlaps="task_images",
         cascade="all, delete-orphan",
         single_parent=True
     )

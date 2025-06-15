@@ -134,7 +134,6 @@ aside {
             .name {
                 font-size: 18px;
                 font-weight: bold;
-                margin-left: 10px;
             }
         }
     }

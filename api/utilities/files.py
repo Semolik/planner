@@ -7,9 +7,11 @@ from pathlib import Path
 from models.files_models import Image
 from PIL import Image as PillowImage
 from cruds.base_crud import BaseCRUD
+from models.files_models import File
 
 CONTENT_FOLDER = '/uploads'
 IMAGES_FOLDER = 'images'
+FILES_FOLDER = 'files'
 IMAGES_EXTENSION = '.png'
 SUPPORTED_IMAGE_EXTENSIONS = {
     ext for ext, fmt in PillowImage.registered_extensions().items() if fmt in PillowImage.OPEN
@@ -22,6 +24,10 @@ def get_image_path(image: Image) -> str:
 
 def get_image_link(image_id: UUID) -> str:
     return f"/api/images/{image_id}"
+
+
+def get_file_link(file_id: UUID) -> str:
+    return f"/api/files/{file_id}"
 
 
 async def save_image(db: AsyncSession, upload_file: UploadFile, resize_image_options=(400, 400),
@@ -48,3 +54,22 @@ async def save_image(db: AsyncSession, upload_file: UploadFile, resize_image_opt
         return image_model
     except Exception:
         raise HTTPException(status_code=422, detail=detail_error_message)
+
+
+def get_file_path(file: File) -> str:
+    return f"{CONTENT_FOLDER}/{FILES_FOLDER}/{file.id}"
+
+
+async def save_file(db: AsyncSession, upload_file: UploadFile) -> File:
+
+    content = await upload_file.read()
+
+    original_file_name = upload_file.filename
+    buf = io.BytesIO(content)
+    buf.name = original_file_name
+
+    file_model = await BaseCRUD(db).create(File(file_name=original_file_name))
+    file_path = get_file_path(file=file_model)
+    with open(file_path, 'wb') as f:
+        f.write(buf.read())
+    return file_model

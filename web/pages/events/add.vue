@@ -117,9 +117,36 @@
             </template>
         </UCollapsible>
 
-        <app-button :active="buttonActive" @click="createEvent">
-            Создать мероприятие
-        </app-button>
+        <div class="flex gap-2">
+            <UDropdownMenu
+                :items="items"
+                :content="{
+                    align: 'start',
+                    side: 'top',
+                    sideOffset: 8,
+                }"
+            >
+                <app-button active>
+                    <Icon name="material-symbols:attach-file" />
+                </app-button>
+                <template #item="{ item }">
+                    <app-button active class="!rounded-sm">
+                        <div class="flex items-center gap-1">
+                            <Icon :name="item.icon" />
+                            {{ item.label }}
+                        </div>
+                    </app-button>
+                </template>
+            </UDropdownMenu>
+
+            <app-button
+                :active="buttonActive"
+                @click="createEvent"
+                class="w-full"
+            >
+                Создать мероприятие
+            </app-button>
+        </div>
     </app-form>
 </template>
 <script setup>
@@ -134,6 +161,7 @@ definePageMeta({
 const tasksSettingsOpen = ref(false);
 const selectGroupOpen = ref(false);
 
+const { $toast } = useNuxtApp();
 const name = ref("");
 const date = ref("");
 const description = ref("");
@@ -145,7 +173,18 @@ const organizer = ref("");
 const createPhotographersSubTask = ref(true);
 const createCopywritersSubTask = ref(true);
 const createDesignersSubTask = ref(true);
-
+const items = ref([
+    [
+        {
+            label: "Изображения",
+            icon: "material-symbols:photo",
+        },
+        {
+            label: "Документы",
+            icon: "material-symbols:description",
+        },
+    ],
+]);
 const eventLevels = appSettingsStore.eventsLevels.map((level) => ({
     id: level.id,
     label: level.name,
@@ -205,8 +244,6 @@ watch(timeEnd, (value) => {
         timeStart.value = startTime.toTimeString().slice(0, 5);
     }
 });
-
-const { $toast } = useNuxtApp();
 
 const createEvent = async () => {
     if (!buttonActive.value) return;

@@ -24,7 +24,7 @@ defineProps({
 .page-container {
     display: flex;
     flex-direction: column;
-    padding: 10px;
+
     width: 100%;
     gap: 10px;
     box-sizing: border-box;

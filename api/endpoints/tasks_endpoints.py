@@ -1,13 +1,15 @@
 from datetime import time
 from typing import Annotated, Union
+from utilities.files import save_file, save_image
 from schemas.events import CreateTypedTask, TaskCreate, TaskRead, TypedTaskReadFull
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, UploadFile
 from cruds.tasks_crud import TasksCRUD
 from cruds.users_crud import UsersCRUD
 from core.users_controller import current_superuser,  optional_current_user, current_user
 from db.session import get_async_session
 from models.user_models import User, UserRole
+from schemas.files import File, ImageInfo, ImageLink
 
 api_router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -120,3 +122,64 @@ async def create_task(
                 for_single_user=typed_task_data.for_single_user
             )
     return await TasksCRUD(db).get_task_by_id(task_id=task.id)
+
+
+@api_router.post('/{task_id}/files', dependencies=[Depends(current_superuser)], status_code=201, response_model=File)
+async def upload_file_to_task(
+    task_id: uuid.UUID,
+    file: UploadFile,
+    db=Depends(get_async_session)
+):
+    task = await TasksCRUD(db).get_task_by_id(task_id=task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    db_file = await save_file(db=db, upload_file=file)
+    await TasksCRUD(db).add_file_to_task(task_id=task.id, file_id=db_file.id)
+    return db_file
+
+
+@api_router.post('/{task_id}/images', dependencies=[Depends(current_superuser)], status_code=201, response_model=ImageInfo)
+async def upload_image_to_task(
+    task_id: uuid.UUID,
+    image: UploadFile,
+    db=Depends(get_async_session)
+):
+    task = await TasksCRUD(db).get_task_by_id(task_id=task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    db_image = await save_image(
+        db=db,
+        upload_file=image,
+    )
+    await TasksCRUD(db).add_image_to_task(task_id=task.id, image_id=db_image.id)
+    return db_image
+
+
+@api_router.delete('/{task_id}/images/{image_id}', dependencies=[Depends(current_superuser)], status_code=204)
+async def delete_image_from_task(
+    task_id: uuid.UUID,
+    image_id: uuid.UUID,
+    db=Depends(get_async_session)
+):
+    task = await TasksCRUD(db).get_task_by_id(task_id=task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    task_image = await TasksCRUD(db).get_task_image(task_id=task.id, image_id=image_id)
+    if task_image is None:
+        raise HTTPException(status_code=404, detail="Image not found in task")
+    await TasksCRUD(db).delete(task_image)
+
+
+@api_router.delete('/{task_id}/files/{file_id}', dependencies=[Depends(current_superuser)], status_code=204)
+async def delete_file_from_task(
+    task_id: uuid.UUID,
+    file_id: uuid.UUID,
+    db=Depends(get_async_session)
+):
+    task = await TasksCRUD(db).get_task_by_id(task_id=task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    task_file = await TasksCRUD(db).get_task_file(task_id=task.id, file_id=file_id)
+    if task_file is None:
+        raise HTTPException(status_code=404, detail="File not found in task")
+    await TasksCRUD(db).delete(task_file)

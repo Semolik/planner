@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload, contains_eager
 
 from cruds.base_crud import BaseCRUD
 from models.user_models import User, UserRole
-from models.events_models import Event, State, Task, TypedTask, TaskState, TasksToken, TaskStatePeriod
+from models.events_models import Event, State, Task, TaskFile, TaskImage, TypedTask, TaskState, TasksToken, TaskStatePeriod
 from sqlalchemy import select, and_, or_
 from sqlalchemy.sql import exists
 from sqlalchemy.sql import case
@@ -103,18 +103,6 @@ class TasksCRUD(BaseCRUD):
         typed_task.for_single_user = for_single_user
         return await self.update(typed_task)
 
-    async def get_task(self, task_id: uuid.UUID) -> Task:
-        query = select(Task).where(Task.id == task_id).options(
-            selectinload(Task.typed_tasks))
-        result = await self.db.execute(query)
-        return result.scalars().first()
-
-    async def get_full_task(self, task_id: uuid.UUID) -> Task:
-        query = select(Task).where(Task.id == task_id).options(
-            selectinload(Task.typed_tasks).selectinload(TypedTask.users))
-        result = await self.db.execute(query)
-        return result.scalars().first()
-
     async def get_tasks(
         self,
         user_id: Optional[uuid.UUID] = None,
@@ -201,7 +189,9 @@ class TasksCRUD(BaseCRUD):
                 ),
                 selectinload(Task.event).options(
                     selectinload(Event.group)
-                )
+                ),
+                selectinload(Task.files),
+                selectinload(Task.images)
             )
         )
 
@@ -318,6 +308,32 @@ class TasksCRUD(BaseCRUD):
             selectinload(Task.typed_tasks).options(
                 *self.get_typed_task_options()
             ),
+            selectinload(Task.files),
+            selectinload(Task.images)
         )
+        result = await self.db.execute(query)
+        return result.scalars().first()
+
+    async def add_file_to_task(self, task_id: uuid.UUID, file_id: uuid.UUID) -> TaskFile:
+        return await self.create(TaskFile(
+            task_id=task_id,
+            file_id=file_id
+        ))
+
+    async def add_image_to_task(self, task_id: uuid.UUID, image_id: uuid.UUID) -> TaskFile:
+        return await self.create(TaskImage(
+            task_id=task_id,
+            image_id=image_id
+        ))
+
+    async def get_task_image(self, task_id: uuid.UUID, image_id: uuid.UUID) -> TaskImage:
+        query = select(TaskImage).where(
+            TaskImage.task_id == task_id, TaskImage.image_id == image_id)
+        result = await self.db.execute(query)
+        return result.scalars().first()
+
+    async def get_task_file(self, task_id: uuid.UUID, file_id: uuid.UUID) -> TaskFile:
+        query = select(TaskFile).where(
+            TaskFile.task_id == task_id, TaskFile.file_id == file_id)
         result = await self.db.execute(query)
         return result.scalars().first()

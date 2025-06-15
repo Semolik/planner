@@ -1,5 +1,6 @@
+from fastapi import Query
 from pydantic import BaseModel, model_validator, validator
-from utilities.files import get_image_link
+from utilities.files import get_file_link, get_image_link
 from models.files_models import Image
 from uuid import UUID
 from pydantic_core import core_schema
@@ -35,6 +36,21 @@ class ImageInfo(BaseModel):
         if url is not None:
             return url
         return get_image_link(values['id'])
+
+    class Config:
+        from_attributes = True
+
+
+class File(BaseModel):
+    id: UUID
+    url: str = None
+    file_name: str = Query(
+        ..., description="Имя файла, как оно было на компьютере пользователя")
+
+    @model_validator(mode='after')
+    def url_generator(self) -> 'File':
+        self.url = get_file_link(file_id=self.id)
+        return self
 
     class Config:
         from_attributes = True
