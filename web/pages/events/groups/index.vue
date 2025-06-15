@@ -1,54 +1,79 @@
 <template>
     <page-container header="Группы">
         <div class="groups-page" ref="container">
-            <app-input
-                v-model="searchQuery"
-                placeholder="Поиск групп"
-                type="text"
-                height="50px"
-                class="search-input"
-            />
+            <div class="flex gap-2">
+                <app-input
+                    v-model="searchQuery"
+                    placeholder="Поиск групп"
+                    type="text"
+                />
+                <app-button
+                    active
+                    :to="{
+                        name: routesNames.eventsGroupsNew,
+                    }"
+                >
+                    Создать
+                </app-button>
+            </div>
             <div v-if="gridInitialized" ref="scroller" class="scroller">
-                <div class="groups-grid" v-auto-animate>
+                <div class="groups-grid">
                     <nuxt-link
                         v-for="group in groups"
                         :key="group.id"
                         :group="group"
                         class="group-card"
+                        :to="{
+                            name: routesNames.eventsGroupsGroupId,
+                            params: { group_id: group.id },
+                        }"
                     >
                         <div class="group-name">
-                            {{ group }}
+                            {{ group.name }}
+                        </div>
+                        <template v-if="group.period_start && group.period_end">
+                            <div
+                                class="period"
+                                v-if="group.period_start !== group.period_end"
+                            >
+                                {{ getDateString(group.period_start) }} -
+                                {{ getDateString(group.period_end) }}
+                            </div>
+                            <div class="period" v-else>
+                                {{ getDateString(group.period_start) }}
+                            </div>
+                        </template>
+                        <div class="event-count">
+                            {{ group.events_count }}
+                            {{
+                                usePluralize(group.events_count, [
+                                    "мероприятие",
+                                    "мероприятия",
+                                    "мероприятий",
+                                ])
+                            }}
                         </div>
                     </nuxt-link>
                 </div>
-                <div v-if="loading && !groups.length" class="loading">
-                    Загрузка...
-                </div>
-                <div
-                    v-if="!loading && !groups.length && searchQuery"
-                    class="empty-results"
-                >
+
+                <div v-if="!groups.length && searchQuery" class="empty-results">
                     Ничего не найдено
-                </div>
-                <div v-if="loading && groups.length" class="loading-more">
-                    Загрузка...
                 </div>
             </div>
         </div>
     </page-container>
 </template>
-
 <script setup>
 import { useAuthStore } from "~/stores/auth";
 import { EventsGroupsService } from "~/client";
-import { ref, onMounted, onUnmounted, watch } from "vue";
-import { useSeoMeta, useRoute, useRouter } from "#imports";
-import { useInfiniteScroll } from "@vueuse/core";
+import { routesNames } from "@typed-router";
 
 useSeoMeta({
     title: "Группы",
 });
-
+definePageMeta({
+    middleware: ["admin"],
+});
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
@@ -68,10 +93,11 @@ const searchQuery = ref("");
 const gridColumns = ref(3);
 const gap = ref(10);
 
-// Сброс страницы
+// Debounced search query
+const debouncedSearchQuery = refDebounced(searchQuery, 300);
+
 const resetPage = () => {
     page.value = 1;
-    groups.value = [];
     hasMore.value = true;
 };
 
@@ -82,11 +108,15 @@ const loadGroups = async () => {
     try {
         const response =
             await EventsGroupsService.searchEventGroupsEventsGroupsSearchGet(
-                searchQuery.value,
+                debouncedSearchQuery.value,
                 page.value,
-                "all" // всегда all, как указано
+                "all"
             );
+        if (page.value === 1) {
+            groups.value = [];
+        }
         groups.value.push(...response);
+
         hasMore.value = response.length > 0;
         page.value++;
     } catch (error) {
@@ -112,7 +142,7 @@ const calculateGrid = () => {
 };
 
 // Бесконечный скролл
-useInfiniteScroll(
+const { reset } = useInfiniteScroll(
     scroller,
     async () => {
         if (!loading.value && hasMore.value) {
@@ -132,9 +162,9 @@ onUnmounted(() => {
     window.removeEventListener("resize", calculateGrid);
 });
 
-// Сброс при изменении поискового запроса
-watch(searchQuery, () => {
+watch(debouncedSearchQuery, () => {
     resetPage();
+    reset();
 });
 </script>
 
@@ -147,9 +177,9 @@ watch(searchQuery, () => {
     position: relative;
     box-sizing: border-box;
     padding: 0;
+    gap: 10px;
 
     .search-input {
-        margin-bottom: 10px;
         width: 100%;
     }
 
@@ -185,8 +215,7 @@ watch(searchQuery, () => {
     .group-card {
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        align-items: center;
+
         text-decoration: none;
         color: inherit;
         padding: 20px;
@@ -200,7 +229,16 @@ watch(searchQuery, () => {
         }
 
         .group-name {
-            font-size: 16px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .period {
+            font-size: 14px;
+            color: #666;
+        }
+        .event-count {
+            color: #999;
+            font-size: 14px;
         }
     }
 }

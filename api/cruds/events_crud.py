@@ -53,7 +53,7 @@ class EventsCRUD(BaseCRUD):
 
     async def update_event(self, event: Event, name: str, date: datetime, location: str, organizer: str, level_id: uuid.UUID,
                            start_time: time, end_time: time = None, name_approved: bool = False,
-                           required_photographers: int = 0, description: str = "", group_id: uuid.UUID = None) -> Event:
+                           required_photographers: int = 0, description: str = "", group_id: uuid.UUID = None, link: str = "") -> Event:
         event.name = name
         event.date = date
         event.location = location
@@ -64,6 +64,7 @@ class EventsCRUD(BaseCRUD):
         event.required_photographers = required_photographers
         event.description = description
         event.level_id = level_id
+        event.link = link
         event.group_id = group_id
         return await self.update(event)
 
@@ -81,11 +82,10 @@ class EventsCRUD(BaseCRUD):
             select(EventGroup)
             .where(EventGroup.id == group_id)
             .options(
-                selectinload(EventGroup.events)
-                .selectinload(Event.task)
-                .selectinload(Task.typed_tasks)
-                .selectinload(TypedTask.task_states)
-                .selectinload(TaskState.user)
+                selectinload(EventGroup.events).options(
+                    self._get_event_options()
+                )
+
             )
         )
 
@@ -96,10 +96,14 @@ class EventsCRUD(BaseCRUD):
 
     def _get_event_options(self):
         return (
-            joinedload(Event.task)
-            .joinedload(Task.typed_tasks)
-            .joinedload(TypedTask.task_states)
-            .joinedload(TaskState.user)
+            selectinload(Event.task)
+            .selectinload(Task.typed_tasks)
+            .selectinload(TypedTask.task_states).options(
+                selectinload(TaskState.period),
+                selectinload(TaskState.user).options(
+                    selectinload(User.institute)
+                )
+            )
         )
 
     def _get_unstaffed_events_query(self, subquery_has_photographers):
@@ -203,3 +207,10 @@ class EventsCRUD(BaseCRUD):
 
         result = await self.db.execute(search_query)
         return result.scalars().all()
+
+    async def update_event_group(self, event_group: EventGroup, name: str, description: str = "", organizer: str = "", link: str = "") -> EventGroup:
+        event_group.name = name
+        event_group.description = description
+        event_group.organizer = organizer
+        event_group.link = link
+        return await self.update(event_group)

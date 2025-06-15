@@ -70,7 +70,7 @@ class Event(Base, AuditableMixin):
     # Внешний ключ на EventGroup (событие принадлежит одной группе)
     group_id = Column(
         UUID(as_uuid=True),
-        ForeignKey('event_groups.id', ondelete='CASCADE'),
+        ForeignKey('event_groups.id', ondelete='SET NULL'),
         nullable=True
     )
 
@@ -78,8 +78,6 @@ class Event(Base, AuditableMixin):
     group = relationship(
         "EventGroup",
         foreign_keys=[group_id],
-        back_populates="events",
-        cascade="all, delete-orphan",
         single_parent=True
     )
 
@@ -118,7 +116,6 @@ class EventGroup(Base, AuditableMixin):
         "Event",
         back_populates="group",
         foreign_keys=[Event.group_id],
-        cascade="all, delete-orphan",
         single_parent=True
     )
     period_start = column_property(

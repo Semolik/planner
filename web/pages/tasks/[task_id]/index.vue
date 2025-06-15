@@ -40,11 +40,86 @@
                         >
                             {{ getWaitingTime(task.event) }}
                         </UBadge>
+                        <UBadge
+                            color="info"
+                            size="lg"
+                            v-if="task.event.group"
+                            @click="
+                                () =>
+                                    $router.push({
+                                        name: routesNames.eventsGroupsGroupId,
+                                        params: {
+                                            group_id: task.event.group.id,
+                                        },
+                                    })
+                            "
+                            class="cursor-pointer"
+                            icon="material-symbols:folder"
+                        >
+                            {{ task.event.group.name }}
+                        </UBadge>
+                        <UBadge
+                            v-if="task.event.group?.link"
+                            color="neutral"
+                            icon="material-symbols:link"
+                            size="lg"
+                            as="a"
+                            :href="task.event.group.link"
+                            rel="noopener noreferrer"
+                            target="_blank"
+                        >
+                            Пост группы
+                        </UBadge>
+                        <UBadge
+                            v-if="task.event.link"
+                            color="neutral"
+                            icon="material-symbols:link"
+                            size="lg"
+                            as="a"
+                            :href="task.event.link"
+                            rel="noopener noreferrer"
+                            target="_blank"
+                        >
+                            Пост
+                        </UBadge>
+                    </div>
+                    <div class="section" v-if="task.event.group?.description">
+                        <div class="section-head">
+                            Описание группы мероприятий
+                        </div>
+                        <div class="section-content">
+                            {{ task.event.group.description }}
+                        </div>
                     </div>
                     <div class="section" v-if="task.event.description">
                         <div class="section-head">Описание</div>
                         <div class="section-content">
                             {{ task.event.description }}
+                        </div>
+                    </div>
+                    <div
+                        class="section"
+                        v-if="
+                            task.event.organizer || task.event.group?.organizer
+                        "
+                    >
+                        <div class="section-head">Контакт организатора</div>
+                        <div class="section-content">
+                            <div class="flex gap-1">
+                                <app-input
+                                    disabled
+                                    :model-value="
+                                        task.event.organizer ||
+                                        task.event.group?.organizer
+                                    "
+                                    white
+                                />
+                                <div class="copy" @click="copyOrganizerContact">
+                                    <Icon
+                                        name="material-symbols:content-copy"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </template>
@@ -240,7 +315,10 @@
                 }}
             </div>
             <template
-                v-if="selectedTypedTask.task_type === UserRole.PHOTOGRAPHER"
+                v-if="
+                    selectedTypedTask.task_type === UserRole.PHOTOGRAPHER &&
+                    task.event
+                "
             >
                 <div class="mb-4">
                     <USwitch
@@ -251,7 +329,7 @@
                 </div>
 
                 <TimeRangeSlider
-                    v-if="!isFullEventTime && task.event"
+                    v-if="!isFullEventTime"
                     v-model="selectedRange"
                     :min-time="task.event.start_time"
                     :max-time="task.event.end_time"
@@ -437,6 +515,7 @@
 
 <script setup>
 import { routesNames } from "@typed-router";
+import copy from "copy-to-clipboard";
 import {
     TasksService,
     UserRole,
@@ -631,22 +710,36 @@ const typedTasksCurrentUser = computed(() => {
 });
 
 const typed_tasks = computed(() => {
+    const roleOrder = [
+        UserRole.PHOTOGRAPHER,
+        UserRole.COPYWRITER,
+        UserRole.DESIGNER,
+    ];
+
+    let filteredTasks;
+
     if (authStore.isAdmin) {
-        return typedTasksCurrentUser.value;
+        filteredTasks = typedTasksCurrentUser.value;
+    } else {
+        if (
+            !showTakeInWorkButton.value &&
+            typedTasksCurrentUser.value.some(
+                (typed_task) => typed_task.has_my_state
+            )
+        ) {
+            return [];
+        }
+
+        filteredTasks = typedTasksCurrentUser.value.filter(
+            (typed_task) => typed_task.task_type in userData.value.roles
+        );
     }
 
-    if (
-        !showTakeInWorkButton.value &&
-        typedTasksCurrentUser.value.some(
-            (typed_task) => typed_task.has_my_state
-        )
-    ) {
-        return [];
-    }
-
-    return typedTasksCurrentUser.value.filter(
-        (typed_task) => typed_task.task_type in userData.value.roles
-    );
+    return filteredTasks.sort((a, b) => {
+        const aIndex = roleOrder.indexOf(a.task_type);
+        const bIndex = roleOrder.indexOf(b.task_type);
+        return aIndex - bIndex;
+    });
 });
 
 const typedTasksLabels = computed(() => {
@@ -697,7 +790,7 @@ const showDeleteStateModal = (selectedState) => {
 };
 
 const submitAssignmentButtonActive = computed(() => {
-    if (!isFullEventTime.value) {
+    if (!isFullEventTime.value && task.value.event) {
         if (
             selectedRange.value[0] ===
                 timeToMinutes(task.value.event.start_time) &&
@@ -885,6 +978,21 @@ function minutesToTime(minutes) {
     const m = minutes % 60;
     return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
+const copyOrganizerContact = () => {
+    if (!task.value.event) return;
+    const contact =
+        task.value.event.organizer || task.value.event.group?.organizer;
+    if (contact) {
+        try {
+            copy(contact);
+            $toast.success("Контакт организатора скопирован в буфер обмена");
+        } catch (error) {
+            $toast.error("Ошибка при копировании контакта организатора");
+        }
+    } else {
+        $toast.error("Контакт организатора не указан");
+    }
+};
 </script>
 
 <style scoped lang="scss">
@@ -902,6 +1010,22 @@ function minutesToTime(minutes) {
         display: flex;
         flex-direction: column;
         gap: 8px;
+        .copy {
+            height: 40px;
+            width: 40px;
+            background-color: black;
+            margin-top: auto;
+            border-radius: 8px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+
+            &:hover {
+                background-color: $text-color-secondary;
+            }
+        }
         .head {
             font-size: 1.5rem;
             color: $text-color;

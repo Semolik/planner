@@ -1,6 +1,9 @@
 <template>
     <div class="page-container" :class="{ 'full-height': fullHeight }">
-        <UBreadcrumb :items="items" v-if="items" />
+        <div class="header">
+            <UBreadcrumb :items="items" v-if="items" class="breadcrumb" />
+            <slot name="header" />
+        </div>
         <div class="content">
             <slot />
         </div>
@@ -24,16 +27,22 @@ defineProps({
     padding: 10px;
     width: 100%;
     gap: 10px;
-
     box-sizing: border-box;
+
+    .header {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        &:empty {
+            display: none;
+        }
+        .breadcrumb {
+            margin-right: auto;
+        }
+    }
 
     &.full-height {
         height: 100%;
-    }
-
-    .header {
-        font-size: 24px;
-        font-weight: bold;
     }
 
     .content {

@@ -43,6 +43,25 @@ export class TasksService {
         });
     }
     /**
+     * Create Task
+     * @param requestBody
+     * @returns TaskRead Successful Response
+     * @throws ApiError
+     */
+    public static createTaskTasksPost(
+        requestBody: TaskCreate,
+    ): CancelablePromise<TaskRead> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/tasks',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * Get Tasks Token
      * @returns string Successful Response
      * @throws ApiError
@@ -130,25 +149,6 @@ export class TasksService {
             path: {
                 'task_id': taskId,
             },
-            body: requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Create Task
-     * @param requestBody
-     * @returns TaskRead Successful Response
-     * @throws ApiError
-     */
-    public static createTaskTasksPost(
-        requestBody: TaskCreate,
-    ): CancelablePromise<TaskRead> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/tasks/',
             body: requestBody,
             mediaType: 'application/json',
             errors: {

@@ -59,10 +59,11 @@
                 <UBadge
                     color="error"
                     v-if="
-                        typed_task.task_states.length === 0 || task.event
+                        typed_task.task_states.length === 0 ||
+                        (task.event
                             ? task.event.required_photographers !==
                               typed_task.task_states.length
-                            : false
+                            : false)
                     "
                 >
                     Нуж{{ typed_task.for_single_user ? "ен" : "ны" }}

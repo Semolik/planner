@@ -99,4 +99,28 @@ export class EventsGroupsService {
             },
         });
     }
+    /**
+     * Update Event Group
+     * @param groupId
+     * @param requestBody
+     * @returns EventGroupRead Successful Response
+     * @throws ApiError
+     */
+    public static updateEventGroupEventsGroupsGroupIdPut(
+        groupId: string,
+        requestBody: EventGroupCreate,
+    ): CancelablePromise<EventGroupRead> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/events/groups/{group_id}',
+            path: {
+                'group_id': groupId,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
 }

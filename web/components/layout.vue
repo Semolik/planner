@@ -71,11 +71,7 @@ const asideBlocks = computed(() => {
                     path: routesNames.users,
                     icon: "material-symbols:person-rounded",
                 },
-                {
-                    name: "Модераторы",
-                    icon: "material-symbols:verified-user-rounded",
-                    path: routesNames.usersModerators,
-                },
+
                 {
                     name: "Статистика",
                     icon: "material-symbols:analytics-outline-rounded",

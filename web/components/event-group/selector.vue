@@ -9,6 +9,19 @@
                     : "Добавить в группу"
             }}
         </div>
+        <app-button
+            active
+            :to="{
+                name: routesNames.eventsGroupsGroupIdEdit,
+                params: { group_id: modelValue.id },
+            }"
+            v-if="modelValue && modelValue.id"
+            class="aspect-square"
+        >
+            <div class="flex items-center justify-center">
+                <Icon name="material-symbols:edit" />
+            </div>
+        </app-button>
         <app-button red active @click="clearSelection" v-if="modelValue">
             <div class="flex items-center justify-center">
                 <Icon name="material-symbols:delete" />
@@ -32,7 +45,7 @@
                     placeholder="Введите название группы"
                     border-radius="10px"
                 />
-                <div class="groups-list" v-auto-animate>
+                <div class="groups-list overflow-y-auto" v-auto-animate>
                     <div
                         :class="[
                             'group',
@@ -48,9 +61,9 @@
                         Группы не найдены
                     </div>
                 </div>
-                <app-button active @click="openCreateGroup"
-                    >Создать группу</app-button
-                >
+                <app-button active @click="openCreateGroup">
+                    Создать группу
+                </app-button>
             </div>
         </template>
     </UModal>
@@ -99,7 +112,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
+import { routesNames } from "@typed-router";
 import { EventsGroupsService } from "~/client";
 const appConfig = useAppConfig();
 const modalUi = appConfig.ui;

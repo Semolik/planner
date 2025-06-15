@@ -4,10 +4,11 @@ from datetime import datetime, date, time
 import uuid
 from models.events_models import State
 from schemas.users import UserReadShort, UserRole
+from pydantic import Field
 
 
 class EventBase(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1, strip_whitespace=True)
     date: date
     start_time: time
     end_time: time
@@ -53,7 +54,7 @@ class TaskStateBase(UserReadShort):
 
 
 class EventGroupBase(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1, strip_whitespace=True)
     description: str
     organizer: str
     link: str

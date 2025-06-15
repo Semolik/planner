@@ -100,7 +100,7 @@ async def delete_task(
     await TasksCRUD(db).delete(task)
 
 
-@api_router.post('/', dependencies=[Depends(current_superuser)], status_code=201, response_model=TaskRead)
+@api_router.post('', dependencies=[Depends(current_superuser)], status_code=201, response_model=TaskRead)
 async def create_task(
     data: TaskCreate,
     db=Depends(get_async_session)

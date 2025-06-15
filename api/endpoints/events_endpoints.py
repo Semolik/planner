@@ -131,7 +131,8 @@ async def update_event(event_id: uuid.UUID, event: EventUpdate, db=Depends(get_a
         required_photographers=event.required_photographers,
         description=event.description,
         level_id=event.level_id,
-        group_id=event.group_id
+        group_id=event.group_id,
+        link=event.link,
     )
     return await EventsCRUD(db).get_full_event(db_event.id)
 

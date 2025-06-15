@@ -67,6 +67,7 @@
                         v-model="link"
                         label="Ссылка на публикацию"
                         white
+                        :validator="() => linkIsValid"
                     />
                     <component
                         :is="link && linkIsValid ? 'a' : 'div'"
@@ -191,8 +192,7 @@ const event_level = ref(
 );
 const linkIsValid = computed(() => {
     if (!link.value) return true;
-    const urlPattern = /^(https?:\/\/)?([\w-]+(\.[\w-]+)+)(\/[\w- .\/?%&=]*)?$/;
-    return link.value ? urlPattern.test(link.value) : false;
+    return validateUrl(link.value);
 });
 const saveButtonActive = computed(() => {
     if (task.value.event) {

@@ -7,7 +7,6 @@
                         v-for="task in tasks"
                         :key="task.id"
                         :task="task"
-                        class="task-card"
                     />
                 </div>
             </div>

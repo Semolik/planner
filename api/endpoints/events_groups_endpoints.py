@@ -58,3 +58,24 @@ async def delete_event_group(
     if remove_events:
         await EventsCRUD(session).delete_group_events(group_id=group_id)
     await EventsCRUD(session).delete(db_group)
+
+
+@api_router.put("/{group_id}", response_model=EventGroupRead, dependencies=[Depends(current_superuser)])
+async def update_event_group(
+    event_group: EventGroupCreate,
+    group_id: uuid.UUID = Path(...),
+    session=Depends(get_async_session),
+):
+    db_group = await EventsCRUD(session).get_event_group(group_id=group_id)
+    if db_group is None:
+        raise HTTPException(status_code=404, detail="Группа не найдена")
+
+    updated_group = await EventsCRUD(session).update_event_group(
+        event_group=db_group,
+        name=event_group.name,
+        description=event_group.description,
+        organizer=event_group.organizer,
+        link=event_group.link,
+    )
+
+    return updated_group

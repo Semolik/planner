@@ -13,12 +13,18 @@
                 {{ task.event ? task.event.name : task.name }}
             </div>
             <aside>
-                <nuxt-link :to="{ name: routesNames.tasksTaskIdEdit.index }">
+                <nuxt-link
+                    :to="{
+                        name: routesNames.tasksTaskIdEdit.index,
+                        params: { task_id: task_id },
+                    }"
+                >
                     Основная информация
                 </nuxt-link>
                 <nuxt-link
                     :to="{
                         name: routesNames.tasksTaskIdEdit.taskIdEditTypedTasks,
+                        params: { task_id: task_id },
                     }"
                 >
                     Подзадачи
@@ -26,6 +32,7 @@
                 <nuxt-link
                     :to="{
                         name: routesNames.tasksTaskIdEdit.taskIdEditHistory,
+                        params: { task_id: task_id },
                     }"
                 >
                     История изменений
