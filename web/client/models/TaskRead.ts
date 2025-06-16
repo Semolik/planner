@@ -3,6 +3,8 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { EventRead } from './EventRead';
+import type { File } from './File';
+import type { ImageInfo } from './ImageInfo';
 import type { TypedTaskRead } from './TypedTaskRead';
 export type TaskRead = {
     event_id?: (string | null);
@@ -10,5 +12,7 @@ export type TaskRead = {
     id: string;
     event?: (EventRead | null);
     typed_tasks: Array<TypedTaskRead>;
+    images: Array<ImageInfo>;
+    files: Array<File>;
 };
 

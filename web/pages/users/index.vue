@@ -8,7 +8,9 @@ definePageMeta({
 import { useInfiniteScroll } from "@vueuse/core";
 import type { TableColumn } from "@nuxt/ui";
 import { UsersService, type UserReadWithEmail, UserRole } from "~/client";
-
+useHead({
+    title: "Пользователи",
+});
 const UButton = resolveComponent("UButton");
 const UBadge = resolveComponent("UBadge");
 const Icon = resolveComponent("Icon");

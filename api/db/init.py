@@ -95,4 +95,13 @@ async def init_settings(session):
         logger.error(
             "\033[93mТокен ВК не установлен\033[0m")
 
+    for chat_type in ['photographers', 'designers', 'copywriters']:
+        chat_enabled = next(
+            (x for x in settings_list if x.key == f'vk_chat_{chat_type}_enabled'), None)
+        if not chat_enabled:
+            session.add(AppSettings(
+                key=f'vk_chat_{chat_type}_enabled', value='false'))
+            logger.warning(
+                f"\033[93mУстановлена стандартная настройка чата {chat_type}: выключен\033[0m")
+
     await session.commit()

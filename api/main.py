@@ -13,6 +13,8 @@ from endpoints.events_groups_endpoints import api_router as events_groups_router
 from endpoints.events_levels import api_router as events_levels_router
 from endpoints.typed_tasks_endpoints import api_router as typed_tasks_router
 from endpoints.typed_tasks_states_endpoints import api_router as typed_tasks_states_router
+from endpoints.vk_endpoints import api_router as vk_router
+from db.session import async_session_maker
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from db.init import init_db
@@ -30,6 +32,7 @@ app.include_router(typed_tasks_router)
 app.include_router(typed_tasks_states_router)
 app.include_router(users_router)
 app.include_router(files_router)
+app.include_router(vk_router)
 app.include_router(institutes_router)
 app.include_router(settings_router)
 
@@ -42,10 +45,17 @@ async def lifespan_wrapper(app):
     await create_db_and_tables()
     await init_db()
 
+    async with async_session_maker() as session:
+        vk_utils = VKUtils(session=session)
+        token = await vk_utils.get_token()
+        if token:
+            print("Starting VK bot ")
+
+            await vk_utils.start_bot(token=token)
+        app.state.vk_utils = vk_utils
     async with main_app_lifespan(app) as maybe_state:
         yield maybe_state
-    # loop = asyncio.get_event_loop()
-    # await VKUtils().start_bot(loop)
+
 app.router.lifespan_context = lifespan_wrapper
 app.add_middleware(
     CORSMiddleware,
