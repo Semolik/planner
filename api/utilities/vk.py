@@ -1,13 +1,15 @@
 import asyncio
+import datetime
+import uuid
 from sqlalchemy import select
-from vkbottle import Bot, Keyboard, Text, EMPTY_KEYBOARD
+from vkbottle import Bot, GroupEventType, Keyboard, Callback, ShowSnackbarEvent, Text,  GroupTypes
 from vkbottle.tools import WaiterMachine
-from models.user_models import User
+from schemas.vk import Chat
+from cruds.vk_crud import VKCRUD
+from models.user_models import User, UserRole
 from models.app_models import AppSettings
 from db.session import AsyncSession
 from fastapi.logger import logger
-from vkbottle import PayloadRule, Message, Keyboard, ButtonColor, EMPTY_KEYBOARD
-from vkbottle.dispatch.rules.base import PeerRule
 
 from vkbottle.dispatch.rules.base import PeerRule
 
@@ -20,6 +22,7 @@ class VKUtils:
         self.bot_task = None
         self.bot: Bot = None
         self.wm = WaiterMachine()
+        self.chat_fetch_cache = {}
 
     async def get_token(self):
         query = select(AppSettings)
@@ -44,6 +47,7 @@ class VKUtils:
             return
         try:
             loop = asyncio.get_event_loop()
+            print("Starting VK bot...")
             bot = Bot(token=token)
             self.bot_task = loop.create_task(bot.run_polling())
             self.superusers_vk_ids = await self.get_superusers_vk_ids()
@@ -69,19 +73,53 @@ class VKUtils:
         else:
             print("No VK bot task to stop.")
 
+    def update_superusers_vk_ids(self, added_user_id: uuid.UUID = None, removed_user_id: uuid.UUID = None):
+        if added_user_id:
+            if added_user_id not in self.superusers_vk_ids:
+                self.superusers_vk_ids.append(added_user_id)
+                logger.info(f"Added VK superuser ID: {added_user_id}")
+        if removed_user_id:
+            if removed_user_id in self.superusers_vk_ids:
+                self.superusers_vk_ids.remove(removed_user_id)
+                logger.info(f"Removed VK superuser ID: {removed_user_id}")
+
+    async def get_chat_by_id(self, peer_id):
+        if peer_id in self.chat_fetch_cache:
+            cached_chat = self.chat_fetch_cache[peer_id]
+            if cached_chat['timestamp'] + (60 * 5) > datetime.datetime.now().timestamp():
+                print(f"Using cached chat for peer_id {peer_id}")
+                return Chat.model_validate(cached_chat['chat'])
+
+        chat = await VKCRUD(self.session).get_chat_by_id(peer_id)
+        if not chat:
+            return None
+        chat_info = await self.bot.api.messages.get_conversations_by_id(
+            peer_ids=peer_id, extended=0,
+        )
+        chat = await VKCRUD(self.session).update_chat(
+            chat,
+            name=chat_info.items[0].chat_settings.title,
+            members_count=chat_info.items[0].chat_settings.members_count,
+            pin_message_id=chat.pin_message_id
+        )
+        self.chat_fetch_cache[peer_id] = {
+            'chat': Chat.model_validate(chat),
+            'timestamp': datetime.datetime.now().timestamp()
+        }
+        return self.chat_fetch_cache[peer_id]['chat']
+
     def add_bot_handlers(self, bot: Bot):
-        @bot.on.message(text="/start")
-        async def start_handler(message: Message):
+        @bot.on.message(text=["/start"])
+        async def start_handler(message):
             await message.answer("VK bot is running!")
             logger.info("VK bot started successfully.")
 
-        @bot.on.message(PeerRule(from_chat=True), text="/setup")
-        async def setup_handler(message: Message):
+        @bot.on.message(PeerRule(from_chat=True), text=["/setup"])
+        async def setup_handler(message, bot_id=None):
             if message.from_id not in self.superusers_vk_ids:
                 await message.answer("У вас нет прав для выполнения этой команды.")
                 return
 
-            # Получаем статусы включенных чатов
             query = select(AppSettings).where(
                 AppSettings.key.in_([
                     "vk_chat_photographers_enabled",
@@ -95,67 +133,110 @@ class VKUtils:
                 s.key: s.value.lower() == 'true' for s in settings_list
             }
 
-            # Формируем inline-клавиатуру только для включённых чатов
-            keyboard = Keyboard(inline=True)
+            keyboard = Keyboard(one_time=False, inline=True)
 
             chat_options = []
             if enabled_chats.get("vk_chat_photographers_enabled"):
-                chat_options.append(("Фотографы", "photographers"))
+                chat_options.append("Фотографы")
             if enabled_chats.get("vk_chat_copywriters_enabled"):
-                chat_options.append(("Копирайтеры", "copywriters"))
+                chat_options.append("Копирайтеры")
             if enabled_chats.get("vk_chat_designers_enabled"):
-                chat_options.append(("Дизайнеры", "designers"))
+                chat_options.append("Дизайнеры")
 
             if not chat_options:
                 await message.answer("Нет доступных чатов для настройки.")
                 return
 
-            for label, role in chat_options:
-                keyboard.add(
-                    Text(label, {"type": "chat_type", "role": role}), color=ButtonColor.PRIMARY)
-                keyboard.row()
+            for option in chat_options:
+                keyboard.add(Callback(option, payload={
+                             "type": option.lower()}))
 
-            keyboard.add(
-                Text("Завершить", {"type": "action", "value": "finish"}))
+            keyboard.row()
+            keyboard.add(Callback("Завершить", payload={"type": "finish"}))
 
             await message.answer("Выберите тип чата для настройки:", keyboard=keyboard)
 
-        # Обработка выбора через payload
-        @bot.on.message(PayloadRule({"type": "chat_type"}))
-        async def handle_chat_type(message: Message):
-            payload = message.payload
-            role = payload.get("role")
+        @bot.on.raw_event(GroupEventType.MESSAGE_EVENT, dataclass=GroupTypes.MessageEvent)
+        async def handle_message_event(event: GroupTypes.MessageEvent):
+            user_id = event.object.user_id
+            peer_id = event.object.peer_id
+            event_id = event.object.event_id
 
-            chat_role_map = {
-                "photographers": ("photographers", "фотографов"),
-                "copywriters": ("copywriters", "копирайтеров"),
-                "designers": ("designers", "дизайнеров")
-            }
-
-            if role not in dict(chat_role_map):
-                await message.answer("Неизвестный тип чата.")
+            message_id = event.object.conversation_message_id
+            if user_id not in self.superusers_vk_ids:
+                await bot.api.messages.send_message_event_answer(
+                    event_id=event_id,
+                    user_id=user_id,
+                    peer_id=peer_id,
+                    event_data='{"type": "show_snackbar", "text": "Вы не являетесь администратором!"}'
+                )
                 return
 
-            _, chat_title = chat_role_map[role]
+            payload = event.object.payload
+            chat_type = payload.get("type").lower()
+            print(f"Received payload: {payload}")
 
-            # Сохраняем peer_id текущего чата
-            chat_id = message.peer_id
-            setting_key = f"vk_chat_{role}_id"
+            if chat_type == "finish":
+                await bot.api.messages.send_message_event_answer(
+                    event_id=event_id,
+                    user_id=user_id,
+                    peer_id=peer_id,
+                    event_data='{"type": "show_snackbar", "text": "Настройка завершена."}'
+                )
 
-            query = select(AppSettings).where(AppSettings.key == setting_key)
-            result = await self.session.execute(query)
-            chat_setting = result.scalar_one_or_none()
+                await bot.api.messages.delete(
+                    peer_id=peer_id,
+                    conversation_message_ids=message_id,
+                    delete_for_all=True
+                )
+                return
+            chat_info = await bot.api.messages.get_conversations_by_id(
+                peer_ids=peer_id, extended=0,
+            )
+            if not chat_info or not chat_info.items:
+                await bot.api.messages.send_message_event_answer(
+                    event_id=event_id,
+                    user_id=user_id,
+                    peer_id=peer_id,
+                    event_data='{"type": "show_snackbar", "text": "Боту небходимо выдать права администратора!"}'
+                )
+                return
+            chat_role_map = {
+                "фотографы": (UserRole.PHOTOGRAPHER, "фотографов"),
+                "копирайтеры": (UserRole.COPYWRITER, "копирайтеров"),
+                "дизайнеры": (UserRole.DESIGNER, "дизайнеров")
+            }
 
-            if chat_setting:
-                chat_setting.value = str(chat_id)
-            else:
-                chat_setting = AppSettings(key=setting_key, value=str(chat_id))
-                self.session.add(chat_setting)
+            if chat_type not in chat_role_map:
+                await bot.api.messages.send_message_event_answer(
+                    event_id=event_id,
+                    user_id=user_id,
+                    peer_id=peer_id,
+                    event_data='{"type": "show_snackbar", "text": "Неизвестный тип чата."}'
+                )
+                return
 
-            await self.session.commit()
-            await message.answer(f"Чат для {chat_title} успешно установлен!")
+            chat_key, chat_title = chat_role_map[chat_type]
+            chat = await VKCRUD(self.session).get_chat_by_id(peer_id)
+            if chat and chat.chat_id == peer_id:
+                await VKCRUD(self.session).delete(
+                    chat)
+            chat = await VKCRUD(self.session).get_chat_by_role(chat_key)
+            chat_name = chat_info.items[0].chat_settings.title
+            if chat:
+                await VKCRUD(self.session).delete(
+                    chat)
+            chat = await VKCRUD(self.session).create_chat(
+                chat_id=peer_id, chat_role=chat_key, name=chat_name, members_count=chat_info.items[0].chat_settings.members_count)
 
-        # Обработка завершения
-        @bot.on.message(PayloadRule({"type": "action", "value": "finish"}))
-        async def finish_handler(message: Message):
-            await message.answer("Настройка завершена.", keyboard=EMPTY_KEYBOARD)
+            await bot.api.messages.send(
+                peer_id=event.object.peer_id,
+                message=f"Чат для {chat_title} установлен",
+                random_id=0,
+            )
+
+            await bot.api.messages.delete(
+                peer_id=peer_id,
+                conversation_message_ids=message_id,
+                delete_for_all=True
+            )

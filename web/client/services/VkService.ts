@@ -3,6 +3,8 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { Body_set_token_vk_token_post } from '../models/Body_set_token_vk_token_post';
+import type { ChatsSettingsResponse } from '../models/ChatsSettingsResponse';
+import type { UpdateChatSettings } from '../models/UpdateChatSettings';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -38,14 +40,33 @@ export class VkService {
         });
     }
     /**
-     * Get Token Status
-     * @returns boolean Successful Response
+     * Get Status
+     * @returns ChatsSettingsResponse Successful Response
      * @throws ApiError
      */
-    public static getTokenStatusVkTokenStatusGet(): CancelablePromise<boolean> {
+    public static getStatusVkSettingsGet(): CancelablePromise<ChatsSettingsResponse> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/vk/token/status',
+            url: '/vk/settings',
+        });
+    }
+    /**
+     * Update Settings
+     * @param requestBody
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static updateSettingsVkSettingsPut(
+        requestBody: UpdateChatSettings,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/vk/settings',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
         });
     }
 }

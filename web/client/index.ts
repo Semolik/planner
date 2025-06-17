@@ -12,6 +12,8 @@ export type { Body_set_app_logo_settings_app_logo_put } from './models/Body_set_
 export type { Body_set_token_vk_token_post } from './models/Body_set_token_vk_token_post';
 export type { Body_upload_file_to_task_tasks__task_id__files_post } from './models/Body_upload_file_to_task_tasks__task_id__files_post';
 export type { Body_upload_image_to_task_tasks__task_id__images_post } from './models/Body_upload_image_to_task_tasks__task_id__images_post';
+export type { Chat } from './models/Chat';
+export type { ChatsSettingsResponse } from './models/ChatsSettingsResponse';
 export type { CreateTypedTask } from './models/CreateTypedTask';
 export type { CreateTypedTaskState } from './models/CreateTypedTaskState';
 export type { ErrorModel } from './models/ErrorModel';
@@ -40,6 +42,7 @@ export type { TaskWithoutEventRead } from './models/TaskWithoutEventRead';
 export type { TypedTaskRead } from './models/TypedTaskRead';
 export type { TypedTaskReadFull } from './models/TypedTaskReadFull';
 export type { TypedTaskState } from './models/TypedTaskState';
+export type { UpdateChatSettings } from './models/UpdateChatSettings';
 export type { UpdateTypedTask } from './models/UpdateTypedTask';
 export type { UpdateTypedTaskState } from './models/UpdateTypedTaskState';
 export type { UserCreate } from './models/UserCreate';

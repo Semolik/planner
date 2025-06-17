@@ -13,6 +13,7 @@ from models.user_models import *
 from models.app_models import *
 from models.audit_models import *
 from models.events_models import *
+from models.vk_models import *
 
 
 config = context.config

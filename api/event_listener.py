@@ -1,3 +1,4 @@
+from models.user_models import User
 from core.users_controller import get_async_session_context
 from sqlalchemy import event
 from pathlib import Path

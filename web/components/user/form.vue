@@ -166,7 +166,7 @@ const instituteId = ref("");
 const firstName = ref("");
 const lastName = ref("");
 const patronymic = ref("");
-const vk_id = ref(null);
+const vk_id = ref("");
 const birthDate = ref(null);
 const phone = ref("");
 const group = ref("");
@@ -194,7 +194,7 @@ if (userId) {
     firstName.value = user.first_name;
     lastName.value = user.last_name;
     patronymic.value = user.patronymic;
-    vk_id.value = user.vk_id;
+    vk_id.value = user.vk_id || "";
     birthDate.value = user.birth_date;
     phone.value = user.phone;
     group.value = user.group;
@@ -229,7 +229,7 @@ const buttonActive = computed(
                     userData.value.patronymic !== patronymic.value ||
                     userData.value.institute.id !== instituteId.value ||
                     userData.value.group !== group.value ||
-                    userData.value.vk_id !== vk_id.value ||
+                    (userData.value.vk_id || "") !== vk_id.value ||
                     userData.value.birth_date !== birthDate.value ||
                     userData.value.phone !== phone.value ||
                     userData.value.is_active !== isActive.value ||
@@ -274,7 +274,7 @@ const submit = async () => {
                     roles: selectedRoles.value,
                     institute_id: instituteId.value,
                     group: group.value,
-                    vk_id: vk_id.value,
+                    vk_id: vk_id.value || null,
                     birth_date: birthDate.value,
                     phone: phone.value,
                     is_active: isActive.value,
@@ -282,6 +282,7 @@ const submit = async () => {
                     password: password.value || null,
                 }
             );
+            vk_id.value = userData.value.vk_id ? userData.value.vk_id : "";
         }
     } catch (e) {
         console.error(e);

@@ -1,4 +1,4 @@
-import asyncio
+from fastapi.staticfiles import StaticFiles
 from utilities.vk import VKUtils
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
@@ -19,9 +19,36 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from db.init import init_db
 import event_listener
+from models.user_models import User
+from sqlalchemy import event
 from db.session import create_db_and_tables
+import asyncio
+from fastapi.openapi.docs import (
 
-app = FastAPI()
+    get_swagger_ui_html,
+    get_swagger_ui_oauth2_redirect_html,
+)
+
+
+app = FastAPI(docs_url=None, redoc_url=None)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=app.title + " - Swagger UI",
+        oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
+        swagger_js_url="/static/swagger-ui-bundle.js",
+        swagger_css_url="/static/swagger-ui.css",
+    )
+
+
+@app.get(app.swagger_ui_oauth2_redirect_url, include_in_schema=False)
+async def swagger_ui_redirect():
+    return get_swagger_ui_oauth2_redirect_html()
+
 
 app.include_router(auth_router)
 app.include_router(events_levels_router)
@@ -49,12 +76,25 @@ async def lifespan_wrapper(app):
         vk_utils = VKUtils(session=session)
         token = await vk_utils.get_token()
         if token:
-            print("Starting VK bot ")
-
             await vk_utils.start_bot(token=token)
         app.state.vk_utils = vk_utils
     async with main_app_lifespan(app) as maybe_state:
         yield maybe_state
+
+
+@event.listens_for(User, "after_update")
+def receive_after_update(mapper, connection, target: User):
+    if target.is_superuser and target.vk_id:
+        app.state.vk_utils.update_superusers_vk_ids(
+            added_user_id=target.vk_id)
+
+
+@event.listens_for(User, "after_delete")
+def receive_after_delete(mapper, connection, target: User):
+    if target.is_superuser and target.vk_id:
+        app.state.vk_utils.update_superusers_vk_ids(
+            removed_user_id=target.vk_id)
+
 
 app.router.lifespan_context = lifespan_wrapper
 app.add_middleware(

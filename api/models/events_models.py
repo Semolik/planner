@@ -6,6 +6,7 @@ from sqlalchemy.orm import relationship, column_property, object_session
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import Column, Enum, Integer, String, ForeignKey, Text, Boolean, UniqueConstraint, TIMESTAMP, Date, Time, and_, select
 from sqlalchemy.sql import func
+from models.files_models import File, Image
 from models.user_models import UserRole
 from models.audit_models import AuditLog, AuditableMixin, register_audit_events
 from db.session import Base
@@ -163,13 +164,13 @@ class Task(Base):
         single_parent=True
     )
     files = relationship(
-        "File",
+        File,
         secondary="task_files",
         overlaps="task_files",
         viewonly=True
     )
     images = relationship(
-        "Image",
+        Image,
         secondary="task_images",
         overlaps="task_images",
         viewonly=True
@@ -181,16 +182,16 @@ class TaskFile(Base):
 
     task_id = Column(
         UUID(as_uuid=True),
-        ForeignKey('tasks.id', ondelete='CASCADE'),
+        ForeignKey(Task.id, ondelete='CASCADE'),
         primary_key=True
     )
     file_id = Column(
         UUID(as_uuid=True),
-        ForeignKey('files.id', ondelete='CASCADE'),
+        ForeignKey(File.id, ondelete='CASCADE'),
         primary_key=True
     )
     file = relationship(
-        "File",
+        File,
         foreign_keys=[file_id],
         uselist=False,
         overlaps="task_files",
@@ -204,16 +205,16 @@ class TaskImage(Base):
 
     task_id = Column(
         UUID(as_uuid=True),
-        ForeignKey('tasks.id', ondelete='CASCADE'),
+        ForeignKey(Task.id, ondelete='CASCADE'),
         primary_key=True
     )
     image_id = Column(
         UUID(as_uuid=True),
-        ForeignKey('images.id', ondelete='CASCADE'),
+        ForeignKey(Image.id, ondelete='CASCADE'),
         primary_key=True
     )
     image = relationship(
-        "Image",
+        Image,
         foreign_keys=[image_id],
         uselist=False,
         overlaps="task_images",
