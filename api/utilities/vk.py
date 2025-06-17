@@ -4,6 +4,7 @@ import uuid
 from sqlalchemy import select
 from vkbottle import Bot, GroupEventType, Keyboard, Callback, ShowSnackbarEvent, Text,  GroupTypes
 from vkbottle.tools import WaiterMachine
+from utilities.events import build_message
 from schemas.vk import Chat
 from cruds.vk_crud import VKCRUD
 from models.user_models import User, UserRole
@@ -108,11 +109,36 @@ class VKUtils:
         }
         return self.chat_fetch_cache[peer_id]['chat']
 
+    async def update_messages(self):
+        chats = await VKCRUD(self.session).get_all_chats()
+        for chat in chats:
+            message = await build_message(db=self.session, role=chat.chat_role)
+            # edit pin message if it exists
+            if chat.pin_message_id:
+                try:
+                    await self.bot.api.messages.edit(
+                        peer_id=chat.chat_id,
+                        message=message,
+                        cmid=chat.pin_message_id,
+                        dont_parse_links=True
+                    )
+                except Exception as e:
+                    logger.error(f"Error editing pin message: {e}")
+            else:
+                logger.info(
+                    f"Pin message not found for chat {chat.chat_id}, sending new message.")
+
+    def update_messages_task(self):
+        if not self.bot_task:
+            logger.warning("VK bot is not running. Cannot update messages.")
+            return
+        loop = asyncio.get_event_loop()
+        self.bot_task = loop.create_task(self.update_messages())
+
     def add_bot_handlers(self, bot: Bot):
-        @bot.on.message(text=["/start"])
+        @bot.on.message(text=["/ping"])
         async def start_handler(message):
-            await message.answer("VK bot is running!")
-            logger.info("VK bot started successfully.")
+            await message.answer("pong")
 
         @bot.on.message(PeerRule(from_chat=True), text=["/setup"])
         async def setup_handler(message, bot_id=None):
@@ -174,7 +200,6 @@ class VKUtils:
 
             payload = event.object.payload
             chat_type = payload.get("type").lower()
-            print(f"Received payload: {payload}")
 
             if chat_type == "finish":
                 await bot.api.messages.send_message_event_answer(
@@ -198,7 +223,7 @@ class VKUtils:
                     event_id=event_id,
                     user_id=user_id,
                     peer_id=peer_id,
-                    event_data='{"type": "show_snackbar", "text": "Боту небходимо выдать права администратора!"}'
+                    event_data='{"type": "show_snackbar", "text": "Боту необходимо выдать права администратора!"}'
                 )
                 return
             chat_role_map = {
@@ -239,4 +264,30 @@ class VKUtils:
                 peer_id=peer_id,
                 conversation_message_ids=message_id,
                 delete_for_all=True
+            )
+
+        @bot.on.message(PeerRule(from_chat=True), text=["/pin"])
+        async def create_pin_message_handler(message):
+            if message.from_id not in self.superusers_vk_ids:
+                await message.answer("У вас нет прав для выполнения этой команды.")
+                return
+            vk_crud = VKCRUD(self.session)
+            chat = await vk_crud.get_chat_by_id(message.peer_id)
+            if not chat:
+                return
+
+            message_text = await build_message(self.session, role=chat.chat_role)
+
+            msg = await message.answer(
+                message_text,
+            )
+            await bot.api.messages.pin(
+                peer_id=message.peer_id,
+                conversation_message_id=msg.conversation_message_id
+            )
+            await vk_crud.update_chat(
+                chat,
+                name=chat.name,
+                members_count=chat.members_count,
+                pin_message_id=msg.conversation_message_id
             )

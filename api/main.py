@@ -14,6 +14,7 @@ from endpoints.events_levels import api_router as events_levels_router
 from endpoints.typed_tasks_endpoints import api_router as typed_tasks_router
 from endpoints.typed_tasks_states_endpoints import api_router as typed_tasks_states_router
 from endpoints.vk_endpoints import api_router as vk_router
+from endpoints.import_endpoints import api_router as import_router
 from db.session import async_session_maker
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -49,7 +50,7 @@ async def custom_swagger_ui_html():
 async def swagger_ui_redirect():
     return get_swagger_ui_oauth2_redirect_html()
 
-
+app.include_router(import_router)
 app.include_router(auth_router)
 app.include_router(events_levels_router)
 app.include_router(events_router)
@@ -78,22 +79,9 @@ async def lifespan_wrapper(app):
         if token:
             await vk_utils.start_bot(token=token)
         app.state.vk_utils = vk_utils
+        event_listener.add_vk_listeners(app.state.vk_utils)
     async with main_app_lifespan(app) as maybe_state:
         yield maybe_state
-
-
-@event.listens_for(User, "after_update")
-def receive_after_update(mapper, connection, target: User):
-    if target.is_superuser and target.vk_id:
-        app.state.vk_utils.update_superusers_vk_ids(
-            added_user_id=target.vk_id)
-
-
-@event.listens_for(User, "after_delete")
-def receive_after_delete(mapper, connection, target: User):
-    if target.is_superuser and target.vk_id:
-        app.state.vk_utils.update_superusers_vk_ids(
-            removed_user_id=target.vk_id)
 
 
 app.router.lifespan_context = lifespan_wrapper

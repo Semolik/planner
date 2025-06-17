@@ -1,27 +1,28 @@
 from typing import Literal
 from sqlalchemy.sql import and_, exists
 from sqlalchemy.sql import and_
-from datetime import datetime, time
+from datetime import date, datetime, time
 import uuid
 
-from sqlalchemy import delete, or_, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import selectinload, joinedload
 
 from cruds.tasks_crud import TasksCRUD
 from cruds.base_crud import BaseCRUD
 from models.user_models import User, UserRole
-from models.events_models import Event
+from models.events_models import Event, State
 from models.events_models import Task, TypedTask, TaskState, EventGroup, EventLevel
 
 
 class EventsCRUD(BaseCRUD):
-    async def create_event(self, name: str, date: datetime, location: str, organizer: str, start_time: datetime, end_time: datetime, name_approved: bool, required_photographers: int, description: str, group_id: uuid.UUID = None, level_id: uuid.UUID = None) -> Event:
+    async def create_event(self, name: str, date: datetime, location: str, organizer: str, start_time: datetime, end_time: datetime, name_approved: bool, required_photographers: int, description: str, group_id: uuid.UUID = None, level_id: uuid.UUID = None, link: str = "") -> Event:
         event = Event(
             name=name,
             date=date,
             location=location,
             organizer=organizer,
             start_time=start_time,
+            link=link,
             end_time=end_time,
             name_approved=name_approved,
             required_photographers=required_photographers,
@@ -106,42 +107,6 @@ class EventsCRUD(BaseCRUD):
             )
         )
 
-    def _get_unstaffed_events_query(self, subquery_has_photographers):
-        return (
-            select(Event)
-            .options(self._get_event_options())
-            .where(~Event.task.has(subquery_has_photographers))
-            .order_by(Event.date)
-        )
-
-    def _get_regular_events_query(self, subquery_has_photographers, limit):
-        return (
-            select(Event)
-            .options(self._get_event_options())
-            .where(Event.task.has(subquery_has_photographers))
-            .order_by(Event.date)
-            .limit(limit)
-        )
-
-    def _get_paginated_events_query(self, unstaffed_event_ids, offset, limit):
-        if unstaffed_event_ids:
-            return (
-                select(Event)
-                .options(self._get_event_options())
-                .where(Event.id.not_in(unstaffed_event_ids))
-                .order_by(Event.date)
-                .offset(offset)
-                .limit(limit)
-            )
-        else:
-            return (
-                select(Event)
-                .options(self._get_event_options())
-                .order_by(Event.date)
-                .offset(offset)
-                .limit(limit)
-            )
-
     async def get_event_levels(self):
         query = select(EventLevel).order_by(EventLevel.order.desc())
         result = await self.db.execute(query)
@@ -183,11 +148,11 @@ class EventsCRUD(BaseCRUD):
                 EventGroup.name.ilike(f"%{query}%")
             )
         search_query = (search_query.order_by(
-            # First, prioritize groups with future events
+
             select(Event.date > datetime.now())
             .where(Event.group_id == EventGroup.id)
             .exists().desc(),
-            # Then order by latest event date
+
             select(Event.date)
             .where(Event.group_id == EventGroup.id)
             .order_by(Event.date.desc())
@@ -214,3 +179,40 @@ class EventsCRUD(BaseCRUD):
         event_group.organizer = organizer
         event_group.link = link
         return await self.update(event_group)
+
+    async def get_actual_events(self) -> list[Event]:
+
+        min_date_query = (
+            select(func.min(Event.date))
+            .join(Task, Event.id == Task.event_id)
+            .join(TypedTask, Task.id == TypedTask.task_id)
+            .join(TaskState, TypedTask.id == TaskState.type_task_id)
+            .where(
+                or_(
+                    # Событие ещё не прошло
+                    and_(
+                        Event.date >= date.today(),
+                        or_(
+                            Event.date > date.today(),
+                            Event.end_time > datetime.now().time()
+                        )
+                    ),
+                    # Или есть pending задача фотографа
+                    and_(
+                        TypedTask.task_type == UserRole.PHOTOGRAPHER,
+                        TaskState.state == State.PENDING
+                    )
+                )
+            )
+        )
+        actual_events_query = (
+            select(Event)
+            .where(Event.date >= min_date_query.scalar_subquery())
+            .order_by(Event.date)
+            .options(
+                self._get_event_options()
+            )
+        )
+
+        result = await self.db.execute(actual_events_query)
+        return result.scalars().all()

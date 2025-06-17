@@ -19,6 +19,12 @@ class VKCRUD(BaseCRUD):
                     name=name, members_count=members_count)
         await self.create(chat)
 
+    async def get_all_chats(self) -> list[Chat]:
+        query = select(Chat)
+        result = await self.db.execute(query)
+        chats = result.scalars().all()
+        return chats
+
     async def get_chat_by_role(self, chat_role: UserRole) -> Chat:
         query = select(Chat).where(Chat.chat_role == chat_role)
         result = await self.db.execute(query)
@@ -37,7 +43,7 @@ class VKCRUD(BaseCRUD):
         chat.members_count = members_count
         return await self.update(chat)
 
-    async def get_chats_settings(self, vk_utils: 'VKUtils') -> ChatsSettingsResponse:
+    async def get_chats_settings(self, vk_utils) -> ChatsSettingsResponse:
 
         photographers_enabled_query = select(AppSettings.value).where(
             AppSettings.key == "vk_chat_photographers_enabled"

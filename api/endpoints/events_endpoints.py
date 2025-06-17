@@ -1,5 +1,5 @@
 from models.events_models import Task
-from schemas.events import EventFullInfo, EventCreate, EventUpdate
+from schemas.events import EventFullInfo, EventCreate, EventRead, EventUpdate, EventReadShort
 import uuid
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException
@@ -10,6 +10,15 @@ from db.session import get_async_session
 from models.user_models import UserRole
 
 api_router = APIRouter(prefix="/events", tags=["events"])
+
+
+@api_router.get("/actual", response_model=list[EventFullInfo])
+async def get_actual_events(db=Depends(get_async_session)):
+    """
+    Получить список актуальных мероприятий.
+    """
+    events = await EventsCRUD(db).get_actual_events()
+    return events
 
 
 @api_router.post("", response_model=EventFullInfo, dependencies=[Depends(current_superuser)])
