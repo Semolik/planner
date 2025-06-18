@@ -10,6 +10,18 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class EventsService {
     /**
+     * Get Actual Events
+     * Получить список актуальных мероприятий.
+     * @returns EventFullInfo Successful Response
+     * @throws ApiError
+     */
+    public static getActualEventsEventsActualGet(): CancelablePromise<Array<EventFullInfo>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/events/actual',
+        });
+    }
+    /**
      * Create Event
      * @param requestBody
      * @returns EventFullInfo Successful Response

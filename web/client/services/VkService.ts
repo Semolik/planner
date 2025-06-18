@@ -53,12 +53,12 @@ export class VkService {
     /**
      * Update Settings
      * @param requestBody
-     * @returns any Successful Response
+     * @returns ChatsSettingsResponse Successful Response
      * @throws ApiError
      */
     public static updateSettingsVkSettingsPut(
         requestBody: UpdateChatSettings,
-    ): CancelablePromise<any> {
+    ): CancelablePromise<ChatsSettingsResponse> {
         return __request(OpenAPI, {
             method: 'PUT',
             url: '/vk/settings',

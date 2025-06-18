@@ -8,6 +8,8 @@ export { OpenAPI } from './core/OpenAPI';
 export type { OpenAPIConfig } from './core/OpenAPI';
 
 export type { Body_auth_jwt_login_auth_jwt_login_post } from './models/Body_auth_jwt_login_auth_jwt_login_post';
+export type { Body_import_events_import_events_post } from './models/Body_import_events_import_events_post';
+export type { Body_import_users_import_users_post } from './models/Body_import_users_import_users_post';
 export type { Body_set_app_logo_settings_app_logo_put } from './models/Body_set_app_logo_settings_app_logo_put';
 export type { Body_set_token_vk_token_post } from './models/Body_set_token_vk_token_post';
 export type { Body_upload_file_to_task_tasks__task_id__files_post } from './models/Body_upload_file_to_task_tasks__task_id__files_post';
@@ -59,6 +61,7 @@ export { EventsService } from './services/EventsService';
 export { EventsGroupsService } from './services/EventsGroupsService';
 export { EventsLevelsService } from './services/EventsLevelsService';
 export { FilesService } from './services/FilesService';
+export { ImportService } from './services/ImportService';
 export { InstitutesService } from './services/InstitutesService';
 export { SettingsService } from './services/SettingsService';
 export { TasksService } from './services/TasksService';

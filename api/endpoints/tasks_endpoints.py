@@ -1,5 +1,5 @@
 from datetime import time
-from typing import Annotated, Union
+from typing import Annotated, Literal, Union
 from utilities.files import save_file, save_image
 from schemas.events import CreateTypedTask, TaskCreate, TaskRead, TypedTaskReadFull
 import uuid
@@ -39,6 +39,21 @@ async def get_tasks(
         roles=roles,
         hide_busy_tasks=hide_busy_tasks,
         prioritize_unassigned=prioritize_unassigned
+    )
+    return tasks
+
+
+@api_router.get('/my', response_model=list[TaskRead])
+async def get_my_tasks(
+    page: int = 1,
+    current_user: User = Depends(current_user),
+    db=Depends(get_async_session),
+    filter: Literal['all', 'active'] = 'active',
+):
+    tasks = await TasksCRUD(db).get_my_tasks(
+        user_id=current_user.id,
+        filter=filter,
+        page=page
     )
     return tasks
 

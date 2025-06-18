@@ -8,5 +8,6 @@ export type Chat = {
     name: string;
     chat_id: number;
     chat_role: UserRole;
+    members_count: number;
 };
 

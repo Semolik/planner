@@ -66,6 +66,29 @@ export class TasksService {
         });
     }
     /**
+     * Get My Tasks
+     * @param page
+     * @param filter
+     * @returns TaskRead Successful Response
+     * @throws ApiError
+     */
+    public static getMyTasksTasksMyGet(
+        page: number = 1,
+        filter: 'all' | 'active' = 'active',
+    ): CancelablePromise<Array<TaskRead>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/tasks/my',
+            query: {
+                'page': page,
+                'filter': filter,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * Get Tasks Token
      * @returns string Successful Response
      * @throws ApiError

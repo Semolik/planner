@@ -1,5 +1,5 @@
 from datetime import datetime, time
-from typing import Optional
+from typing import Literal, Optional
 import uuid
 
 from sqlalchemy.orm import selectinload, contains_eager
@@ -337,3 +337,36 @@ class TasksCRUD(BaseCRUD):
             TaskFile.task_id == task_id, TaskFile.file_id == file_id)
         result = await self.db.execute(query)
         return result.scalars().first()
+
+    async def get_my_tasks(self, user_id: uuid.UUID, filter: Literal['all', 'active'] = 'active', page: int = 1, per_page: int = 10):
+
+        query = (select(Task)
+                 .join(TypedTask, TypedTask.task_id == Task.id)
+                 .join(TaskState, TaskState.type_task_id == TypedTask.id))
+        if filter == 'active':
+            query = query.where(TaskState.state == State.PENDING)
+        query = (
+            query
+            .where(TaskState.user_id == user_id)
+            .options(
+                contains_eager(Task.typed_tasks).options(
+                    contains_eager(TypedTask.task_states).options(
+                        selectinload(TaskState.user).options(
+                            selectinload(User.institute)),
+                        selectinload(TaskState.period)
+                    ),
+                    selectinload(TypedTask.users).options(
+                        selectinload(User.roles_objects)),
+                ),
+                selectinload(Task.event).options(
+                    selectinload(Event.group)
+                ),
+                selectinload(Task.files),
+                selectinload(Task.images)
+            )
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+        )
+
+        result = await self.db.execute(query)
+        return result.unique().scalars().all()
