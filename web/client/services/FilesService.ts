@@ -26,4 +26,24 @@ export class FilesService {
             },
         });
     }
+    /**
+     * Get App Image
+     * @param fileId
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static getAppImageFilesFileIdGet(
+        fileId: string,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/files/{file_id}',
+            path: {
+                'file_id': fileId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
 }
