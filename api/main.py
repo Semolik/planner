@@ -14,7 +14,7 @@ from endpoints.events_levels import api_router as events_levels_router
 from endpoints.typed_tasks_endpoints import api_router as typed_tasks_router
 from endpoints.typed_tasks_states_endpoints import api_router as typed_tasks_states_router
 from endpoints.vk_endpoints import api_router as vk_router
-from endpoints.import_endpoints import api_router as import_router
+
 from endpoints.home_endpoints import api_router as home_router
 from endpoints.statistics_endpoints import api_router as statistics_router
 from db.session import async_session_maker
@@ -52,7 +52,7 @@ async def custom_swagger_ui_html():
 async def swagger_ui_redirect():
     return get_swagger_ui_oauth2_redirect_html()
 
-app.include_router(import_router)
+
 app.include_router(auth_router)
 app.include_router(home_router)
 app.include_router(events_levels_router)
