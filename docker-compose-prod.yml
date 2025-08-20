@@ -2,7 +2,7 @@ services:
   api:
     build: ./api
     ports:
-      - "8000:8000"
+      - "${API_PORT}:8000"
     volumes:
       - ./api:/usr/src
       - ./uploads/images:/uploads/images
@@ -36,8 +36,6 @@ services:
     env_file:
       - .env
     image: postgres:16
-    ports:
-      - "5432:5432"
     restart: always
     healthcheck:
       test: pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}
