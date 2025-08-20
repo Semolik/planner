@@ -1,5 +1,6 @@
 db-data
 uploads
 .env
+.env.web
 .DS_Store
 *.pyc
