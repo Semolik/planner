@@ -51,7 +51,7 @@ services:
       dockerfile: Dockerfile
     env_file: web/.env
     ports:
-      - "${WEB_PORT}:80"
+      - "${WEB_PORT}:3000"
     command: ["node", "/app/server/index.mjs"]
     depends_on:
       api:
