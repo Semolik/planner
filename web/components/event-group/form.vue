@@ -36,7 +36,12 @@
             <app-button :active="saveButtonActive" @click="handleSave">
                 Сохранить
             </app-button>
-            <app-button active red @click="deleteGroupModalOpen = true">
+            <app-button
+                active
+                red
+                @click="deleteGroupModalOpen = true"
+                v-if="group"
+            >
                 Удалить группу
             </app-button>
         </div>

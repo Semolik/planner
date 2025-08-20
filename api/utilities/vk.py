@@ -24,6 +24,7 @@ class VKUtils:
         self.bot: Bot = None
         self.wm = WaiterMachine()
         self.chat_fetch_cache = {}
+        self.superusers_vk_ids = []
 
     async def get_token(self):
         query = select(AppSettings)
@@ -94,6 +95,8 @@ class VKUtils:
         chat = await VKCRUD(self.session).get_chat_by_id(peer_id)
         if not chat:
             return None
+        if not self.bot:
+            return Chat.model_validate(chat)
         chat_info = await self.bot.api.messages.get_conversations_by_id(
             peer_ids=peer_id, extended=0,
         )
