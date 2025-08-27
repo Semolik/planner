@@ -42,6 +42,7 @@ async def register_user(user: UserCreate, db=Depends(get_async_session), current
         roles=user.roles,
         is_superuser=user.is_superuser if has_admin else True,
         institute_id=user.institute_id,
+        birth_date=user.birth_date,
         group=user.group,
         is_verified=True
     )
