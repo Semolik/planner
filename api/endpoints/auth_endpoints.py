@@ -44,6 +44,7 @@ async def register_user(user: UserCreate, db=Depends(get_async_session), current
         institute_id=user.institute_id,
         birth_date=user.birth_date,
         group=user.group,
+        vk_id=user.vk_id,
         is_verified=True
     )
     if not has_admin:
