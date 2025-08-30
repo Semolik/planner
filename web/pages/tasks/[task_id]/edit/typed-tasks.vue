@@ -357,9 +357,12 @@ async function deleteTypedTask(role) {
                 justify-content: space-between;
                 align-items: center;
                 gap: 10px;
+                @include md(true) {
+                    flex-direction: column;
+                    gap: 5px;
+                }
                 .label {
                     margin-left: 10px;
-                    margin-bottom: 4px;
                 }
                 .badges {
                     display: flex;
@@ -372,22 +375,34 @@ async function deleteTypedTask(role) {
                         color: white;
                         border-radius: 10px;
                         font-size: 14px;
+                        @include md(true) {
+                            padding: 5px 10px;
+                            flex-grow: 1;
+                            text-align: center;
+                        }
                     }
                 }
                 .actions {
                     display: flex;
                     gap: 8px;
-
+                    @include md(true) {
+                        width: 100%;
+                    }
                     .button {
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        width: 35px;
-                        height: 35px;
+
                         border-radius: 10px;
                         background-color: black;
+                        height: 35px;
                         cursor: pointer;
-
+                        @include md {
+                            width: 35px;
+                        }
+                        @include md(true) {
+                            flex-grow: 1;
+                        }
                         .iconify {
                             width: 20px;
                             height: 20px;

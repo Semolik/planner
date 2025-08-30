@@ -105,7 +105,7 @@
                     >
                         <div class="section-head">Контакт организатора</div>
                         <div class="section-content">
-                            <div class="flex gap-1">
+                            <div class="flex gap-2">
                                 <app-input
                                     disabled
                                     :model-value="
@@ -151,10 +151,10 @@
                         >
                             {{ typed_task.description }}
                         </div>
-                        <div class="flex gap-1">
+                        <div class="grid md:grid-cols-2 gap-2 grid-cols-1">
                             <app-button
                                 active
-                                mini
+                                :mini="$viewport.isGreaterThan('md')"
                                 v-if="
                                     showTakeInWorkButton &&
                                     !typed_task.has_my_state
@@ -172,7 +172,7 @@
                             </app-button>
                             <app-button
                                 active
-                                mini
+                                :mini="$viewport.isGreaterThan('md')"
                                 class="w-full"
                                 v-else-if="typed_task.has_my_state"
                                 outline
@@ -188,7 +188,7 @@
                             </app-button>
                             <app-button
                                 active
-                                mini
+                                :mini="$viewport.isGreaterThan('md')"
                                 class="w-full"
                                 v-if="authStore.isAdmin"
                                 @click="
@@ -257,10 +257,13 @@
                     </div>
                 </div>
 
-                <div v-if="authStore.isAdmin" class="grid grid-cols-2 gap-2">
+                <div
+                    v-if="authStore.isAdmin"
+                    class="grid grid-cols-2 gap-2 mt-auto"
+                >
                     <app-button
                         active
-                        mini
+                        :mini="$viewport.isGreaterThan('md')"
                         :to="{
                             name: routesNames.tasksTaskIdEdit.index,
                             params: { task_id: task.id },
@@ -271,7 +274,7 @@
                     <app-button
                         active
                         red
-                        mini
+                        :mini="$viewport.isGreaterThan('md')"
                         @click="deleteModalOpened = true"
                     >
                         Удалить
@@ -998,18 +1001,25 @@ const copyOrganizerContact = () => {
 <style scoped lang="scss">
 .task-card-container {
     display: flex;
-    justify-content: center;
-    align-items: center;
+
     height: 100%;
+
+    @include lg {
+        justify-content: center;
+        align-items: center;
+    }
     .task-card {
         width: 100%;
         max-width: 500px;
-        border: 1px solid $border-color;
-        border-radius: 8px;
-        padding: 16px;
+
         display: flex;
         flex-direction: column;
         gap: 8px;
+        @include lg {
+            border: 1px solid $border-color;
+            border-radius: 8px;
+            padding: 16px;
+        }
         .copy {
             height: 40px;
             width: 40px;
@@ -1059,6 +1069,9 @@ const copyOrganizerContact = () => {
                     display: flex;
                     flex-direction: column;
                     gap: 8px;
+                    &:empty {
+                        display: none;
+                    }
                     .user-item {
                         display: flex;
                         align-items: center;

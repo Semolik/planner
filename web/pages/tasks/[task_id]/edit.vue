@@ -6,7 +6,10 @@
         :class="{ 'min-h-[650px]': task.event }"
     >
         <template #top>
-            <UBreadcrumb :items="sections" />
+            <UBreadcrumb
+                :items="sections"
+                v-if="$viewport.isGreaterThan('md')"
+            />
         </template>
         <div class="edit-form">
             <div class="form-header">
@@ -41,6 +44,16 @@
             <div class="form-content">
                 <nuxt-page @update:task="task = $event" />
             </div>
+            <app-button
+                active
+                class="lg:!hidden"
+                :to="{
+                    name: routesNames.tasksTaskId,
+                    params: { task_id: task_id },
+                }"
+            >
+                Назад к задаче
+            </app-button>
         </div>
     </app-form>
 </template>
@@ -91,27 +104,44 @@ const sections = computed(() => [
     grid-template-columns: 250px 1fr;
     grid-template-rows: min-content 1fr;
     height: 100%;
+    @include lg(true) {
+        grid-template-columns: 1fr;
+        grid-template-rows: min-content min-content 1fr;
+
+        gap: 8px;
+    }
     .form-header {
-        padding: 10px;
-        font-size: 20px;
-        text-align: center;
+        font-size: 1.5rem;
         grid-column: 1 / -1;
-        border-bottom: 1px solid $border-color;
+        @include lg {
+            padding: 10px;
+            border-bottom: 1px solid $border-color;
+            text-align: center;
+        }
     }
     .form-content {
-        grid-column: 2;
-        padding: 10px;
         display: flex;
         flex-direction: column;
         gap: 20px;
+        @include lg {
+            padding: 10px;
+            grid-column: 2;
+        }
     }
     aside {
         display: flex;
-        flex-direction: column;
+
         gap: 5px;
-        padding: 10px;
-        height: 100%;
-        border-right: 1px solid $border-color;
+
+        @include lg {
+            flex-direction: column;
+            padding: 10px;
+            border-right: 1px solid $border-color;
+            height: 100%;
+        }
+        @include lg(true) {
+            flex-wrap: wrap;
+        }
         a {
             display: flex;
             padding: 5px 10px;
@@ -119,12 +149,17 @@ const sections = computed(() => [
             align-items: center;
             gap: 10px;
             border-radius: 10px;
-            // font-size: 15px;
             border: 1px solid $text-color-secondary;
             cursor: pointer;
             color: $text-color-secondary;
             word-wrap: break-word;
             overflow-wrap: anywhere;
+            @include lg(true) {
+                flex-grow: 1;
+                text-align: center;
+                align-items: center;
+                justify-content: center;
+            }
             &.router-link-exact-active {
                 color: white;
                 background-color: black;

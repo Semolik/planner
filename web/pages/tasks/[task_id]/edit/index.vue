@@ -1,6 +1,6 @@
 <template>
-    <div class="flex flex-col gap-2 w-full">
-        <div class="flex gap-1">
+    <div class="flex flex-col gap-2 w-full h-full">
+        <div class="flex gap-2">
             <app-input
                 v-model="name"
                 :label="`Название ${task.event ? 'мероприятия' : 'задачи'}`"
@@ -16,7 +16,7 @@
                 label="Название утверждено"
                 class="ml-1"
             />
-            <div class="flex gap-1">
+            <div class="flex gap-2">
                 <app-input
                     v-model="location"
                     label="Место проведения"
@@ -30,7 +30,7 @@
                 />
             </div>
 
-            <div class="flex gap-1">
+            <div class="flex gap-2">
                 <app-input
                     v-model="date"
                     type="date"
@@ -61,8 +61,8 @@
                 rows="3"
                 class="max-h-[150px]"
             />
-            <div class="flex gap-1">
-                <div class="flex gap-1 w-full">
+            <div class="flex gap-2">
+                <div class="flex gap-2 w-full">
                     <app-input
                         v-model="link"
                         label="Ссылка на публикацию"
@@ -117,7 +117,7 @@
                 />
             </div>
         </template>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-auto">
+        <div class="grid grid-cols-2 gap-2 mt-auto">
             <app-button red active @click="deleteTaskModalOpen = true">
                 Удалить
             </app-button>

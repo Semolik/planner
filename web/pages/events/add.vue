@@ -326,6 +326,7 @@ const createEvent = async () => {
     overflow: hidden;
     text-overflow: ellipsis;
     position: relative;
+
     &.active .iconify {
         transform: rotate(-180deg);
     }

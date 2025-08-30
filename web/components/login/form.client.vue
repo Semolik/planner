@@ -100,6 +100,7 @@ watch(social, (newValue) => {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+
     .role-selector {
         display: flex;
         flex-direction: column;

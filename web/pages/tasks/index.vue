@@ -161,7 +161,9 @@ onUnmounted(() => {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-
+    @include lg(true) {
+        gap: 5px;
+    }
     .filter-item {
         display: flex;
         align-items: center;

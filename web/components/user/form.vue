@@ -100,7 +100,7 @@
         </div>
         <div class="flex flex-col gap-1">
             <div class="event-form-label">Роли</div>
-            <div class="flex flex-wrap gap-4 ml-2">
+            <div class="flex flex-wrap md:gap-4 gap-2 md:ml-2">
                 <UCheckbox
                     v-for="role in roles"
                     v-model="role.selected"

@@ -275,9 +275,9 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="flex-1 divide-accented w-full">
+    <div class="flex-1 md:divide-accented w-full">
         <div
-            class="flex items-center gap-2 min-h-[60px] overflow-x-auto px-2 head"
+            class="flex md:items-center gap-2 min-h-[60px] overflow-x-auto px-2 head md:flex-row flex-col-reverse"
         >
             <UInput
                 v-model="searchQuery"
@@ -288,7 +288,7 @@ onMounted(() => {
             <app-button
                 active
                 mini
-                class="ml-auto"
+                class="md:ml-auto"
                 :to="{ name: routesNames.usersAdd }"
             >
                 Добавить пользователя
@@ -313,6 +313,8 @@ onMounted(() => {
 </template>
 <style scoped lang="scss">
 .head {
-    border-bottom: 1px solid $border-color;
+    @include md {
+        border-bottom: 1px solid $border-color;
+    }
 }
 </style>

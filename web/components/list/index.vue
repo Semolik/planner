@@ -62,8 +62,6 @@ defineProps({
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 10px;
 
-    height: 100%;
-
     .empty-results {
         height: 100%;
         grid-column: 1 / -1;

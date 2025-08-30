@@ -1,7 +1,7 @@
 <template>
     <page-container header="Группы">
         <div class="groups-page" ref="container">
-            <div class="flex gap-2">
+            <div class="flex gap-2 md:flex-row flex-col">
                 <app-input
                     v-model="searchQuery"
                     placeholder="Поиск групп"
@@ -9,11 +9,12 @@
                 />
                 <app-button
                     active
+                    class="whitespace-nowrap"
                     :to="{
                         name: routesNames.eventsGroupsNew,
                     }"
                 >
-                    Создать
+                    Создать группу
                 </app-button>
             </div>
             <div v-if="gridInitialized" ref="scroller" class="scroller">

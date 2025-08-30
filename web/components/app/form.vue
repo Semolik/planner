@@ -4,6 +4,7 @@
             'form-container',
             { 'full-height': fullHeight },
             { 'no-padding': noPadding },
+            { 'center-mobile': centerMobile },
         ]"
     >
         <div class="form-top">
@@ -42,6 +43,10 @@ defineProps({
         type: Boolean,
         default: false,
     },
+    centerMobile: {
+        type: Boolean,
+        required: false,
+    },
 });
 const emit = defineEmits(["submit"]);
 </script>
@@ -58,6 +63,14 @@ const emit = defineEmits(["submit"]);
         .form-wrapper {
             height: 100%;
             min-height: min-content;
+        }
+        &.center-mobile .form-wrapper {
+            justify-content: center;
+        }
+        @include md(true) {
+            .form {
+                height: 100%;
+            }
         }
     }
     .form-top:empty {
@@ -78,20 +91,24 @@ const emit = defineEmits(["submit"]);
         gap: 10px;
         width: 100%;
 
-        @include sm(true) {
+        @include lg(true) {
             & {
                 padding: 0;
             }
         }
-        & {
-            @include flex-center;
+        @include lg {
+            & {
+                @include flex-center;
+            }
         }
     }
     .bottom-form {
-        max-width: v-bind(maxWidth);
         width: 100%;
         display: flex;
         flex-direction: column;
+        @include lg {
+            max-width: v-bind(maxWidth);
+        }
     }
     &.no-padding {
         .form {
@@ -101,18 +118,20 @@ const emit = defineEmits(["submit"]);
     .form {
         color: $text-color;
         width: 100%;
-        max-width: v-bind(maxWidth);
 
-        padding: 20px;
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 5px;
         position: relative;
-        background-color: $secondary-bg;
-        border-radius: 20px;
-        border: 1px solid $border-color;
-        position: relative;
-
+        padding: 10px;
+        @include lg {
+            background-color: $secondary-bg;
+            border: 1px solid $border-color;
+            border-radius: 20px;
+            padding: 20px;
+            gap: 10px;
+            max-width: v-bind(maxWidth);
+        }
         .description {
             font-size: 14px;
             color: $text-color-secondary;

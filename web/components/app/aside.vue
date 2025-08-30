@@ -1,48 +1,56 @@
 <template>
     <aside>
-        <div class="head">
-            <nuxt-link class="header_logo" href="/">
-                <div class="logo" v-if="appSettingsStore.settings.app_logo">
-                    <img :src="appSettingsStore.settings.app_logo" alt="Logo" />
-                </div>
-                <div class="name">
-                    {{ appSettingsStore.settings.app_name }}
-                </div>
-            </nuxt-link>
-        </div>
+        <slot name="head" />
 
         <div class="aside-block" v-for="(block, index) in blocks" :key="index">
             <div class="block-name" v-if="block.name">{{ block.name }}</div>
             <div class="items">
-                <div
-                    class="dropdown-button"
-                    :class="{ open: dropdownOpen }"
-                    v-if="index === 0"
-                    @click="dropdownOpen = !dropdownOpen"
-                    v-auto-animate
-                >
-                    <div class="button-content">
-                        Создать
-                        <Icon name="i-lucide-chevron-down" />
+                <template v-if="index === 0">
+                    <div
+                        class="dropdown-button"
+                        :class="{ open: dropdownOpen }"
+                        v-if="$viewport.isGreaterOrEquals('lg')"
+                        @click="dropdownOpen = !dropdownOpen"
+                        v-auto-animate
+                    >
+                        <div class="button-content">
+                            Создать
+                            <Icon name="i-lucide-chevron-down" />
+                        </div>
+                        <div class="links" v-if="dropdownOpen" @click.stop>
+                            <nuxt-link
+                                class="link"
+                                @click.stop.prevent="dropdownOpen = false"
+                                :to="{ name: routesNames.tasksAdd }"
+                            >
+                                задачу
+                            </nuxt-link>
+                            <nuxt-link
+                                class="link"
+                                :to="{ name: routesNames.eventsAdd }"
+                                @click.stop.prevent="dropdownOpen = false"
+                            >
+                                мероприятие
+                            </nuxt-link>
+                        </div>
                     </div>
-                    <div class="links" v-if="dropdownOpen" @click.stop>
+                    <div v-else class="aside-line">
                         <nuxt-link
-                            class="link"
-                            @click.stop.prevent="dropdownOpen = false"
+                            class="aside-item"
                             :to="{ name: routesNames.tasksAdd }"
                         >
-                            задачу
+                            <Icon name="material-symbols:add-rounded" />
+                            <span> Задача </span>
                         </nuxt-link>
                         <nuxt-link
-                            class="link"
+                            class="aside-item"
                             :to="{ name: routesNames.eventsAdd }"
-                            @click.stop.prevent="dropdownOpen = false"
                         >
-                            мероприятие
+                            <Icon name="material-symbols:add-rounded" />
+                            <span> Мероприятие </span>
                         </nuxt-link>
                     </div>
-                </div>
-
+                </template>
                 <nuxt-link
                     class="aside-item"
                     v-for="item in block.items"
@@ -99,49 +107,28 @@ const logout = () => {
 aside {
     display: flex;
     flex-direction: column;
-    width: 280px;
 
-    border-right: 1px solid $border-color;
     height: 100%;
-
+    @include lg {
+        border-right: 1px solid $border-color;
+        width: 280px;
+    }
+    @include lg(true) {
+        width: 100%;
+        gap: 10px;
+    }
     .spliter {
         height: 1px;
         background-color: $border-color;
     }
-    .head {
-        display: flex;
-        align-items: center;
-        padding: 13px;
-        height: 60px;
-        gap: 10px;
-        border-bottom: 1px solid $border-color;
 
-        .header_logo {
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            color: $text-color-secondary;
-
-            .logo {
-                width: 30px;
-                height: 30px;
-                img {
-                    width: 100%;
-                    height: 100%;
-                    object-fit: contain;
-                }
-            }
-            .name {
-                font-size: 18px;
-                font-weight: bold;
-            }
-        }
-    }
     .aside-block {
-        padding: 13px;
         display: flex;
         flex-direction: column;
         gap: 10px;
+        @include lg {
+            padding: 13px;
+        }
 
         .dropdown-button {
             border: 1px solid black;
@@ -193,6 +180,20 @@ aside {
             display: flex;
             flex-direction: column;
             gap: 5px;
+            @include lg(true) {
+                gap: 8px;
+            }
+            .aside-line {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 5px;
+                .aside-item {
+                    flex-grow: 1;
+                    text-align: center;
+                    justify-content: center;
+                    gap: 5px;
+                }
+            }
             .aside-item {
                 display: flex;
                 padding: 10px;
@@ -231,12 +232,6 @@ aside {
                     overflow-wrap: anywhere;
                 }
             }
-        }
-    }
-    @include sm(true) {
-        & {
-            width: 100%;
-            padding: 5px;
         }
     }
 }

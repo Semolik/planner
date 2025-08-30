@@ -24,11 +24,18 @@ defineProps({
 .page-container {
     display: flex;
     flex-direction: column;
-
+    height: 100%;
     width: 100%;
     gap: 10px;
     box-sizing: border-box;
+    @include lg(true) {
+        gap: 8px;
+        .header {
+            padding-bottom: 0px;
 
+            display: none !important;
+        }
+    }
     .header {
         display: flex;
         align-items: center;

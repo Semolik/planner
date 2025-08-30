@@ -3,18 +3,38 @@
         <NuxtLoadingIndicator />
 
         <div class="default-layout">
-            <app-aside :blocks="asideBlocks" v-if="authStore.logined" />
+            <template v-if="authStore.logined">
+                <app-head v-if="$viewport.isLessThan('lg')" />
+                <app-aside :blocks="asideBlocks" v-else>
+                    <template #head> <app-head /> </template></app-aside
+            ></template>
 
             <div id="teleports"></div>
             <div :class="['default-layout__content', { padding: !noPadding }]">
                 <slot />
+            </div>
+            <div
+                class="bottom-bar"
+                v-if="authStore.logined && $viewport.isLessThan('lg')"
+            >
+                <nuxt-link class="bottom-bar-item" to="/">
+                    <Icon name="material-symbols:home-rounded" />
+                </nuxt-link>
+                <nuxt-link class="bottom-bar-item" to="/tasks">
+                    <Icon name="material-symbols:calendar-month" />
+                </nuxt-link>
+                <nuxt-link class="bottom-bar-item" to="/menu">
+                    <Icon
+                        name="material-symbols:format-list-bulleted-rounded"
+                    />
+                </nuxt-link>
             </div>
         </div>
     </UApp>
 </template>
 <script setup>
 import { routesNames } from "@typed-router";
-
+const { $viewport } = useNuxtApp();
 import { useAuthStore } from "~/stores/auth";
 const { noPadding } = defineProps({
     noPadding: {
@@ -52,7 +72,7 @@ const asideBlocks = computed(() => {
                 {
                     name: "Мероприятия и задачи",
                     path: routesNames.tasks,
-                    icon: "material-symbols:list-rounded",
+                    icon: "material-symbols:calendar-month",
                 },
                 {
                     name: "Группы мероприятий",
@@ -102,11 +122,13 @@ const asideBlocks = computed(() => {
 <style lang="scss">
 .default-layout {
     display: flex;
-
     height: 100%;
     max-width: 100%;
     overflow-y: auto;
     isolation: isolate;
+    @include lg(true) {
+        flex-direction: column;
+    }
 
     &__content {
         flex: 1;
@@ -115,9 +137,41 @@ const asideBlocks = computed(() => {
         width: 100%;
         margin: 0 auto;
         z-index: 0;
-
         &.padding {
             padding: 13px;
+        }
+        @include lg(true) {
+            overflow: auto;
+            padding: 8px !important;
+        }
+    }
+    .bottom-bar {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        padding: 8px;
+        border-top: 1px solid $border-color;
+        .bottom-bar-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 8px;
+            background: $secondary-bg;
+            border: 1px solid $border-color;
+            border-radius: 8px;
+            .iconify {
+                width: 20px;
+                height: 20px;
+            }
+            &.router-link-exact-active {
+                color: white;
+                background-color: black;
+                border-color: transparent;
+
+                .iconify {
+                    color: white;
+                }
+            }
         }
     }
 }

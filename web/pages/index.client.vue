@@ -1,6 +1,6 @@
 <template>
     <div class="index-page">
-        <div class="block">
+        <div class="block" v-if="typed_tasks.length">
             <div class="head">Мои задачи</div>
             <div class="tasks">
                 <div
@@ -363,9 +363,12 @@ const getTypedTaskDate = (task) => {
 .index-page {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    padding: 10px;
-    gap: 20px;
 
+    gap: 10px;
+    @include lg {
+        padding: 10px;
+        gap: 20px;
+    }
     .block {
         padding: 20px;
         border: 1px solid #ccc;

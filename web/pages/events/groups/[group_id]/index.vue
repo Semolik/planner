@@ -36,11 +36,13 @@
             </div>
         </div>
 
-        <template #header>
+        <div class="tasks-grid">
+            <task-card v-for="task in tasks" :key="task.id" :task="task" />
+        </div>
+        <template #header v-if="authStore.isAdmin">
             <app-button
                 active
                 mini
-                v-if="authStore.isAdmin"
                 :to="{
                     name: routesNames.eventsGroupsGroupIdEdit,
                     params: { group_id },
@@ -49,9 +51,17 @@
                 Редактировать
             </app-button>
         </template>
-        <div class="tasks-grid">
-            <task-card v-for="task in tasks" :key="task.id" :task="task" />
-        </div>
+        <app-button
+            active
+            :to="{
+                name: routesNames.eventsGroupsGroupIdEdit,
+                params: { group_id },
+            }"
+            class="lg:!hidden mt-auto"
+            v-if="authStore.isAdmin"
+        >
+            Редактировать
+        </app-button>
     </page-container>
 </template>
 <script setup>
