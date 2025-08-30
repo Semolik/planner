@@ -69,9 +69,7 @@ import { routesNames } from "@typed-router";
 import { EventsGroupsService } from "~/client";
 import { useAuthStore } from "~/stores/auth";
 const { group_id } = useRoute().params;
-definePageMeta({
-    middleware: ["user"],
-});
+
 const authStore = useAuthStore();
 const group =
     await EventsGroupsService.getEventGroupEventsGroupsGroupIdGet(group_id);

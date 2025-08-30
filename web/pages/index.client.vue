@@ -163,9 +163,6 @@
 import { HomeService, UserRole, TasksService } from "~/client";
 import { useAuthStore } from "~/stores/auth";
 
-definePageMeta({
-    middleware: ["user"],
-});
 const tasks = await TasksService.getMyTasksTasksMyGet(1, "active");
 // flat array of tasks
 const typed_tasks = tasks.flatMap((task) => {

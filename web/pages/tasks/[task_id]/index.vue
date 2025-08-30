@@ -528,10 +528,6 @@ import {
 } from "~/client";
 import { useAuthStore } from "~/stores/auth";
 
-definePageMeta({
-    middleware: ["user"],
-});
-
 const authStore = useAuthStore();
 const { userData } = storeToRefs(authStore);
 const selectedTypedTask = ref(null);

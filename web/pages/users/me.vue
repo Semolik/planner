@@ -7,7 +7,4 @@ const authStore = useAuthStore();
 useSeoMeta({
     title: "Мой профиль",
 });
-definePageMeta({
-    middleware: ["user"],
-});
 </script>

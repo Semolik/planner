@@ -59,6 +59,7 @@ export const useAuthStore = defineStore("auth", {
                 return error;
             }
         },
+
         async registerRequest(username, password, name, role) {
             this.logined = false;
             try {

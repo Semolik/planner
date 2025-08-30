@@ -4,7 +4,10 @@ import { routesNames } from "@typed-router";
 export const useAuthMiddleware = async (context, userRole) => {
     const authStore = useAuthStore();
     const { logined } = storeToRefs(authStore);
-    await authStore.getUserData();
+
+    if (!logined.value) {
+        await authStore.getUserData();
+    }
     if (
         !logined.value ||
         (userRole &&

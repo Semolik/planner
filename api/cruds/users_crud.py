@@ -35,8 +35,8 @@ class UsersCRUD(BaseCRUD):
         else:
             users = users.order_by(order_query)
         if filter_role:
-            users = users.outerjoin(UserRoleAssociation, UserRoleAssociation.user_id == User.id).where(
-                or_(UserRoleAssociation.role == filter_role, User.is_superuser == True))
+            users = users.join(UserRoleAssociation, UserRoleAssociation.user_id == User.id).where(
+                UserRoleAssociation.role == filter_role)
         if search:
             users = users.where(
                 or_(User.first_name.ilike(f"%{search}%"), User.last_name.ilike(
