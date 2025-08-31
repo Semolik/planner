@@ -47,6 +47,7 @@ export const useAuthStore = defineStore("auth", {
             } catch (error) {
                 console.log(error);
                 this.resetSavedData();
+                return error;
             }
         },
         async updateProfile(data) {
