@@ -11,6 +11,7 @@ services:
       - .env
     environment:
       - HOST=http://localhost
+      - COOKIE_DOMAIN=localhost
     restart: always
     command: uvicorn main:app --host 0.0.0.0 --reload --port 8000
     depends_on:

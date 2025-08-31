@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
+    COOKIE_DOMAIN: str
     EVENT_LEVELS: List[str] = [
         'Институтский', 'Университетский', 'Городской',
         'Региональный', 'Окружной', 'Межрегиональный',
