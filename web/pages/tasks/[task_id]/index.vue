@@ -1003,10 +1003,12 @@ const copyOrganizerContact = () => {
     @include lg {
         justify-content: center;
         align-items: center;
+        .task-card {
+            max-width: 600px;
+        }
     }
     .task-card {
         width: 100%;
-        max-width: 500px;
 
         display: flex;
         flex-direction: column;
