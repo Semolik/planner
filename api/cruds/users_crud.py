@@ -37,11 +37,17 @@ class UsersCRUD(BaseCRUD):
         if filter_role:
             users = users.join(UserRoleAssociation, UserRoleAssociation.user_id == User.id).where(
                 UserRoleAssociation.role == filter_role)
-        if search:
+        if search and search.strip():
+            search = search.strip()
             users = users.where(
-                or_(User.first_name.ilike(f"%{search}%"), User.last_name.ilike(
-                    f"%{search}%")), User.patronymic.ilike(f"%{search}%"),
-                User.phone.ilike(f"%{search}%"), User.group.ilike(f"%{search}%"))
+                or_(
+                    User.first_name.ilike(f"%{search}%"),
+                    User.last_name.ilike(f"%{search}%"),
+                    User.patronymic.ilike(f"%{search}%"),
+                    User.phone.ilike(f"%{search}%"),
+                    User.group.ilike(f"%{search}%")
+                )
+            )
         if only_superusers:
             users = users.where(User.is_superuser == True)
         users = users.offset(
