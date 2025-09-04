@@ -9,12 +9,13 @@
                     type="text"
                 />
 
+                <!-- Прокручиваемый контейнер -->
+
                 <div
-                    :class="[
-                        'flex flex-col gap-2',
-                        { grow: searchUsersResults.length === 0 },
-                    ]"
+                    ref="scrollContainer"
+                    class="flex flex-col gap-2"
                     v-auto-animate
+                    :style="{ 'max-height': '40vh', 'overflow-y': 'auto' }"
                 >
                     <div
                         class="user-item"
@@ -38,11 +39,20 @@
                         </div>
                     </div>
 
+                    <!-- Сообщение, если нет результатов -->
                     <div
-                        class="text-md text-gray-500 text-center grow flex items-center justify-center"
-                        v-if="searchUsersResults.length === 0"
+                        class="text-md text-gray-500 text-center"
+                        v-if="searchUsersResults.length === 0 && !loading"
                     >
                         Ничего не найдено
+                    </div>
+
+                    <!-- Лоадер подгрузки -->
+                    <div
+                        class="text-center py-2 text-sm text-gray-500"
+                        v-if="loading"
+                    >
+                        Загрузка...
                     </div>
                 </div>
             </div>
@@ -51,6 +61,8 @@
 </template>
 <script setup>
 import { UsersService, UserRole } from "~/client";
+import { useInfiniteScroll } from "@vueuse/core";
+
 const props = defineProps({
     active: {
         type: Boolean,
@@ -68,11 +80,11 @@ const props = defineProps({
         type: String,
     },
 });
+
 const { excludeUsers } = toRefs(props);
+
 const title = computed(() => {
-    if (!props.filterRole) {
-        return `Выбрать пользователя`;
-    }
+    if (!props.filterRole) return `Выбрать пользователя`;
     switch (props.filterRole) {
         case UserRole.COPYWRITER:
             return `Выбрать копирайтера`;
@@ -80,47 +92,94 @@ const title = computed(() => {
             return `Выбрать фотографа`;
         case UserRole.DESIGNER:
             return `Выбрать дизайнера`;
+        default:
+            return `Выбрать пользователя`;
     }
 });
+
 const emit = defineEmits(["update:active", "select"]);
 const active = computed({
     get: () => props.active,
     set: (value) => emit("update:active", value),
 });
-const searchUsersQuery = ref("");
 
-watch(active, (value) => {
-    if (value) {
-        searchUsersQuery.value = "";
-    }
-});
-const excludeUsersIds = computed(() => {
-    return excludeUsers.value.map((user) => user.id);
-});
-const searchResults = ref([]);
-watch(
-    [searchUsersQuery, () => props.filterRole],
-    async () => {
-        searchResults.value = await UsersService.getUsersUsersGet(
+const searchUsersQuery = ref("");
+const excludeUsersIds = computed(() =>
+    excludeUsers.value.map((user) => user.id)
+);
+
+// Состояние пагинации
+const page = ref(1);
+const hasMore = ref(true);
+const loading = ref(false);
+const allUsers = ref([]);
+
+// Ссылка на контейнер прокрутки
+const scrollContainer = ref(null);
+
+// Загрузка пользователей
+const loadUsers = async () => {
+    if (loading.value || !hasMore.value) return;
+
+    try {
+        const response = await UsersService.getUsersUsersGet(
             searchUsersQuery.value,
-            1,
+            page.value,
             "last_name",
             "asc",
             false,
             false,
             props.filterRole
         );
+
+        if (response.length === 0) {
+            hasMore.value = false;
+        } else {
+            allUsers.value.push(...response);
+            page.value++;
+        }
+    } catch (error) {
+        console.error("Failed to load users:", error);
+        hasMore.value = false;
+    } finally {
+        loading.value = false;
+    }
+};
+
+watch([searchUsersQuery, () => props.filterRole], () => {
+    allUsers.value = [];
+    page.value = 1;
+    hasMore.value = true;
+    loadUsers();
+});
+
+watch(
+    () => active,
+    () => {
+        if (!active.value) return;
+        nextTick(() => {
+            useInfiniteScroll(scrollContainer.value, () => loadUsers(), {
+                canLoadMore: () => hasMore.value,
+                distance: 10,
+            });
+        });
     },
     { immediate: true }
 );
+
 const searchUsersResults = computed(() =>
-    searchResults.value.map((user) => ({
+    allUsers.value.map((user) => ({
         ...user,
         excluded: excludeUsersIds.value.includes(user.id),
     }))
 );
 </script>
 <style scoped lang="scss">
+.user-list-container {
+    border-top: 1px solid #eee;
+    margin-top: 8px;
+}
+
 .user-item {
     display: flex;
     align-items: center;
@@ -128,15 +187,18 @@ const searchUsersResults = computed(() =>
     padding: 10px;
     border-radius: 10px;
     border: 1px solid $tertiary-bg;
-
     cursor: pointer;
-    &:hover {
+    transition: border-color 0.2s;
+
+    &:hover:not(.excluded) {
         border-color: $text-color;
     }
 
     &.excluded {
         cursor: not-allowed;
+        opacity: 0.7;
     }
+
     .user-item-info {
         display: flex;
         justify-content: space-between;
@@ -151,7 +213,6 @@ const searchUsersResults = computed(() =>
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 180px;
-            display: block;
         }
 
         .badge {
