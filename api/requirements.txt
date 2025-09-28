@@ -9,3 +9,4 @@ pydantic-async-validation==0.1.0
 requests==2.31.0
 typer==0.15.2
 vkbottle==4.5.1
+ruff==0.13.2

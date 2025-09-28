@@ -1,4 +1,4 @@
-from datetime import datetime, time
+from datetime import datetime, time, date
 from typing import Literal, Optional
 import uuid
 
@@ -6,14 +6,24 @@ from sqlalchemy.orm import selectinload, contains_eager
 
 from cruds.base_crud import BaseCRUD
 from models.user_models import User, UserRole
-from models.events_models import Event, State, Task, TaskFile, TaskImage, TypedTask, TaskState, TasksToken, TaskStatePeriod
+from models.events_models import (
+    Event,
+    State,
+    Task,
+    TaskFile,
+    TaskImage,
+    TypedTask,
+    TaskState,
+    TasksToken,
+    TaskStatePeriod,
+)
 from sqlalchemy import select, and_, or_
 from sqlalchemy.sql import exists
 from sqlalchemy.sql import case
 
 
 class TasksCRUD(BaseCRUD):
-    async def create_task(self, name: str,  event_id: uuid.UUID | None = None) -> Task:
+    async def create_task(self, name: str, event_id: uuid.UUID | None = None) -> Task:
         task = Task(
             name=name,
             event_id=event_id,
@@ -21,71 +31,95 @@ class TasksCRUD(BaseCRUD):
         return await self.create(task)
 
     def get_typed_task_options(self):
-        return [selectinload(TypedTask.users),
-                selectinload(TypedTask.task_states).selectinload(
-                TaskState.user).options(selectinload(User.institute)),
-                selectinload(TypedTask.parent_task).selectinload(Task.event).options(
-                    selectinload(Event.group)
-        ),
-            selectinload(TypedTask.task_states).selectinload(TaskState.period)]
+        return [
+            selectinload(TypedTask.users),
+            selectinload(TypedTask.task_states)
+            .selectinload(TaskState.user)
+            .options(selectinload(User.institute)),
+            selectinload(TypedTask.parent_task)
+            .selectinload(Task.event)
+            .options(selectinload(Event.group)),
+            selectinload(TypedTask.task_states).selectinload(TaskState.period),
+        ]
 
     async def get_typed_task(self, typed_task_id: uuid.UUID) -> TypedTask:
-        query = select(TypedTask).where(TypedTask.id == typed_task_id).options(
-            *self.get_typed_task_options()
+        query = (
+            select(TypedTask)
+            .where(TypedTask.id == typed_task_id)
+            .options(*self.get_typed_task_options())
         )
         result = await self.db.execute(query)
         return result.scalars().first()
 
-    async def assign_user_to_task(self, typed_task: TypedTask, user: User, comment: str) -> TaskState:
+    async def assign_user_to_task(
+        self, typed_task: TypedTask, user: User, comment: str
+    ) -> TaskState:
         task_state = TaskState(
             type_task_id=typed_task.id,
             user_id=user.id,
-
             comment=comment,
         )
         await self.create(task_state)
         return task_state
 
     async def get_task_state(self, typed_task: TypedTask, user: User) -> TaskState:
-        query = select(TaskState).where(TaskState.type_task_id ==
-                                        typed_task.id, TaskState.user_id == user.id)
+        query = select(TaskState).where(
+            TaskState.type_task_id == typed_task.id, TaskState.user_id == user.id
+        )
         result = await self.db.execute(query)
         return result.scalars().first()
 
     async def get_task_state_by_id(self, typed_task_state_id: uuid.UUID) -> TaskState:
-        query = select(TaskState).where(TaskState.id ==
-                                        typed_task_state_id).options(
-            selectinload(TaskState.user).options(selectinload(User.institute)),
-            selectinload(TaskState.period),
-            selectinload(TaskState.typed_task).selectinload(
-                TypedTask.users).selectinload(User.roles_objects),
-            selectinload(TaskState.typed_task).selectinload(
-                TypedTask.parent_task).selectinload(Task.event).options(
-                    selectinload(Event.group)
-            ),
+        query = (
+            select(TaskState)
+            .where(TaskState.id == typed_task_state_id)
+            .options(
+                selectinload(TaskState.user).options(selectinload(User.institute)),
+                selectinload(TaskState.period),
+                selectinload(TaskState.typed_task)
+                .selectinload(TypedTask.users)
+                .selectinload(User.roles_objects),
+                selectinload(TaskState.typed_task)
+                .selectinload(TypedTask.parent_task)
+                .selectinload(Task.event)
+                .options(selectinload(Event.group)),
+            )
         )
         result = await self.db.execute(query)
         return result.scalars().first()
 
-    async def get_task_state_period_by_task_state_id(self, task_state_id: uuid.UUID) -> TaskStatePeriod:
-        query = select(TaskStatePeriod).where(
-            TaskStatePeriod.task_state_id == task_state_id).options(
-            selectinload(TaskStatePeriod.task_state).selectinload(
-                TaskState.user).options(selectinload(User.institute)),
-            selectinload(TaskStatePeriod.task_state).selectinload(
-                TaskState.period)
-
+    async def get_task_state_period_by_task_state_id(
+        self, task_state_id: uuid.UUID
+    ) -> TaskStatePeriod:
+        query = (
+            select(TaskStatePeriod)
+            .where(TaskStatePeriod.task_state_id == task_state_id)
+            .options(
+                selectinload(TaskStatePeriod.task_state)
+                .selectinload(TaskState.user)
+                .options(selectinload(User.institute)),
+                selectinload(TaskStatePeriod.task_state).selectinload(TaskState.period),
+            )
         )
         result = await self.db.execute(query)
         return result.scalars().first()
 
-    async def update_task_state(self, task_state: TaskState, comment: str, state: State) -> TaskState:
-
+    async def update_task_state(
+        self, task_state: TaskState, comment: str, state: State
+    ) -> TaskState:
         task_state.comment = comment
         task_state.state = state
         return await self.update(task_state)
 
-    async def create_typed_task(self, task_id: uuid.UUID, task_type: UserRole,  for_single_user: bool, due_date: datetime | None = None, description: str | None = None, link: str = "") -> TypedTask:
+    async def create_typed_task(
+        self,
+        task_id: uuid.UUID,
+        task_type: UserRole,
+        for_single_user: bool,
+        due_date: datetime | None = None,
+        description: str | None = None,
+        link: str = "",
+    ) -> TypedTask:
         typed_task = TypedTask(
             task_id=task_id,
             task_type=task_type,
@@ -96,7 +130,14 @@ class TasksCRUD(BaseCRUD):
         )
         return await self.create(typed_task)
 
-    async def update_typed_task(self, typed_task: TypedTask,  for_single_user: bool, due_date: datetime | None = None, description: str | None = None, link: str = "") -> TypedTask:
+    async def update_typed_task(
+        self,
+        typed_task: TypedTask,
+        for_single_user: bool,
+        due_date: datetime | None = None,
+        description: str | None = None,
+        link: str = "",
+    ) -> TypedTask:
         typed_task.description = description
         typed_task.link = link
         typed_task.due_date = due_date
@@ -110,7 +151,7 @@ class TasksCRUD(BaseCRUD):
         page: int = 1,
         per_page: int = 10,
         hide_busy_tasks: bool = True,
-        prioritize_unassigned: bool = True
+        prioritize_unassigned: bool = True,
     ):
         if not roles:
             roles = [UserRole[role.name] for role in UserRole]
@@ -133,21 +174,19 @@ class TasksCRUD(BaseCRUD):
         )
 
         # Подзапрос для исключения прошедших мероприятий без фотографов
-        past_events_without_photographers = (
-            and_(
-                TypedTask.task_type == UserRole.PHOTOGRAPHER,
-                ~subquery_has_users,
-                Task.event_id.is_not(None),
-                Task.event.has(
-                    or_(
-                        Task.event.has(Event.date < current_datetime.date()),
-                        and_(
-                            Event.date <= current_datetime.date(),
-                            Event.end_time <= current_datetime.time()
-                        )
-                    )
+        past_events_without_photographers = and_(
+            TypedTask.task_type == UserRole.PHOTOGRAPHER,
+            ~subquery_has_users,
+            Task.event_id.is_not(None),
+            Task.event.has(
+                or_(
+                    Task.event.has(Event.date < current_datetime.date()),
+                    and_(
+                        Event.date <= current_datetime.date(),
+                        Event.end_time <= current_datetime.time(),
+                    ),
                 )
-            )
+            ),
         )
 
         if prioritize_unassigned or not hide_busy_tasks:
@@ -156,7 +195,8 @@ class TasksCRUD(BaseCRUD):
             )
             # Исключаем прошедшие мероприятия без фотографов
             unassigned_query = unassigned_query.filter(
-                ~past_events_without_photographers)
+                ~past_events_without_photographers
+            )
             result = await self.db.execute(unassigned_query)
             unassigned_tasks = result.unique().scalars().all()
 
@@ -164,9 +204,7 @@ class TasksCRUD(BaseCRUD):
                 return unassigned_tasks[:per_page]
 
         if hide_busy_tasks and not user_id:
-            regular_query = self._get_regular_tasks_query(
-                roles, subquery_has_users
-            )
+            regular_query = self._get_regular_tasks_query(roles, subquery_has_users)
         else:
             regular_query = self._get_all_tasks_query(roles, user_id)
 
@@ -181,17 +219,15 @@ class TasksCRUD(BaseCRUD):
                         selectinload(TaskState.user).options(
                             selectinload(User.institute)
                         ),
-                        selectinload(TaskState.period)
+                        selectinload(TaskState.period),
                     ),
                     selectinload(TypedTask.users).options(
                         selectinload(User.roles_objects)
                     ),
                 ),
-                selectinload(Task.event).options(
-                    selectinload(Event.group)
-                ),
+                selectinload(Task.event).options(selectinload(Event.group)),
                 selectinload(Task.files),
-                selectinload(Task.images)
+                selectinload(Task.images),
             )
         )
 
@@ -201,16 +237,12 @@ class TasksCRUD(BaseCRUD):
             regular_query = regular_query.order_by(
                 case(
                     (past_events_without_photographers, 2),  # Низкий приоритет
-                    (subquery_has_users, 1),                # Средний приоритет
-                    else_=0                                 # Высокий приоритет
+                    (subquery_has_users, 1),  # Средний приоритет
+                    else_=0,  # Высокий приоритет
                 )
             )
 
-        paginated_query = (
-            regular_query
-            .offset((page - 1) * per_page)
-            .limit(per_page)
-        )
+        paginated_query = regular_query.offset((page - 1) * per_page).limit(per_page)
 
         result = await self.db.execute(paginated_query)
         paginated_tasks = result.unique().scalars().all()
@@ -223,8 +255,8 @@ class TasksCRUD(BaseCRUD):
             .join(TypedTask, TypedTask.task_id == Task.id)
             .filter(
                 TypedTask.task_type.in_(roles),
-                ~subquery_has_users | (
-                    TaskState.user_id == user_id if user_id else False)
+                ~subquery_has_users
+                | (TaskState.user_id == user_id if user_id else False),
             )
         )
         return query
@@ -233,10 +265,7 @@ class TasksCRUD(BaseCRUD):
         query = (
             select(Task)
             .join(TypedTask, TypedTask.task_id == Task.id)
-            .filter(
-                TypedTask.task_type.in_(roles),
-                ~subquery_has_users
-            )
+            .filter(TypedTask.task_type.in_(roles), ~subquery_has_users)
         )
         return query
 
@@ -247,14 +276,24 @@ class TasksCRUD(BaseCRUD):
             .filter(TypedTask.task_type.in_(roles))
         )
         if user_id:
-            query = query.join(TaskState, TaskState.type_task_id == TypedTask.id).filter(
-                TaskState.user_id == user_id)
+            query = query.join(
+                TaskState, TaskState.type_task_id == TypedTask.id
+            ).filter(TaskState.user_id == user_id)
         return query
 
-    async def get_user_open_tasks(self, user_id: uuid.UUID, task_types: list[UserRole]) -> list[tuple[Task, TypedTask]]:
-        query = select(Task, TypedTask).join(TypedTask, Task.id == TypedTask.task_id).join(
-            TaskState, TypedTask.id == TaskState.type_task_id).where(
-            TaskState.state == State.PENDING, TypedTask.task_type.in_(task_types), TaskState.user_id == user_id)
+    async def get_user_open_tasks(
+        self, user_id: uuid.UUID, task_types: list[UserRole]
+    ) -> list[tuple[Task, TypedTask]]:
+        query = (
+            select(Task, TypedTask)
+            .join(TypedTask, Task.id == TypedTask.task_id)
+            .join(TaskState, TypedTask.id == TaskState.type_task_id)
+            .where(
+                TaskState.state == State.PENDING,
+                TypedTask.task_type.in_(task_types),
+                TaskState.user_id == user_id,
+            )
+        )
         result = await self.db.execute(query)
         return result.all()
 
@@ -283,16 +322,18 @@ class TasksCRUD(BaseCRUD):
         return result.scalars().all()
 
     async def update_task_state_period(
-            self, task_state_id: uuid.UUID, period_start: time, period_end: time) -> TaskStatePeriod:
+        self, task_state_id: uuid.UUID, period_start: time, period_end: time
+    ) -> TaskStatePeriod:
         query = select(TaskStatePeriod).where(
-            TaskStatePeriod.task_state_id == task_state_id)
+            TaskStatePeriod.task_state_id == task_state_id
+        )
         result = await self.db.execute(query)
         task_state_period = result.scalars().first()
         if not task_state_period:
             task_state_period = TaskStatePeriod(
                 task_state_id=task_state_id,
                 period_start=period_start,
-                period_end=period_end
+                period_end=period_end,
             )
             return await self.create(task_state_period)
         else:
@@ -301,68 +342,76 @@ class TasksCRUD(BaseCRUD):
             return await self.update(task_state_period)
 
     async def get_task_by_id(self, task_id: uuid.UUID) -> Task:
-        query = select(Task).where(Task.id == task_id).options(
-            selectinload(Task.event).options(
-                selectinload(Event.group)
-            ),
-            selectinload(Task.typed_tasks).options(
-                *self.get_typed_task_options()
-            ),
-            selectinload(Task.files),
-            selectinload(Task.images)
+        query = (
+            select(Task)
+            .where(Task.id == task_id)
+            .options(
+                selectinload(Task.event).options(selectinload(Event.group)),
+                selectinload(Task.typed_tasks).options(*self.get_typed_task_options()),
+                selectinload(Task.files),
+                selectinload(Task.images),
+            )
         )
         result = await self.db.execute(query)
         return result.scalars().first()
 
-    async def add_file_to_task(self, task_id: uuid.UUID, file_id: uuid.UUID) -> TaskFile:
-        return await self.create(TaskFile(
-            task_id=task_id,
-            file_id=file_id
-        ))
+    async def add_file_to_task(
+        self, task_id: uuid.UUID, file_id: uuid.UUID
+    ) -> TaskFile:
+        return await self.create(TaskFile(task_id=task_id, file_id=file_id))
 
-    async def add_image_to_task(self, task_id: uuid.UUID, image_id: uuid.UUID) -> TaskFile:
-        return await self.create(TaskImage(
-            task_id=task_id,
-            image_id=image_id
-        ))
+    async def add_image_to_task(
+        self, task_id: uuid.UUID, image_id: uuid.UUID
+    ) -> TaskFile:
+        return await self.create(TaskImage(task_id=task_id, image_id=image_id))
 
-    async def get_task_image(self, task_id: uuid.UUID, image_id: uuid.UUID) -> TaskImage:
+    async def get_task_image(
+        self, task_id: uuid.UUID, image_id: uuid.UUID
+    ) -> TaskImage:
         query = select(TaskImage).where(
-            TaskImage.task_id == task_id, TaskImage.image_id == image_id)
+            TaskImage.task_id == task_id, TaskImage.image_id == image_id
+        )
         result = await self.db.execute(query)
         return result.scalars().first()
 
     async def get_task_file(self, task_id: uuid.UUID, file_id: uuid.UUID) -> TaskFile:
         query = select(TaskFile).where(
-            TaskFile.task_id == task_id, TaskFile.file_id == file_id)
+            TaskFile.task_id == task_id, TaskFile.file_id == file_id
+        )
         result = await self.db.execute(query)
         return result.scalars().first()
 
-    async def get_my_tasks(self, user_id: uuid.UUID, filter: Literal['all', 'active'] = 'active', page: int = 1, per_page: int = 10):
-
-        query = (select(Task)
-                 .join(TypedTask, TypedTask.task_id == Task.id)
-                 .join(TaskState, TaskState.type_task_id == TypedTask.id))
-        if filter == 'active':
+    async def get_my_tasks(
+        self,
+        user_id: uuid.UUID,
+        filter: Literal["all", "active"] = "active",
+        page: int = 1,
+        per_page: int = 10,
+    ):
+        query = (
+            select(Task)
+            .join(TypedTask, TypedTask.task_id == Task.id)
+            .join(TaskState, TaskState.type_task_id == TypedTask.id)
+        )
+        if filter == "active":
             query = query.where(TaskState.state == State.PENDING)
         query = (
-            query
-            .where(TaskState.user_id == user_id)
+            query.where(TaskState.user_id == user_id)
             .options(
                 contains_eager(Task.typed_tasks).options(
                     contains_eager(TypedTask.task_states).options(
                         selectinload(TaskState.user).options(
-                            selectinload(User.institute)),
-                        selectinload(TaskState.period)
+                            selectinload(User.institute)
+                        ),
+                        selectinload(TaskState.period),
                     ),
                     selectinload(TypedTask.users).options(
-                        selectinload(User.roles_objects)),
+                        selectinload(User.roles_objects)
+                    ),
                 ),
-                selectinload(Task.event).options(
-                    selectinload(Event.group)
-                ),
+                selectinload(Task.event).options(selectinload(Event.group)),
                 selectinload(Task.files),
-                selectinload(Task.images)
+                selectinload(Task.images),
             )
             .offset((page - 1) * per_page)
             .limit(per_page)
@@ -370,3 +419,32 @@ class TasksCRUD(BaseCRUD):
 
         result = await self.db.execute(query)
         return result.unique().scalars().all()
+
+    async def get_tasks_by_period(self, date_from: date, date_to: date) -> list[Task]:
+        query = (
+            select(Task)
+            .where(
+                Task.due_date.between(date_from, date_to),
+            )
+            .options(
+                selectinload(Task.event).options(selectinload(Event.group)),
+                selectinload(Task.typed_tasks).options(*self.get_typed_task_options()),
+                selectinload(Task.files),
+                selectinload(Task.images),
+            )
+        )
+        result = await self.db.execute(query)
+        return result.scalars().all()
+
+    async def get_typed_tasks_by_period(
+        self, date_from: date, date_to: date
+    ) -> list[TypedTask]:
+        query = (
+            select(TypedTask)
+            .where(
+                TypedTask.due_date.between(date_from, date_to),
+            )
+            .options(*self.get_typed_task_options())
+        )
+        result = await self.db.execute(query)
+        return result.scalars().all()

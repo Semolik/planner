@@ -135,6 +135,7 @@ const asideBlocks = computed(() => {
         min-width: 0;
         max-height: 100%;
         width: 100%;
+        overflow-y: auto;
         margin: 0 auto;
         z-index: 0;
         &.padding {

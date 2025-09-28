@@ -110,10 +110,10 @@ a.app-button.light.router-link-exact-active {
     }
 }
 .app-button {
-    min-height: 40px;
+    min-height: 35px;
     border-radius: 10px;
     border: 1px solid $border-color;
-    padding: 3px 10px;
+    padding: 3px 20px;
     font-size: 16px;
     color: $text-color-secondary;
     outline: none;

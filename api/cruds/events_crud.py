@@ -1,11 +1,10 @@
 from typing import Literal
-from sqlalchemy.sql import and_, exists
 from sqlalchemy.sql import and_
 from datetime import date, datetime, time
 import uuid
 
 from sqlalchemy import delete, func, or_, select
-from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy.orm import selectinload
 
 from cruds.tasks_crud import TasksCRUD
 from cruds.base_crud import BaseCRUD
@@ -15,7 +14,21 @@ from models.events_models import Task, TypedTask, TaskState, EventGroup, EventLe
 
 
 class EventsCRUD(BaseCRUD):
-    async def create_event(self, name: str, date: datetime, location: str, organizer: str, start_time: datetime, end_time: datetime, name_approved: bool, required_photographers: int, description: str, group_id: uuid.UUID = None, level_id: uuid.UUID = None, link: str = "") -> Event:
+    async def create_event(
+        self,
+        name: str,
+        date: datetime,
+        location: str,
+        organizer: str,
+        start_time: datetime,
+        end_time: datetime,
+        name_approved: bool,
+        required_photographers: int,
+        description: str,
+        group_id: uuid.UUID = None,
+        level_id: uuid.UUID = None,
+        link: str = "",
+    ) -> Event:
         event = Event(
             name=name,
             date=date,
@@ -28,13 +41,14 @@ class EventsCRUD(BaseCRUD):
             required_photographers=required_photographers,
             description=description,
             group_id=group_id,
-            level_id=level_id
+            level_id=level_id,
         )
         return await self.create(event)
 
     async def get_event(self, event_id: uuid.UUID) -> Event:
-        query = select(Event).where(Event.id == event_id).options(
-            selectinload(Event.task))
+        query = (
+            select(Event).where(Event.id == event_id).options(selectinload(Event.task))
+        )
         result = await self.db.execute(query)
         return result.scalars().first()
 
@@ -44,7 +58,9 @@ class EventsCRUD(BaseCRUD):
             .where(Event.id == event_id)
             .options(
                 selectinload(Event.task)
-                .selectinload(Task.typed_tasks).options(*TasksCRUD(self.db).get_typed_task_options()))
+                .selectinload(Task.typed_tasks)
+                .options(*TasksCRUD(self.db).get_typed_task_options())
+            )
         )
 
     async def get_full_event(self, event_id: uuid.UUID) -> Event:
@@ -52,9 +68,22 @@ class EventsCRUD(BaseCRUD):
         result = await self.db.execute(query)
         return result.scalars().first()
 
-    async def update_event(self, event: Event, name: str, date: datetime, location: str, organizer: str, level_id: uuid.UUID,
-                           start_time: time, end_time: time = None, name_approved: bool = False,
-                           required_photographers: int = 0, description: str = "", group_id: uuid.UUID = None, link: str = "") -> Event:
+    async def update_event(
+        self,
+        event: Event,
+        name: str,
+        date: datetime,
+        location: str,
+        organizer: str,
+        level_id: uuid.UUID,
+        start_time: time,
+        end_time: time = None,
+        name_approved: bool = False,
+        required_photographers: int = 0,
+        description: str = "",
+        group_id: uuid.UUID = None,
+        link: str = "",
+    ) -> Event:
         event.name = name
         event.date = date
         event.location = location
@@ -69,12 +98,15 @@ class EventsCRUD(BaseCRUD):
         event.group_id = group_id
         return await self.update(event)
 
-    async def create_event_group(self, name: str, description: str = None, organizer: str = None, link: str = None) -> EventGroup:
+    async def create_event_group(
+        self,
+        name: str,
+        description: str = None,
+        organizer: str = None,
+        link: str = None,
+    ) -> EventGroup:
         event_group = EventGroup(
-            name=name,
-            description=description,
-            organizer=organizer,
-            link=link
+            name=name, description=description, organizer=organizer, link=link
         )
         return await self.create(event_group)
 
@@ -82,12 +114,7 @@ class EventsCRUD(BaseCRUD):
         return (
             select(EventGroup)
             .where(EventGroup.id == group_id)
-            .options(
-                selectinload(EventGroup.events).options(
-                    self._get_event_options()
-                )
-
-            )
+            .options(selectinload(EventGroup.events).options(self._get_event_options()))
         )
 
     async def get_event_group(self, group_id: uuid.UUID) -> EventGroup:
@@ -99,11 +126,10 @@ class EventsCRUD(BaseCRUD):
         return (
             selectinload(Event.task)
             .selectinload(Task.typed_tasks)
-            .selectinload(TypedTask.task_states).options(
+            .selectinload(TypedTask.task_states)
+            .options(
                 selectinload(TaskState.period),
-                selectinload(TaskState.user).options(
-                    selectinload(User.institute)
-                )
+                selectinload(TaskState.user).options(selectinload(User.institute)),
             )
         )
 
@@ -123,13 +149,12 @@ class EventsCRUD(BaseCRUD):
         return result.scalars().first()
 
     async def create_event_level(self, name: str, order: int) -> EventLevel:
-        event_level = EventLevel(
-            name=name,
-            order=order
-        )
+        event_level = EventLevel(name=name, order=order)
         return await self.create(event_level)
 
-    async def update_event_level(self, level: EventLevel, name: str, order: int) -> EventLevel:
+    async def update_event_level(
+        self, level: EventLevel, name: str, order: int
+    ) -> EventLevel:
         level.name = name
         level.order = order
         return await self.update(level)
@@ -138,28 +163,33 @@ class EventsCRUD(BaseCRUD):
         query = delete(Event).where(Event.group_id == group_id)
         await self.db.execute(query)
 
-    async def search_event_groups(self, query: str | None, page: int = 1, per_page: int = 10, filter: Literal['all', 'active', 'passed'] = 'all') -> list[EventGroup]:
-
+    async def search_event_groups(
+        self,
+        query: str | None,
+        page: int = 1,
+        per_page: int = 10,
+        filter: Literal["all", "active", "passed"] = "all",
+    ) -> list[EventGroup]:
         end = page * per_page
         start = end - per_page
         search_query = select(EventGroup)
         if query:
-            search_query = search_query.where(
-                EventGroup.name.ilike(f"%{query}%")
+            search_query = search_query.where(EventGroup.name.ilike(f"%{query}%"))
+        search_query = (
+            search_query.order_by(
+                select(Event.date > datetime.now())
+                .where(Event.group_id == EventGroup.id)
+                .exists()
+                .desc(),
+                select(Event.date)
+                .where(Event.group_id == EventGroup.id)
+                .order_by(Event.date.desc())
+                .limit(1)
+                .scalar_subquery()
+                .desc()
+                .nulls_last(),
+                EventGroup.name,
             )
-        search_query = (search_query.order_by(
-
-            select(Event.date > datetime.now())
-            .where(Event.group_id == EventGroup.id)
-            .exists().desc(),
-
-            select(Event.date)
-            .where(Event.group_id == EventGroup.id)
-            .order_by(Event.date.desc())
-            .limit(1)
-            .scalar_subquery().desc().nulls_last(),
-            EventGroup.name
-        )
             .slice(start, end)
             .options(
                 selectinload(EventGroup.events)
@@ -167,13 +197,20 @@ class EventsCRUD(BaseCRUD):
                 .selectinload(Task.typed_tasks)
                 .selectinload(TypedTask.task_states)
                 .selectinload(TaskState.user)
-        )
+            )
         )
 
         result = await self.db.execute(search_query)
         return result.scalars().all()
 
-    async def update_event_group(self, event_group: EventGroup, name: str, description: str = "", organizer: str = "", link: str = "") -> EventGroup:
+    async def update_event_group(
+        self,
+        event_group: EventGroup,
+        name: str,
+        description: str = "",
+        organizer: str = "",
+        link: str = "",
+    ) -> EventGroup:
         event_group.name = name
         event_group.description = description
         event_group.organizer = organizer
@@ -181,7 +218,6 @@ class EventsCRUD(BaseCRUD):
         return await self.update(event_group)
 
     async def get_actual_events(self) -> list[Event]:
-
         min_date_query = (
             select(func.min(Event.date))
             .join(Task, Event.id == Task.event_id)
@@ -194,14 +230,14 @@ class EventsCRUD(BaseCRUD):
                         Event.date >= date.today(),
                         or_(
                             Event.date > date.today(),
-                            Event.end_time > datetime.now().time()
-                        )
+                            Event.end_time > datetime.now().time(),
+                        ),
                     ),
                     # Или есть pending задача фотографа
                     and_(
                         TypedTask.task_type == UserRole.PHOTOGRAPHER,
-                        TaskState.state == State.PENDING
-                    )
+                        TaskState.state == State.PENDING,
+                    ),
                 )
             )
         )
@@ -209,10 +245,22 @@ class EventsCRUD(BaseCRUD):
             select(Event)
             .where(Event.date >= min_date_query.scalar_subquery())
             .order_by(Event.date)
-            .options(
-                self._get_event_options()
-            )
+            .options(self._get_event_options())
         )
 
         result = await self.db.execute(actual_events_query)
+        return result.scalars().all()
+    async def get_events_by_period(self, date_from: date, date_to: date) -> list[Event]:
+        query = (
+            select(Event)
+            .where(
+                and_(
+                    Event.date >= date_from,
+                    Event.date <= date_to,
+                )
+            )
+            .order_by(Event.date)
+            .options(self._get_event_options())
+        )
+        result = await self.db.execute(query)
         return result.scalars().all()

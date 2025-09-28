@@ -1,4 +1,3 @@
-
 from datetime import date
 import uuid
 from schemas.stats import StatsUser
@@ -8,7 +7,6 @@ from models.events_models import TaskState, TypedTask, State
 from sqlalchemy import Integer, select, func, extract
 from sqlalchemy.orm import aliased
 from typing import List, Dict, Union
-from uuid import UUID
 from sqlalchemy.orm import selectinload
 
 
@@ -39,8 +37,9 @@ def get_months_between(start_date: date, end_date: date) -> set:
 
 
 class StatisticsCRUD(BaseCRUD):
-    async def get_statistics(self, period_start: date, period_end: date) -> List[StatsUser]:
-
+    async def get_statistics(
+        self, period_start: date, period_end: date
+    ) -> List[StatsUser]:
         all_months_in_range = get_months_between(period_start, period_end)
 
         user_alias = aliased(User)
@@ -50,19 +49,19 @@ class StatisticsCRUD(BaseCRUD):
         subquery = (
             select(
                 user_alias.id.label("user_id"),
-                extract('month', typed_task_alias.due_date).cast(
-                    Integer).label("month"),
-                func.count(task_state_alias.id).label("count")
+                extract("month", typed_task_alias.due_date)
+                .cast(Integer)
+                .label("month"),
+                func.count(task_state_alias.id).label("count"),
             )
             .outerjoin(task_state_alias.user.of_type(user_alias))
             .join(task_state_alias.typed_task.of_type(typed_task_alias))
             .where(
                 task_state_alias.state == State.COMPLETED,
-                typed_task_alias.due_date.between(period_start, period_end)
+                typed_task_alias.due_date.between(period_start, period_end),
             )
             .group_by(
-                user_alias.id,
-                extract('month', typed_task_alias.due_date).cast(Integer)
+                user_alias.id, extract("month", typed_task_alias.due_date).cast(Integer)
             )
             .subquery()
         )
@@ -70,15 +69,10 @@ class StatisticsCRUD(BaseCRUD):
         stmt = (
             select(User)
             .outerjoin(subquery, subquery.c.user_id == User.id)
-            .add_columns(
-                subquery.c.month,
-                subquery.c.count
-            )
-
+            .add_columns(subquery.c.month, subquery.c.count)
             .order_by(User.last_name)
             .options(
                 selectinload(User.institute),
-
             )
         )
 

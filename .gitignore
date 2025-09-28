@@ -4,3 +4,4 @@ uploads
 .env.web
 .DS_Store
 *.pyc
+.idea

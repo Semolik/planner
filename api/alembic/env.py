@@ -2,7 +2,6 @@ from db.session import Base
 import asyncio
 from logging.config import fileConfig
 
-import asyncpg
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
@@ -32,7 +31,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        include_schemas=True
+        include_schemas=True,
     )
 
     with context.begin_transaction():
@@ -44,7 +43,8 @@ def do_run_migrations(connection: Connection) -> None:
         connection=connection,
         target_metadata=target_metadata,
         dialect_opts={"paramstyle": "named"},
-        include_schemas=True)
+        include_schemas=True,
+    )
 
     with context.begin_transaction():
         context.run_migrations()
@@ -57,7 +57,6 @@ async def run_async_migrations() -> None:
         poolclass=pool.NullPool,
     )
     async with connectable.connect() as connection:
-
         await connection.run_sync(do_run_migrations)
     await connectable.dispose()
 

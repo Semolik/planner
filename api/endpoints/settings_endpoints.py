@@ -6,24 +6,27 @@ from sqlalchemy.orm import Session
 from schemas.files import ImageLink
 from cruds.settings_crud import SettingsCRUD
 from db.session import get_async_session
+
 api_router = APIRouter(prefix="/settings", tags=["settings"])
 
 
 @api_router.get("", response_model=Settings)
-async def get_settings(
-    db: Session = Depends(get_async_session)
-):
+async def get_settings(db: Session = Depends(get_async_session)):
     settings_crud = SettingsCRUD(db)
     return await settings_crud.get_settings()
 
 
-@api_router.put("/app_logo", response_model=ImageLink, dependencies=[Depends(current_superuser)])
+@api_router.put(
+    "/app_logo", response_model=ImageLink, dependencies=[Depends(current_superuser)]
+)
 async def set_app_logo(
     image: UploadFile = File(...),
     db: Session = Depends(get_async_session),
 ):
     settings_crud = SettingsCRUD(db)
-    image = await save_image(db=db, upload_file=image,  resize_image_options=(2000, 2000))
+    image = await save_image(
+        db=db, upload_file=image, resize_image_options=(2000, 2000)
+    )
     await settings_crud.update_app_logo(image=image)
     return image
 

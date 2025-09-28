@@ -1,13 +1,14 @@
 from datetime import date
 from schemas.stats import StatsUser
-from utilities.files import save_image
 from core.users_controller import current_superuser
 from cruds.statistics_crud import StatisticsCRUD
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends
 
 from db.session import get_async_session
+
 api_router = APIRouter(
-    prefix="/statistics", tags=["statistics"], dependencies=[Depends(current_superuser)])
+    prefix="/statistics", tags=["statistics"], dependencies=[Depends(current_superuser)]
+)
 
 
 @api_router.get("", response_model=list[StatsUser])

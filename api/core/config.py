@@ -1,7 +1,7 @@
 import secrets
 from typing import List
 
-from pydantic import PostgresDsn, PostgresDsn
+from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings
 
 
@@ -15,9 +15,15 @@ class Settings(BaseSettings):
     POSTGRES_DB: str
     COOKIE_DOMAIN: str
     EVENT_LEVELS: List[str] = [
-        'Институтский', 'Университетский', 'Городской',
-        'Региональный', 'Окружной', 'Межрегиональный',
-        'Всероссийский', 'Международный', 'Другое'
+        "Институтский",
+        "Университетский",
+        "Городской",
+        "Региональный",
+        "Окружной",
+        "Межрегиональный",
+        "Всероссийский",
+        "Международный",
+        "Другое",
     ]
     # Количество дней на обработку репортажа считая со следующего дня после события
     PHOTOGRAPHERS_DEADLINE_DEFAULT: int = 3
@@ -33,7 +39,7 @@ class Settings(BaseSettings):
 
     @property
     def BACKEND_CORS_ORIGINS_LIST(self) -> List[str]:
-        return self.BACKEND_CORS_ORIGINS.split(',')
+        return self.BACKEND_CORS_ORIGINS.split(",")
 
     class Config:
         case_sensitive = True

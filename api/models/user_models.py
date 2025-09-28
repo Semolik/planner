@@ -1,7 +1,6 @@
 import uuid
 import enum
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import Column, Date, Integer, String, DateTime, func, ForeignKey, Enum
 from fastapi_users.db import SQLAlchemyBaseUserTableUUID
@@ -29,21 +28,23 @@ class User(SQLAlchemyBaseUserTableUUID, Base, AuditableMixin):
     birth_date = Column(Date, nullable=True)
     phone = Column(String, nullable=False, default="")
     group = Column(String, nullable=False)
-    institute_id = Column(UUID(as_uuid=True), ForeignKey(
-        'institutes.id'), nullable=False)
+    institute_id = Column(
+        UUID(as_uuid=True), ForeignKey("institutes.id"), nullable=False
+    )
 
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime, server_default=func.now(),
-                        onupdate=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
     roles_objects = relationship(
-        "UserRoleAssociation", back_populates="user", cascade="all, delete-orphan")
+        "UserRoleAssociation", back_populates="user", cascade="all, delete-orphan"
+    )
 
     @property
     def roles(self):
-        return [
-            role.role for role in self.roles_objects
-        ]
+        return [role.role for role in self.roles_objects]
+
     institute = relationship("Institute", foreign_keys=[institute_id])
 
 
@@ -53,14 +54,10 @@ register_audit_events(User)
 class UserRoleAssociation(Base):
     __tablename__ = "user_roles"
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey(
-        'users.id'
-    ), primary_key=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
     role = Column(Enum(UserRole), primary_key=True)
 
-    user = relationship(
-        "User", back_populates="roles_objects", foreign_keys=[user_id]
-    )
+    user = relationship("User", back_populates="roles_objects", foreign_keys=[user_id])
 
 
 class Institute(Base):

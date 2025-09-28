@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Literal
 from datetime import datetime, date, time
 import uuid
 from schemas.files import ImageInfo, File
@@ -38,10 +38,6 @@ class EventCreate(EventUpdate):
 class TaskBase(BaseModel):
     event_id: Optional[uuid.UUID] = None
     name: str
-
-
-class TaskCreate(TaskBase):
-    pass
 
 
 class TaskStateBase(UserReadShort):
@@ -143,6 +139,9 @@ class TypedTaskRead(CreateTypedTask):
     id: uuid.UUID
     task_states: List[TypedTaskState]
 
+    class Config:
+        from_attributes = True
+
 
 class TaskReadShortWithoutEvent(TaskBase):
     id: uuid.UUID
@@ -183,7 +182,6 @@ class EventFullInfo(EventRead):
 
 
 class EventGroupRead(EventGroupReadShort):
-
     events: List[EventFullInfo]
 
     class Config:
@@ -197,6 +195,14 @@ class EventLevelCreateOrUpdate(BaseModel):
 
 class EventLevelRead(EventLevelCreateOrUpdate):
     id: uuid.UUID
+
+    class Config:
+        from_attributes = True
+
+
+class CalendarItem(BaseModel):
+    item: TypedTaskReadFull | TaskReadShort | UserReadShort | EventFullInfo
+    item_type: Literal["task", "user", "typed_task", "event"]
 
     class Config:
         from_attributes = True

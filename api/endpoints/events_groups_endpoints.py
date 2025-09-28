@@ -9,7 +9,9 @@ from db.session import get_async_session
 api_router = APIRouter(prefix="/events/groups", tags=["events groups"])
 
 
-@api_router.post("", response_model=EventGroupRead, dependencies=[Depends(current_superuser)])
+@api_router.post(
+    "", response_model=EventGroupRead, dependencies=[Depends(current_superuser)]
+)
 async def create_event_group(
     event_group: EventGroupCreate,
     session=Depends(get_async_session),
@@ -23,19 +25,26 @@ async def create_event_group(
     return await EventsCRUD(session).get_event_group(group_id=db_event_group.id)
 
 
-@api_router.get("/search", response_model=list[EventGroupReadShort], dependencies=[Depends(current_user)])
+@api_router.get(
+    "/search",
+    response_model=list[EventGroupReadShort],
+    dependencies=[Depends(current_user)],
+)
 async def search_event_groups(
     query: str = Query(None),
     page: int = Query(1, ge=1),
-    filter: Literal['all', 'active', 'passed'] = Query('all'),
+    filter: Literal["all", "active", "passed"] = Query("all"),
     session=Depends(get_async_session),
 ):
-
-    db_groups = await EventsCRUD(session).search_event_groups(query=query, page=page, filter=filter)
+    db_groups = await EventsCRUD(session).search_event_groups(
+        query=query, page=page, filter=filter
+    )
     return db_groups
 
 
-@api_router.get("/{group_id}", response_model=EventGroupRead, dependencies=[Depends(current_user)])
+@api_router.get(
+    "/{group_id}", response_model=EventGroupRead, dependencies=[Depends(current_user)]
+)
 async def get_event_group(
     group_id: uuid.UUID = Path(...),
     session=Depends(get_async_session),
@@ -46,7 +55,9 @@ async def get_event_group(
     return db_group
 
 
-@api_router.delete("/{group_id}", status_code=204, dependencies=[Depends(current_superuser)])
+@api_router.delete(
+    "/{group_id}", status_code=204, dependencies=[Depends(current_superuser)]
+)
 async def delete_event_group(
     group_id: uuid.UUID = Path(...),
     remove_events: bool = Query(False),
@@ -60,7 +71,11 @@ async def delete_event_group(
     await EventsCRUD(session).delete(db_group)
 
 
-@api_router.put("/{group_id}", response_model=EventGroupRead, dependencies=[Depends(current_superuser)])
+@api_router.put(
+    "/{group_id}",
+    response_model=EventGroupRead,
+    dependencies=[Depends(current_superuser)],
+)
 async def update_event_group(
     event_group: EventGroupCreate,
     group_id: uuid.UUID = Path(...),

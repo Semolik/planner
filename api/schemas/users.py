@@ -51,7 +51,7 @@ class UserCreate(BaseUserUsername, BaseUserCustomFields, CreateUpdateDictModel):
     institute_id: uuid.UUID
 
     class Config:
-        exclude = {'email'}
+        exclude = {"email"}
 
 
 class UserReadShort(BaseModel):
@@ -72,9 +72,7 @@ class UserRead(UserReadShortWithEmail, BaseUser):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {
-        'exclude': {'phone'}
-    }
+    model_config = {"exclude": {"phone"}}
 
 
 class UserReadWithEmail(UserRead, BaseUserUsername):

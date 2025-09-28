@@ -1,4 +1,3 @@
-
 from fastapi_users.authentication import CookieTransport
 from sqlalchemy import select
 from cruds.base_crud import BaseCRUD
@@ -35,7 +34,8 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     async def get_by_email(self, user_email: str):
         async with get_async_session_context() as session:
             query = await session.execute(
-                select(User).where(User.username == user_email))
+                select(User).where(User.username == user_email)
+            )
             user = query.scalars().first()
             if user is None:
                 raise UserNotExists()
@@ -47,7 +47,6 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         safe: bool = False,
         request: Optional[Request] = None,
     ):
-
         await self.validate_password(user_create.password, user_create)
 
         existing_user = await self.user_db.get_by_email(user_create.username)
@@ -74,7 +73,8 @@ async def get_user_manager(user_db: SQLAlchemyUserDatabase = Depends(get_user_db
 
 
 cookie_transport = CookieTransport(
-    cookie_max_age=3600, cookie_domain=settings.COOKIE_DOMAIN)
+    cookie_max_age=3600, cookie_domain=settings.COOKIE_DOMAIN
+)
 
 
 def get_jwt_strategy() -> JWTStrategy:
@@ -92,8 +92,7 @@ class CustomFastAPIUsers(FastAPIUsers[User, uuid.UUID]):
     def __init__(
         self,
     ):
-        self.authenticator = CustomAuthenticator(
-            [auth_backend], get_user_manager)
+        self.authenticator = CustomAuthenticator([auth_backend], get_user_manager)
         self.get_user_manager = get_user_manager
         self.current_user = self.authenticator.current_user
 
@@ -110,7 +109,21 @@ get_user_db_context = contextlib.asynccontextmanager(get_user_db)
 get_user_manager_context = contextlib.asynccontextmanager(get_user_manager)
 
 
-async def create_user(username: str, password: str, first_name: str, last_name: str, group: str, institute_id: uuid.UUID, roles: list[UserRole], patronymic: str | None = None, birth_date: str | None = None, vk_id: int | None = None, phone: str | None = None, is_superuser: bool = False, is_verified: bool = True):
+async def create_user(
+    username: str,
+    password: str,
+    first_name: str,
+    last_name: str,
+    group: str,
+    institute_id: uuid.UUID,
+    roles: list[UserRole],
+    patronymic: str | None = None,
+    birth_date: str | None = None,
+    vk_id: int | None = None,
+    phone: str | None = None,
+    is_superuser: bool = False,
+    is_verified: bool = True,
+):
     try:
         async with get_async_session_context() as session:
             async with get_user_db_context(session) as user_db:
@@ -132,8 +145,9 @@ async def create_user(username: str, password: str, first_name: str, last_name: 
                         )
                     )
                     for role in roles:
-                        await BaseCRUD(session).create(UserRoleAssociation(
-                            user_id=db_user.id, role=role))
+                        await BaseCRUD(session).create(
+                            UserRoleAssociation(user_id=db_user.id, role=role)
+                        )
                     return await user_manager.get(db_user.id)
     except UserAlreadyExists:
         print(f"User {username} already exists")

@@ -2,7 +2,13 @@ import asyncio
 import datetime
 import uuid
 from sqlalchemy import select
-from vkbottle import Bot, GroupEventType, Keyboard, Callback, ShowSnackbarEvent, Text,  GroupTypes
+from vkbottle import (
+    Bot,
+    GroupEventType,
+    Keyboard,
+    Callback,
+    GroupTypes,
+)
 from vkbottle.tools import WaiterMachine
 from utilities.events import build_message
 from schemas.vk import Chat
@@ -30,15 +36,15 @@ class VKUtils:
         query = select(AppSettings)
         result = await self.session.execute(query)
         settings_list = result.scalars().all()
-        token_setting = next(
-            (x for x in settings_list if x.key == 'vk_token'), None)
+        token_setting = next((x for x in settings_list if x.key == "vk_token"), None)
         if not token_setting:
             return None
         return token_setting.value
 
     async def get_superusers_vk_ids(self):
         query = select(User.vk_id).where(
-            User.is_superuser == True, User.vk_id.is_not(None))
+            User.is_superuser == True, User.vk_id.is_not(None)
+        )
         result = await self.session.execute(query)
         superusers_vk_ids = result.scalars().all()
         return superusers_vk_ids if superusers_vk_ids else []
@@ -75,7 +81,9 @@ class VKUtils:
         else:
             print("No VK bot task to stop.")
 
-    def update_superusers_vk_ids(self, added_user_id: uuid.UUID = None, removed_user_id: uuid.UUID = None):
+    def update_superusers_vk_ids(
+        self, added_user_id: uuid.UUID = None, removed_user_id: uuid.UUID = None
+    ):
         if added_user_id:
             if added_user_id not in self.superusers_vk_ids:
                 self.superusers_vk_ids.append(added_user_id)
@@ -88,9 +96,12 @@ class VKUtils:
     async def get_chat_by_id(self, peer_id):
         if peer_id in self.chat_fetch_cache:
             cached_chat = self.chat_fetch_cache[peer_id]
-            if cached_chat['timestamp'] + (60 * 5) > datetime.datetime.now().timestamp():
+            if (
+                cached_chat["timestamp"] + (60 * 5)
+                > datetime.datetime.now().timestamp()
+            ):
                 print(f"Using cached chat for peer_id {peer_id}")
-                return Chat.model_validate(cached_chat['chat'])
+                return Chat.model_validate(cached_chat["chat"])
 
         chat = await VKCRUD(self.session).get_chat_by_id(peer_id)
         if not chat:
@@ -98,19 +109,20 @@ class VKUtils:
         if not self.bot:
             return Chat.model_validate(chat)
         chat_info = await self.bot.api.messages.get_conversations_by_id(
-            peer_ids=peer_id, extended=0,
+            peer_ids=peer_id,
+            extended=0,
         )
         chat = await VKCRUD(self.session).update_chat(
             chat,
             name=chat_info.items[0].chat_settings.title,
             members_count=chat_info.items[0].chat_settings.members_count,
-            pin_message_id=chat.pin_message_id
+            pin_message_id=chat.pin_message_id,
         )
         self.chat_fetch_cache[peer_id] = {
-            'chat': Chat.model_validate(chat),
-            'timestamp': datetime.datetime.now().timestamp()
+            "chat": Chat.model_validate(chat),
+            "timestamp": datetime.datetime.now().timestamp(),
         }
-        return self.chat_fetch_cache[peer_id]['chat']
+        return self.chat_fetch_cache[peer_id]["chat"]
 
     async def update_messages(self):
         chats = await VKCRUD(self.session).get_all_chats()
@@ -123,13 +135,14 @@ class VKUtils:
                         peer_id=chat.chat_id,
                         message=message,
                         cmid=chat.pin_message_id,
-                        dont_parse_links=True
+                        dont_parse_links=True,
                     )
                 except Exception as e:
                     logger.error(f"Error editing pin message: {e}")
             else:
                 logger.info(
-                    f"Pin message not found for chat {chat.chat_id}, sending new message.")
+                    f"Pin message not found for chat {chat.chat_id}, sending new message."
+                )
 
     def update_messages_task(self):
         if not self.bot_task:
@@ -150,17 +163,17 @@ class VKUtils:
                 return
 
             query = select(AppSettings).where(
-                AppSettings.key.in_([
-                    "vk_chat_photographers_enabled",
-                    "vk_chat_copywriters_enabled",
-                    "vk_chat_designers_enabled"
-                ])
+                AppSettings.key.in_(
+                    [
+                        "vk_chat_photographers_enabled",
+                        "vk_chat_copywriters_enabled",
+                        "vk_chat_designers_enabled",
+                    ]
+                )
             )
             result = await self.session.execute(query)
             settings_list = result.scalars().all()
-            enabled_chats = {
-                s.key: s.value.lower() == 'true' for s in settings_list
-            }
+            enabled_chats = {s.key: s.value.lower() == "true" for s in settings_list}
 
             keyboard = Keyboard(one_time=False, inline=True)
 
@@ -177,15 +190,16 @@ class VKUtils:
                 return
 
             for option in chat_options:
-                keyboard.add(Callback(option, payload={
-                             "type": option.lower()}))
+                keyboard.add(Callback(option, payload={"type": option.lower()}))
 
             keyboard.row()
             keyboard.add(Callback("Завершить", payload={"type": "finish"}))
 
             await message.answer("Выберите тип чата для настройки:", keyboard=keyboard)
 
-        @bot.on.raw_event(GroupEventType.MESSAGE_EVENT, dataclass=GroupTypes.MessageEvent)
+        @bot.on.raw_event(
+            GroupEventType.MESSAGE_EVENT, dataclass=GroupTypes.MessageEvent
+        )
         async def handle_message_event(event: GroupTypes.MessageEvent):
             user_id = event.object.user_id
             peer_id = event.object.peer_id
@@ -197,7 +211,7 @@ class VKUtils:
                     event_id=event_id,
                     user_id=user_id,
                     peer_id=peer_id,
-                    event_data='{"type": "show_snackbar", "text": "Вы не являетесь администратором!"}'
+                    event_data='{"type": "show_snackbar", "text": "Вы не являетесь администратором!"}',
                 )
                 return
 
@@ -209,30 +223,31 @@ class VKUtils:
                     event_id=event_id,
                     user_id=user_id,
                     peer_id=peer_id,
-                    event_data='{"type": "show_snackbar", "text": "Настройка завершена."}'
+                    event_data='{"type": "show_snackbar", "text": "Настройка завершена."}',
                 )
 
                 await bot.api.messages.delete(
                     peer_id=peer_id,
                     conversation_message_ids=message_id,
-                    delete_for_all=True
+                    delete_for_all=True,
                 )
                 return
             chat_info = await bot.api.messages.get_conversations_by_id(
-                peer_ids=peer_id, extended=0,
+                peer_ids=peer_id,
+                extended=0,
             )
             if not chat_info or not chat_info.items:
                 await bot.api.messages.send_message_event_answer(
                     event_id=event_id,
                     user_id=user_id,
                     peer_id=peer_id,
-                    event_data='{"type": "show_snackbar", "text": "Боту необходимо выдать права администратора!"}'
+                    event_data='{"type": "show_snackbar", "text": "Боту необходимо выдать права администратора!"}',
                 )
                 return
             chat_role_map = {
                 "фотографы": (UserRole.PHOTOGRAPHER, "фотографов"),
                 "копирайтеры": (UserRole.COPYWRITER, "копирайтеров"),
-                "дизайнеры": (UserRole.DESIGNER, "дизайнеров")
+                "дизайнеры": (UserRole.DESIGNER, "дизайнеров"),
             }
 
             if chat_type not in chat_role_map:
@@ -240,22 +255,24 @@ class VKUtils:
                     event_id=event_id,
                     user_id=user_id,
                     peer_id=peer_id,
-                    event_data='{"type": "show_snackbar", "text": "Неизвестный тип чата."}'
+                    event_data='{"type": "show_snackbar", "text": "Неизвестный тип чата."}',
                 )
                 return
 
             chat_key, chat_title = chat_role_map[chat_type]
             chat = await VKCRUD(self.session).get_chat_by_id(peer_id)
             if chat and chat.chat_id == peer_id:
-                await VKCRUD(self.session).delete(
-                    chat)
+                await VKCRUD(self.session).delete(chat)
             chat = await VKCRUD(self.session).get_chat_by_role(chat_key)
             chat_name = chat_info.items[0].chat_settings.title
             if chat:
-                await VKCRUD(self.session).delete(
-                    chat)
+                await VKCRUD(self.session).delete(chat)
             chat = await VKCRUD(self.session).create_chat(
-                chat_id=peer_id, chat_role=chat_key, name=chat_name, members_count=chat_info.items[0].chat_settings.members_count)
+                chat_id=peer_id,
+                chat_role=chat_key,
+                name=chat_name,
+                members_count=chat_info.items[0].chat_settings.members_count,
+            )
 
             await bot.api.messages.send(
                 peer_id=event.object.peer_id,
@@ -266,7 +283,7 @@ class VKUtils:
             await bot.api.messages.delete(
                 peer_id=peer_id,
                 conversation_message_ids=message_id,
-                delete_for_all=True
+                delete_for_all=True,
             )
 
         @bot.on.message(PeerRule(from_chat=True), text=["/pin"])
@@ -286,11 +303,11 @@ class VKUtils:
             )
             await bot.api.messages.pin(
                 peer_id=message.peer_id,
-                conversation_message_id=msg.conversation_message_id
+                conversation_message_id=msg.conversation_message_id,
             )
             await vk_crud.update_chat(
                 chat,
                 name=chat.name,
                 members_count=chat.members_count,
-                pin_message_id=msg.conversation_message_id
+                pin_message_id=msg.conversation_message_id,
             )

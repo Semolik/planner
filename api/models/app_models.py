@@ -2,9 +2,6 @@ import uuid
 from sqlalchemy import Column, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from db.session import Base
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
-from sqlalchemy import DateTime, ForeignKey
 
 
 class AppSettings(Base):

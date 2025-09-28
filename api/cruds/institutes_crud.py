@@ -29,7 +29,6 @@ class InstitutesCRUD(BaseCRUD):
         return bool(result.scalars().first())
 
     async def get_institute_by_name(self, name: str) -> Institute | None:
-        query = select(Institute).where(
-            func.lower(Institute.name) == name.lower())
+        query = select(Institute).where(func.lower(Institute.name) == name.lower())
         result = await self.db.execute(query)
         return result.scalars().first()

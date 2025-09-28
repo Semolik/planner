@@ -157,6 +157,7 @@
             </div>
         </template>
     </UModal>
+  <nuxt-link to="test">asdas</nuxt-link>
 </template>
 
 <script setup>

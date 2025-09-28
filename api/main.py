@@ -12,7 +12,10 @@ from endpoints.tasks_endpoints import api_router as tasks_router
 from endpoints.events_groups_endpoints import api_router as events_groups_router
 from endpoints.events_levels import api_router as events_levels_router
 from endpoints.typed_tasks_endpoints import api_router as typed_tasks_router
-from endpoints.typed_tasks_states_endpoints import api_router as typed_tasks_states_router
+from endpoints.typed_tasks_states_endpoints import (
+    api_router as typed_tasks_states_router,
+)
+from endpoints.calendar_endpoints import api_router as calendar_router
 from endpoints.vk_endpoints import api_router as vk_router
 
 from endpoints.home_endpoints import api_router as home_router
@@ -22,12 +25,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from db.init import init_db
 import event_listener
-from models.user_models import User
-from sqlalchemy import event
 from db.session import create_db_and_tables
-import asyncio
 from fastapi.openapi.docs import (
-
     get_swagger_ui_html,
     get_swagger_ui_oauth2_redirect_html,
 )
@@ -56,6 +55,7 @@ async def swagger_ui_redirect():
 app.include_router(auth_router)
 app.include_router(home_router)
 app.include_router(events_levels_router)
+app.include_router(calendar_router)
 app.include_router(events_router)
 app.include_router(events_groups_router)
 app.include_router(tasks_router)
@@ -94,5 +94,5 @@ app.add_middleware(
     allow_origins=settings.BACKEND_CORS_ORIGINS_LIST,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["Content-Type", "Set-Cookie"]
+    allow_headers=["Content-Type", "Set-Cookie"],
 )

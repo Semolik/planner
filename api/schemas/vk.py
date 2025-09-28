@@ -22,7 +22,6 @@ class UpdateChatSettings(BaseModel):
 
 
 class ChatsSettingsResponse(UpdateChatSettings):
-
     photographers_chat: Chat | None
     copywriters_chat: Chat | None
     designers_chat: Chat | None
