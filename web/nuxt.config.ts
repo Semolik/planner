@@ -16,6 +16,7 @@ export default defineNuxtConfig({
     ui: {
         colorMode: false,
     },
+
     devServer: {
         port: 80,
     },
@@ -71,5 +72,8 @@ export default defineNuxtConfig({
                         : "http://api:8000/**",
             },
         },
+        '/tasks': {
+            ssr: false
+        }
     },
 });
