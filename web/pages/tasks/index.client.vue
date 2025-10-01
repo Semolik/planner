@@ -4,19 +4,21 @@
             <app-button active @click="prev">
                 <Icon name="mdi:arrow-left"/>
             </app-button>
-
             <app-button active @click="next">
                 <Icon name="mdi:arrow-right"/>
             </app-button>
             <div class="period-label">
                 {{ periodLabel }}
             </div>
+            <app-button active @click="toggleTypedTasks" class="toggle-button">
+                <Icon :name="showTypedTasks ? 'mdi:eye' : 'mdi:eye-off'"/>
+            </app-button>
         </div>
         <TuiCalendar
             v-if="!isSmallScreen"
             ref="calendarRef"
             :calendars="calendars"
-            :events="myEvents"
+            :events="filteredEvents"
             :month="options.month"
             :options="options"
             :template="popupTemplates"
@@ -33,13 +35,13 @@
                 <h3>{{ formatDateHeader(dateKey) }}</h3>
                 <hr>
                 <div
-                    v-for="ev in groupedByDate[dateKey]"
+                    v-for="ev in filteredGroupedByDate[dateKey]"
                     :key="ev.id"
                     :style="{
-            backgroundColor: ev.backgroundColor,
-            border: `1px solid ${ev.borderColor}`,
-            color: ev.color
-          }"
+                        backgroundColor: ev.backgroundColor,
+                        border: `1px solid ${ev.borderColor}`,
+                        color: ev.color
+                    }"
                     class="event-card"
                     @click="handleEventClick(ev)"
                 >
@@ -70,6 +72,8 @@ const isSmallScreen = computed(() => $viewport.isLessThan('md'));
 const router = useRouter();
 const calendarRef = ref();
 const myEvents = ref([]);
+const showTypedTasks = ref(true); // Новое состояние для toggling typed tasks
+
 const calendars = ref([
     {
         id: 'user',
@@ -137,9 +141,7 @@ const colors = {
         borderColor: '#6e6e6e',
         color: '#3b3b3b',
     },
-
-
-}
+};
 
 const periodLabel = computed(() => {
     const date = currentDate.value;
@@ -167,9 +169,24 @@ const periodLabel = computed(() => {
     }
 });
 
+const filteredEvents = computed(() => {
+    if (showTypedTasks.value) return myEvents.value;
+    return myEvents.value.filter(ev => ev.calendarId !== 'photographer' && ev.calendarId !== 'copywriter' && ev.calendarId !== 'designer'); // Скрываем typed tasks (photographer, copywriter, designer)
+});
+
 const groupedByDate = computed(() => {
     const groups = {};
     myEvents.value.forEach((ev) => {
+        const dateKey = ev.start.split('T')[0];
+        if (!groups[dateKey]) groups[dateKey] = [];
+        groups[dateKey].push(ev);
+    });
+    return groups;
+});
+
+const filteredGroupedByDate = computed(() => {
+    const groups = {};
+    filteredEvents.value.forEach((ev) => {
         const dateKey = ev.start.split('T')[0];
         if (!groups[dateKey]) groups[dateKey] = [];
         groups[dateKey].push(ev);
@@ -186,34 +203,24 @@ const formatDateHeader = (dateStr) => {
 
 const fetchEvents = async () => {
     let view;
-    let currentViewDate;
+    let dateFrom, dateTo;
     if (!isSmallScreen.value && calendarRef.value) {
         const instance = calendarRef.value.getInstance();
         view = instance.getViewName();
-        currentViewDate = instance.getDate().toDate();
+        const rangeStart = instance.getDateRangeStart().toDate(); // Первая дата видимого диапазона
+        const rangeEnd = instance.getDateRangeEnd().toDate(); // Последняя дата видимого диапазона
+        dateFrom = formatDate(rangeStart);
+        dateTo = formatDate(rangeEnd);
     } else {
         view = 'week';
-        currentViewDate = currentDate.value;
-    }
-
-    let dateFrom, dateTo;
-    if (view === 'month') {
-        const year = currentViewDate.getFullYear();
-        const month = currentViewDate.getMonth() + 1;
-        dateFrom = `${year}-${month.toString().padStart(2, '0')}-01`;
-        const lastDay = new Date(year, month, 0).getDate();
-        dateTo = `${year}-${month.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
-    } else if (view === 'week') {
-        const day = currentViewDate.getDay();
+        const day = currentDate.value.getDay();
         const diff = (day === 0 ? 6 : day - 1);
-        const startWeek = new Date(currentViewDate);
+        const startWeek = new Date(currentDate.value);
         startWeek.setDate(startWeek.getDate() - diff);
         dateFrom = formatDate(startWeek);
         const endWeek = new Date(startWeek);
         endWeek.setDate(endWeek.getDate() + 6);
         dateTo = formatDate(endWeek);
-    } else {
-        return;
     }
 
     try {
@@ -412,6 +419,10 @@ const prev = () => {
         currentDate.value = new Date(currentDate.value.setDate(currentDate.value.getDate() - 7));
     }
     fetchEvents();
+};
+
+const toggleTypedTasks = () => {
+    showTypedTasks.value = !showTypedTasks.value;
 };
 
 onMounted(async () => {
