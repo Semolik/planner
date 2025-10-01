@@ -21,6 +21,7 @@ export type EventFullInfo = {
     level_id: string;
     is_passed?: boolean;
     group?: (EventGroupReadShort | null);
+    has_assigned_photographers?: boolean;
     task: TaskWithoutEventRead;
 };
 

@@ -59,12 +59,12 @@
 <script setup>
 import TuiCalendar from 'toast-ui-calendar-vue3';
 import 'toast-ui-calendar-vue3/styles.css';
-import { CalendarService } from '@/client';
-import { computed, ref, onMounted, nextTick } from 'vue';
-import { useRouter } from 'vue-router';
-import { useNuxtApp } from 'nuxt/app';
+import {CalendarService} from '@/client';
+import {computed, ref, onMounted, nextTick} from 'vue';
+import {useRouter} from 'vue-router';
+import {useNuxtApp} from 'nuxt/app';
 
-const { $viewport } = useNuxtApp();
+const {$viewport} = useNuxtApp();
 const isSmallScreen = computed(() => $viewport.isLessThan('md'));
 
 const router = useRouter();
@@ -116,6 +116,30 @@ const calendars = ref([
 ]);
 
 const currentDate = ref(new Date());
+const colors = {
+    inProgress: {
+        backgroundColor: '#66b3ff',
+        borderColor: '#3399ff',
+        color: '#ffffff',
+    },
+    completed: {
+        backgroundColor: '#66ff69',
+        borderColor: '#33cc33',
+        color: '#000000',
+    },
+    overdueOrNoAssignees: {
+        backgroundColor: '#ff4d4d',
+        borderColor: '#cc0000',
+        color: '#ffffff',
+    },
+    noPhotographersAndPassed: {
+        backgroundColor: '#d3d3d3',
+        borderColor: '#6e6e6e',
+        color: '#3b3b3b',
+    },
+
+
+}
 
 const periodLabel = computed(() => {
     const date = currentDate.value;
@@ -235,18 +259,10 @@ const fetchEvents = async () => {
                 event.end = `${date}T23:59:59`;
                 event.category = 'allday';
             } else if (type === 'task') {
-                if (item.event) {
-                    const eventDate = item.event.date;
-                    event.title = item.name;
-                    event.start = `${eventDate}T${item.event.start_time}`;
-                    event.end = `${eventDate}T${item.event.end_time}`;
-                    event.category = 'time';
-                } else {
-                    event.title = item.name;
-                    event.start = `${date}T00:00:00`;
-                    event.end = `${date}T23:59:59`;
-                    event.category = 'allday';
-                }
+                event.title = item.name;
+                event.start = `${date}T00:00:00`;
+                event.end = `${date}T23:59:59`;
+                event.category = 'allday';
             } else if (type === 'typed_task') {
                 event.attendees = item.task_states.length > 0 ? item.task_states.map((state) => state.user.first_name + " " + state.user.last_name) : null;
                 event.id = `task-${item.parent_task.id}`;
@@ -259,9 +275,6 @@ const fetchEvents = async () => {
                     eventName = item.parent_task.event.name;
                     if (item.task_type === 'photographer') {
                         event.title = `сдача репортажа "${eventName}"`;
-                        event.backgroundColor = '#d3d3d3';
-                        event.borderColor = '#6e6e6e';
-                        event.color = '#3b3b3b';
                     } else if (item.task_type === 'copywriter') {
                         event.title = `текст публикации к мероприятию "${eventName}"`;
                     } else if (item.task_type === 'designer') {
@@ -271,113 +284,96 @@ const fetchEvents = async () => {
                     event.title = eventName;
                 }
 
-                const isPastDeadline = new Date(item.due_date) < new Date();
-                const assignedUsers = item.task_states.filter(state => state.state !== 'canceled');
-                const hasAssigned = assignedUsers.length > 0;
-                const allCompleted = assignedUsers.every(state => state.state === 'completed');
-                const inProgress = assignedUsers.some(state => state.state === 'pending');
+                const isPassed = item.parent_task.event ? (item.parent_task.event.is_passed ?? false) : false; // task всегда активен, пока не выполнен, но для typed_task с event используем is_passed события
+                const hasAssignedPhotographers = item.parent_task.event ? (item.parent_task.event.has_assigned_photographers ?? false) : false;
 
-                let eventInProgress = false;
-                if (item.parent_task.event && !item.parent_task.event.is_passed) {
-                    const photographerTasks = item.parent_task.event.task?.typed_tasks?.filter(t => t.task_type === 'photographer') || [];
-                    eventInProgress = photographerTasks.some(t => t.task_states.some(s => s.state !== 'canceled'));
-                }
+                const allCompleted = item.task_states.length > 0 && item.task_states.every(state => state.state === 'completed' || state.state === 'canceled');
+                const inProgress = item.task_states.some(state => state.state === 'pending');
 
-                if (eventInProgress) {
-                    if (!hasAssigned) {
-                        event.backgroundColor = '#e94e4e';
-                        event.borderColor = '#b53232';
-                        event.color = '#ffffff';
-                        event.title = '! ' + event.title;
-                    } else if (hasAssigned && !isPastDeadline) {
-                        event.backgroundColor = '#4a90e2';
-                        event.borderColor = '#357abd';
-                        event.color = '#ffffff';
-                    } else if (hasAssigned && isPastDeadline) {
-                        event.backgroundColor = '#e94e4e';
-                        event.borderColor = '#b53232';
-                        event.color = '#ffffff';
-                        event.title = '! ' + event.title;
+
+                if (!hasAssignedPhotographers && isPassed) {
+                    Object.assign(event, colors.noPhotographersAndPassed);
+                } else if (hasAssignedPhotographers) {
+                    if (allCompleted) {
+                        Object.assign(event, colors.completed);
+                    } else if (inProgress) {
+                        if (item.due_date_passed) {
+                            Object.assign(event, colors.overdueOrNoAssignees);
+                            event.title = '! ' + event.title;
+                        } else {
+                            Object.assign(event, colors.inProgress);
+                        }
                     }
                 } else {
-                    if (!hasAssigned || allCompleted) {
-                        event.backgroundColor = '#d3d3d3';
-                        event.borderColor = '#6e6e6e';
-                        event.color = '#3b3b3b';
-                    } else if (inProgress) {
-                        event.backgroundColor = '#4a90e2';
-                        event.borderColor = '#357abd';
-                        event.color = '#ffffff';
-                    } else if (isPastDeadline) {
-                        event.backgroundColor = '#e94e4e';
-                        event.borderColor = '#b53232';
-                        event.color = '#ffffff';
-                        event.title = '! ' + event.title;
-                    }
+                    Object.assign(event, colors.overdueOrNoAssignees);
                 }
                 event.body = item.description;
             } else if (type === 'event') {
+                event.id = `task-${item.task.id}`;
                 event.title = item.name;
                 event.start = `${item.date}T${item.start_time}`;
                 event.end = `${item.date}T${item.end_time}`;
                 event.category = 'allday';
-                event.backgroundColor = '#6cc24a61';
-                event.borderColor = '#52923561';
-                event.dragBackgroundColor = '#6cc24a61';
-                event.color = '#000000';
+
+                const isPassed = item.is_passed ?? false;
 
                 const photographers = [];
+                let assignedPhotographersCount = 0;
                 if (item.task && item.task.typed_tasks) {
                     item.task.typed_tasks.forEach((typedTask) => {
                         if (typedTask.task_type === 'photographer' && typedTask.task_states) {
-                            typedTask.task_states.forEach((state) => {
-                                if (state.state !== 'canceled') {
-                                    photographers.push(state.user.first_name + " " + state.user.last_name);
-                                }
+                            const activeStates = typedTask.task_states.filter((state) => state.state !== 'canceled');
+                            assignedPhotographersCount += activeStates.length;
+                            activeStates.forEach((state) => {
+                                photographers.push(state.user.first_name + " " + state.user.last_name);
                             });
                         }
                     });
                 }
                 event.attendees = photographers.length > 0 ? photographers : null;
 
-                const isEventPassed = item.is_passed ?? false;
-                const requiredPhotographers = item.required_photographers ?? 0;
-                let assignedPhotographersCount = 0;
-                if (item.task && item.task.typed_tasks) {
-                    item.task.typed_tasks.forEach((typedTask) => {
-                        if (typedTask.task_type === 'photographer') {
-                            assignedPhotographersCount += typedTask.task_states?.filter(s => s.state !== 'canceled').length ?? 0;
-                        }
-                    });
-                }
 
-                if (isEventPassed) {
+                const hasAssignedPhotographers = event.has_assigned_photographers;
+
+                const requiredPhotographers = item.required_photographers ?? 0;
+
+
+                if (isPassed) {
                     const typedTasks = item.task?.typed_tasks || [];
                     const assignedTyped = typedTasks.some(tt => tt.task_states?.some(s => s.state !== 'canceled'));
                     const allCompleted = typedTasks.every(tt => tt.task_states.every(s => s.state === 'completed' || s.state === 'canceled'));
                     const inProgress = typedTasks.some(tt => tt.task_states.some(s => s.state === 'pending'));
                     const isPastAnyDeadline = typedTasks.some(tt => new Date(tt.due_date) < new Date());
 
-                    if (!assignedTyped || allCompleted) {
+                    if (!hasAssignedPhotographers) {
+                        // Серый, если прошло и нет назначенных фотографов
                         event.backgroundColor = '#d3d3d3';
                         event.borderColor = '#6e6e6e';
                         event.color = '#3b3b3b';
+                    } else if (allCompleted) {
+                        event.backgroundColor = '#a8d18d'; // Светло-зеленый для завершенных
+                        event.borderColor = '#7ba86a';
+                        event.color = '#000000';
                     } else if (inProgress) {
-                        event.backgroundColor = '#4a90e2';
+                        event.backgroundColor = '#4a90e2'; // Синий для в процессе
                         event.borderColor = '#357abd';
                         event.color = '#ffffff';
                     } else if (isPastAnyDeadline) {
-                        event.backgroundColor = '#e94e4e';
+                        event.backgroundColor = '#e94e4e'; // Красный для просроченных
                         event.borderColor = '#b53232';
                         event.color = '#ffffff';
                         event.title = '! ' + event.title;
                     }
                 } else {
                     if (assignedPhotographersCount < requiredPhotographers) {
-                        event.backgroundColor = '#e94e4e';
-                        event.borderColor = '#b53232';
+                        event.backgroundColor = '#e9bd4e';
+                        event.borderColor = '#b59632';
                         event.color = '#ffffff';
                         event.title = '! ' + event.title;
+                    } else {
+                        event.backgroundColor = '#6cc24a'; // Зеленый для активных с фотографами
+                        event.borderColor = '#529235';
+                        event.color = '#000000';
                     }
                 }
             }

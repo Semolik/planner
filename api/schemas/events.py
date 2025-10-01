@@ -77,7 +77,7 @@ class EventRead(EventBase):
     level_id: uuid.UUID
     is_passed: bool = False
     group: EventGroupReadShort | None = None
-
+    has_assigned_photographers: bool = False
     class Config:
         from_attributes = True
 
@@ -123,7 +123,7 @@ class UpdateTypedTask(BaseModel):
     description: str
     link: str
     for_single_user: bool
-    due_date: datetime
+    due_date: date
 
 
 class CreateTypedTask(UpdateTypedTask):
@@ -138,6 +138,7 @@ class TaskCreate(BaseModel):
 class TypedTaskRead(CreateTypedTask):
     id: uuid.UUID
     task_states: List[TypedTaskState]
+    due_date_passed: bool = False
 
     class Config:
         from_attributes = True
