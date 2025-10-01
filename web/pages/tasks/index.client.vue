@@ -292,20 +292,30 @@ const fetchEvents = async () => {
 
 
                 if (!hasAssignedPhotographers && isPassed) {
-                    Object.assign(event, colors.noPhotographersAndPassed);
+                    event.backgroundColor = colors.noPhotographersAndPassed.backgroundColor;
+                    event.borderColor = colors.noPhotographersAndPassed.borderColor;
+                    event.color = colors.noPhotographersAndPassed.color;
                 } else if (hasAssignedPhotographers) {
                     if (allCompleted) {
-                        Object.assign(event, colors.completed);
+                        event.backgroundColor = colors.completed.backgroundColor;
+                        event.borderColor = colors.completed.borderColor;
+                        event.color = colors.completed.color;
                     } else if (inProgress) {
                         if (item.due_date_passed) {
-                            Object.assign(event, colors.overdueOrNoAssignees);
+                            event.backgroundColor = colors.overdueOrNoAssignees.backgroundColor;
+                            event.borderColor = colors.overdueOrNoAssignees.borderColor;
+                            event.color = colors.overdueOrNoAssignees.color;
                             event.title = '! ' + event.title;
                         } else {
-                            Object.assign(event, colors.inProgress);
+                            event.backgroundColor = colors.inProgress.backgroundColor;
+                            event.borderColor = colors.inProgress.borderColor;
+                            event.color = colors.inProgress.color;
                         }
                     }
                 } else {
-                    Object.assign(event, colors.overdueOrNoAssignees);
+                    event.backgroundColor = colors.overdueOrNoAssignees.backgroundColor;
+                    event.borderColor = colors.overdueOrNoAssignees.borderColor;
+                    event.color = colors.overdueOrNoAssignees.color;
                 }
                 event.body = item.description;
             } else if (type === 'event') {
@@ -335,7 +345,6 @@ const fetchEvents = async () => {
 
                 const hasAssignedPhotographers = event.has_assigned_photographers;
 
-                const requiredPhotographers = item.required_photographers ?? 0;
 
 
                 if (isPassed) {
@@ -365,16 +374,9 @@ const fetchEvents = async () => {
                         event.title = '! ' + event.title;
                     }
                 } else {
-                    if (assignedPhotographersCount < requiredPhotographers) {
-                        event.backgroundColor = '#e9bd4e';
-                        event.borderColor = '#b59632';
-                        event.color = '#ffffff';
-                        event.title = '! ' + event.title;
-                    } else {
-                        event.backgroundColor = '#6cc24a'; // Зеленый для активных с фотографами
-                        event.borderColor = '#529235';
-                        event.color = '#000000';
-                    }
+                    event.backgroundColor = '#6cc24a'; // Зеленый для активных с фотографами
+                    event.borderColor = '#529235';
+                    event.color = '#000000';
                 }
             }
             return event;

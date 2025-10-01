@@ -12,5 +12,6 @@ export type TypedTaskRead = {
     task_type: UserRole;
     id: string;
     task_states: Array<TypedTaskState>;
+    due_date_passed?: boolean;
 };
 
