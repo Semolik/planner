@@ -383,14 +383,18 @@ const fetchEvents = async () => {
                    });
 
                    const colorMap = { red: '#e94e4e', yellow: '#ffd54f', green: '#6cc24a' };
-                   let circles = '<div style="display:flex;gap:5px;flex-wrap: wrap;">';
-                   ['photographer', 'copywriter', 'designer'].forEach((type) => {
-                       const color = colorMap[statusMap[type]] ;
-                       const label = userTypesMap2[type] || type;
-                       circles += `<span style="display:inline-flex; padding: 1px 8px;border-radius: 10px;border: 1px solid black;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:50%;background:${color};display:inline-block"></span>${label}</span>`;
-                   });
-                   circles += '</div>';
-                   info_message += circles;
+
+                   if (assignedPhotographersCount>0){
+                       let circles = '<div style="display:flex;gap:5px;flex-wrap: wrap;">';
+                       ['photographer', 'copywriter', 'designer'].forEach((type) => {
+                           const color = colorMap[statusMap[type]] ;
+                           const label = userTypesMap2[type] || type;
+                           circles += `<span style="display:inline-flex; padding: 1px 8px;border-radius: 10px;border: 1px solid black;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:50%;background:${color};display:inline-block"></span>${label}</span>`;
+                       });
+                       circles += '</div>';
+                       info_message += circles;
+                   }
+
                }
                 if (info_message.length > 0) {
                     event.body = info_message;
