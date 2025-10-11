@@ -7,6 +7,7 @@ export type TaskWithoutEventRead = {
     event_id?: (string | null);
     name: string;
     id: string;
+    all_typed_tasks_completed?: boolean;
     typed_tasks: Array<TypedTaskRead>;
 };
 

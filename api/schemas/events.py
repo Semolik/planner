@@ -146,6 +146,7 @@ class TypedTaskRead(CreateTypedTask):
 
 class TaskReadShortWithoutEvent(TaskBase):
     id: uuid.UUID
+    all_typed_tasks_completed: bool
 
 
 class TaskReadShort(TaskReadShortWithoutEvent):

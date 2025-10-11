@@ -3,18 +3,19 @@
         <div class="block" v-if="typed_tasks.length">
             <div class="head">Мои задачи</div>
             <div class="tasks">
-                <div
+                <nuxt-link
                     class="task"
-                    v-for="task in typed_tasks.slice(0, 2)"
-                    :key="task.id"
+                    v-for="typed_task in typed_tasks.slice(0, 2)"
+                    :key="typed_task.id"
+                    :to="`/tasks/${typed_task.parent_task.id}`"
                 >
                     <div class="name">
-                        {{ getTypedTaskName(task) }}
+                        {{ getTypedTaskName(typed_task) }}
                     </div>
                     <div class="date">
-                        {{ getTypedTaskDate(task) }}
+                        {{ getTypedTaskDate(typed_task) }}
                     </div>
-                </div>
+                </nuxt-link>
             </div>
             <app-button
                 v-if="typed_tasks.length"
@@ -86,7 +87,7 @@
                     placeholder="Введите текст заметки"
                 />
 
-                <!-- Загрузка новых файлов -->
+
                 <div
                     class="file-upload dashed-box"
                     @dragover.prevent
@@ -397,6 +398,10 @@ const getTypedTaskDate = (task) => {
                     font-size: 12px;
                     color: #666;
                 }
+                &:hover {
+                    border-color: $text-color;
+                }
+
             }
         }
         .head {

@@ -385,7 +385,25 @@ Event.has_assigned_photographers = column_property(
             .correlate_except(Task, TypedTask, TaskState)
             .scalar_subquery() > 0
         )
-
+Task.all_typed_tasks_completed = column_property(
+    select(
+        func.coalesce(
+            func.bool_and(
+                case(
+                    (TaskState.id.is_(None), False),
+                    (TaskState.state.in_([State.COMPLETED, State.CANCELED]), True),
+                    else_=False,
+                )
+            ),
+            True,
+        )
+    )
+    .select_from(TypedTask)
+    .join(TaskState, TypedTask.id == TaskState.type_task_id, isouter=True)
+    .where(TypedTask.task_id == Task.id)
+    .correlate_except(TypedTask, TaskState)
+    .scalar_subquery()
+)
 register_audit_events(
     Event,
     tracked_fields=[
