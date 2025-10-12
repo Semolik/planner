@@ -13,6 +13,7 @@
                     :to="{
                         name: routesNames.eventsGroupsNew,
                     }"
+                    v-if="authStore.isAdmin"
                 >
                     Создать группу
                 </app-button>
@@ -72,9 +73,7 @@ import { routesNames } from "@typed-router";
 useSeoMeta({
     title: "Группы",
 });
-definePageMeta({
-    middleware: ["admin"],
-});
+
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();

@@ -5,6 +5,7 @@
                 <div class="head">
                     {{ task.event ? task.event.name : task.name }}
                 </div>
+
                 <template v-if="task.event">
                     <div class="badges">
                         <UBadge
@@ -151,7 +152,7 @@
                         >
                             {{ typed_task.description }}
                         </div>
-                        <div class="grid md:grid-cols-2 gap-2 grid-cols-1">
+                       <div :class="['gap-2', authStore.isAdmin ? 'grid md:grid-cols-2 grid-cols-1' : 'flex flex-col md:flex-row md:flex-wrap']">
                             <app-button
                                 active
                                 :mini="$viewport.isGreaterThan('md')"
@@ -470,6 +471,10 @@
                 <app-button
                     :active="updateStateButtonActive"
                     @click="updateState"
+                    v-if="
+                        authStore.isAdmin ||
+                        selectedState.user.id === userData.id
+                        "
                 >
                     Обновить статус
                 </app-button>
@@ -632,7 +637,6 @@ watch(
     }
 );
 const resetIfFillPeriod = () => {
-    console.log("resetIfFillPeriod", selectedRange.value);
     if (!task.value.event) return;
     if (
         selectedRange.value[0] === timeToMinutes(task.value.event.start_time) &&
@@ -689,16 +693,7 @@ const getStateType = (state) => {
         tt.task_states.some((s) => s.id === state.id)
     )?.task_type;
 };
-const showTakeInWorkButton = computed(() => {
-    const photographerTypedTask = task.value.typed_tasks.find(
-        (typed_task) => typed_task.task_type === UserRole.PHOTOGRAPHER
-    );
-    return !(
-        photographerTypedTask &&
-        task.value.event &&
-        task.value.event.is_passed
-    );
-});
+const showTakeInWorkButton = computed(() => task.value.event ? task.value.event.has_assigned_photographers: true);
 const typedTasksCurrentUser = computed(() => {
     return task.value.typed_tasks.map((typed_task) => ({
         ...typed_task,
@@ -721,16 +716,12 @@ const typed_tasks = computed(() => {
         filteredTasks = typedTasksCurrentUser.value;
     } else {
         if (
-            !showTakeInWorkButton.value &&
-            typedTasksCurrentUser.value.some(
-                (typed_task) => typed_task.has_my_state
-            )
+            !showTakeInWorkButton.value
         ) {
             return [];
         }
-
         filteredTasks = typedTasksCurrentUser.value.filter(
-            (typed_task) => typed_task.task_type in userData.value.roles
+            (typed_task) => userData.value.roles.includes(typed_task.task_type)
         );
     }
 
@@ -959,7 +950,7 @@ const sections = [
 
 const dateTextFormat = (date) => {
     const options = { year: "numeric", month: "long", day: "numeric" };
-    return new Date(date).toLocaleDateString(undefined, options);
+    return new Date(date).toLocaleDateString("ru-RU", options);
 };
 
 const getTime = (time) => {

@@ -6,8 +6,11 @@
             <template v-if="authStore.logined">
                 <app-head v-if="$viewport.isLessThan('lg')" />
                 <app-aside :blocks="asideBlocks" v-else>
-                    <template #head> <app-head /> </template></app-aside
-            ></template>
+                    <template #head>
+                        <app-head />
+                    </template>
+                </app-aside>
+            </template>
 
             <div id="teleports"></div>
             <div :class="['default-layout__content', { padding: !noPadding }]">

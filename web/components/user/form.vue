@@ -249,7 +249,7 @@ const submit = async () => {
                 first_name: firstName.value,
                 last_name: lastName.value,
                 patronymic: patronymic.value,
-                vk_id: vk_id.value,
+                vk_id: vk_id.value || null,
                 birth_date: birthDate.value,
                 phone: phone.value,
                 group: group.value,

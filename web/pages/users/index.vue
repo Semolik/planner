@@ -103,7 +103,7 @@ const columns: TableColumn<UserReadWithEmail>[] = [
             const parsedDate = new Date(date);
             return isNaN(parsedDate.getTime())
                 ? "Не указана"
-                : parsedDate.toLocaleDateString();
+                : parsedDate.toLocaleDateString("ru-RU");
         },
     },
     {

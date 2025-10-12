@@ -30,24 +30,42 @@ class UsersCRUD(BaseCRUD):
         return result.scalars().first()
 
     async def get_users_by_birthday_period(
-        self, date_from: date, date_to: date
-    ) -> list[User]:
-        users = select(User).where(
-            or_(
-                (func.extract("month", User.birth_date) == date_from.month)
-                & (func.extract("day", User.birth_date) >= date_from.day),
-                (func.extract("month", User.birth_date) > date_from.month),
-                (func.extract("month", User.birth_date) < date_to.month),
-                (func.extract("month", User.birth_date) == date_to.month)
-                & (func.extract("day", User.birth_date) <= date_to.day),
-            )
-        )
-        result = await self.db.execute(
-            users.options(
-                selectinload(User.institute), selectinload(User.roles_objects)
-            )
-        )
-        return result.scalars().all()
+           self, date_from: date, date_to: date
+       ) -> list[User]:
+           month = func.extract("month", User.birth_date)
+           day = func.extract("day", User.birth_date)
+
+           from_month = date_from.month
+           to_month = date_to.month
+           from_day = date_from.day
+           to_day = date_to.day
+
+           # Если период не переходит через конец года
+           if (from_month, from_day) <= (to_month, to_day):
+               condition = (
+                   (
+                       (month > from_month)
+                       | ((month == from_month) & (day >= from_day))
+                   )
+                   & (
+                       (month < to_month)
+                       | ((month == to_month) & (day <= to_day))
+                   )
+               )
+           else:
+               # Период переходит через конец года (например, с декабря по январь)
+               condition = (
+                   (month > from_month) | ((month == from_month) & (day >= from_day))
+                   | (month < to_month) | ((month == to_month) & (day <= to_day))
+               )
+
+           users = select(User).where(condition)
+           result = await self.db.execute(
+               users.options(
+                   selectinload(User.institute), selectinload(User.roles_objects)
+               )
+           )
+           return result.scalars().all()
 
     async def get_users(
         self,

@@ -5,7 +5,7 @@
         <div class="aside-block" v-for="(block, index) in blocks" :key="index">
             <div class="block-name" v-if="block.name">{{ block.name }}</div>
             <div class="items">
-                <template v-if="index === 0">
+                <template v-if="index === 0 && authStore.isAdmin">
                     <div
                         class="dropdown-button"
                         :class="{ open: dropdownOpen }"

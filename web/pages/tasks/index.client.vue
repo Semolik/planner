@@ -1,18 +1,38 @@
 <template>
-    <div class="intro play-container">
+    <div :class="['intro play-container', {'user-mode': !authStore.isAdmin}]">
         <div class="controls">
-            <app-button active @click="prev">
-                <Icon name="mdi:arrow-left"/>
-            </app-button>
-            <app-button active @click="next">
-                <Icon name="mdi:arrow-right"/>
-            </app-button>
+            <UTooltip :delay-duration="0" :disabled="isSmallScreen" text="Прошлый месяц">
+                <app-button active @click="prev">
+                    <Icon name="mdi:arrow-left"/>
+                </app-button>
+            </UTooltip>
+            <UTooltip :delay-duration="0" :disabled="isSmallScreen" text="Следующий месяц">
+                <app-button active @click="next">
+                    <Icon name="mdi:arrow-right"/>
+                </app-button>
+            </UTooltip>
             <div class="period-label">
                 {{ periodLabel }}
             </div>
-            <app-button active @click="toggleTypedTasks" class="toggle-button">
-                <Icon :name="showTypedTasks ? 'mdi:eye' : 'mdi:eye-off'"/>
-            </app-button>
+            <UTooltip :delay-duration="0" :disabled="isSmallScreen"
+                      :text="(showTypedTasks ? 'Скрыть' : 'Показать') + ' дедлайны'">
+                <app-button :outline="isSmallScreen? showTypedTasks:!showTypedTasks" active class="toggle-button"
+                            @click="toggleTypedTasks">
+                    <Icon v-if="!isSmallScreen" class="active" name="material-symbols:calendar-clock-outline"/>
+                    <span v-else class="text-sm">
+                    {{ showTypedTasks ? 'Скрыть' : 'Показать' }} дедлайны
+                </span>
+                </app-button>
+            </UTooltip>
+            <UTooltip :delay-duration="0" :disabled="isSmallScreen" text="Только мои задачи">
+                <app-button :outline="!showCurrentUserTasks" active
+                            class="toggle-button" @click="showCurrentUserTasks = !showCurrentUserTasks">
+                    <Icon v-if="!isSmallScreen" class="active" name="mdi:account"/>
+                    <span v-else class="text-sm">
+                    Только мои задачи
+                </span>
+                </app-button>
+            </UTooltip>
         </div>
         <TuiCalendar
             v-if="!isSmallScreen"
@@ -22,15 +42,18 @@
             :month="options.month"
             :options="options"
             :template="popupTemplates"
-            :use-detail-popup="true"
+            :use-detail-popup="authStore.isAdmin"
             :week="options.week"
             class="my-calendar"
             isReadOnly
             view="month"
-            @beforeCreateEvent="createEvent"
             @beforeUpdateEvent="handleCalendarUpdate"
+            @clickEvent="handleClickEvent"
         />
         <div v-else class="weekly-view">
+            <div class="h-full flex items-center justify-center text-gray-500" v-if="sortedDates.length === 0">
+                {{ (!showTypedTasks || showCurrentUserTasks)  ? 'Нет событий по выбранным фильтрам' : 'Нет событий на этой неделе' }}
+            </div>
             <div v-for="(dateKey, index) in sortedDates" :key="index">
                 <h3>{{ formatDateHeader(dateKey) }}</h3>
                 <hr>
@@ -43,7 +66,7 @@
                         color: ev.color
                     }"
                     class="event-card"
-                    @click="handleEventClick(ev)"
+                    @click="goToEvent(ev)"
                 >
                     <div class="card-title">{{ ev.title }}</div>
                     <div v-if="ev.category === 'time'" class="card-time">
@@ -62,17 +85,18 @@
 import TuiCalendar from 'toast-ui-calendar-vue3';
 import 'toast-ui-calendar-vue3/styles.css';
 import {CalendarService} from '@/client';
-import {computed, ref, onMounted, nextTick} from 'vue';
+
 import {useRouter} from 'vue-router';
-import {useNuxtApp} from 'nuxt/app';
 
-const {$viewport} = useNuxtApp();
-const isSmallScreen = computed(() => $viewport.isLessThan('md'));
+import {useAuthStore} from "~/stores/auth.js";
 
+const isSmallScreen = ref(false);
+const authStore = useAuthStore();
 const router = useRouter();
 const calendarRef = ref();
 const myEvents = ref([]);
-const showTypedTasks =  useLocalStorage('showTypedTasks', true);
+const showTypedTasks = useLocalStorage('showTypedTasks', false);
+const showCurrentUserTasks = useLocalStorage('showCurrentUserTasks', false);
 const userTypesMap = {
     photographer: 'Фотографов',
     copywriter: 'Копирайтеров',
@@ -154,6 +178,7 @@ const periodLabel = computed(() => {
         const year = date.getFullYear();
         return `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
     } else {
+        // compute start and end of week: Monday to Sunday
         const day = date.getDay();
         const diff = (day === 0 ? 6 : day - 1);
         const start = new Date(date);
@@ -174,8 +199,24 @@ const periodLabel = computed(() => {
 });
 
 const filteredEvents = computed(() => {
-    if (showTypedTasks.value) return myEvents.value;
-    return myEvents.value.filter(ev => ev.calendarId !== 'photographer' && ev.calendarId !== 'copywriter' && ev.calendarId !== 'designer'); // Скрываем typed tasks (photographer, copywriter, designer)
+    let events = myEvents.value;
+    if (!showTypedTasks.value) {
+        events = events.filter(ev => ev.calendarId !== 'photographer' && ev.calendarId !== 'copywriter' && ev.calendarId !== 'designer');
+    }
+    if (showCurrentUserTasks.value) {
+        const currentUserId = authStore.userData?.id ?? null;
+        const currentUserName = `${authStore.userData?.first_name || ''} ${authStore.userData?.last_name || ''}`.trim();
+        if (!currentUserId && !currentUserName) return [];
+        events = events.filter(ev => {
+            if (ev.users && ev.users.length) {
+                return ev.users.some(u => u?.id === currentUserId);
+            }
+
+            return false;
+        });
+    }
+
+    return events;
 });
 
 const groupedByDate = computed(() => {
@@ -198,33 +239,41 @@ const filteredGroupedByDate = computed(() => {
     return groups;
 });
 
-const sortedDates = computed(() => Object.keys(groupedByDate.value).sort());
+const sortedDates = computed(() => Object.keys(filteredGroupedByDate.value).sort());
 
 const formatDateHeader = (dateStr) => {
     const d = new Date(dateStr);
     return d.toLocaleString('ru-RU', {weekday: 'long', day: 'numeric', month: 'long'});
 };
 
+const formatDate = (d) => {
+    return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+};
+
+const getWeekStartEnd = (date) => {
+    const day = date.getDay();
+    const diff = (day === 0 ? 6 : day - 1);
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - diff);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    return {start, end};
+};
+
 const fetchEvents = async () => {
-    let view;
     let dateFrom, dateTo;
     if (!isSmallScreen.value && calendarRef.value) {
         const instance = calendarRef.value.getInstance();
-        view = instance.getViewName();
         const rangeStart = instance.getDateRangeStart().toDate();
         const rangeEnd = instance.getDateRangeEnd().toDate();
         dateFrom = formatDate(rangeStart);
         dateTo = formatDate(rangeEnd);
     } else {
-        view = 'week';
-        const day = currentDate.value.getDay();
-        const diff = (day === 0 ? 6 : day - 1);
-        const startWeek = new Date(currentDate.value);
-        startWeek.setDate(startWeek.getDate() - diff);
-        dateFrom = formatDate(startWeek);
-        const endWeek = new Date(startWeek);
-        endWeek.setDate(endWeek.getDate() + 6);
-        dateTo = formatDate(endWeek);
+        const {start, end} = getWeekStartEnd(currentDate.value);
+        dateFrom = formatDate(start);
+        dateTo = formatDate(end);
     }
 
     try {
@@ -263,6 +312,7 @@ const fetchEvents = async () => {
                 calendarId: type,
                 state: null,
                 attendees: null,
+                users: [],
             };
             if (type === 'user') {
                 event.title = `День рождения: ${item.first_name} ${item.last_name}`;
@@ -274,8 +324,19 @@ const fetchEvents = async () => {
                 event.start = `${date}T00:00:00`;
                 event.end = `${date}T23:59:59`;
                 event.category = 'allday';
+                let users = [];
+                for (const typedTask of item.typed_tasks) {
+                    if (typedTask.task_states.length > 0) {
+                        typedTask.task_states.forEach((state) => {
+                            users.push(state.user);
+                        });
+                    }
+                }
+                event.attendees = users.length > 0 ? users.map((user) => user.first_name + " " + user.last_name) : null;
+                event.users = users;
             } else if (type === 'typed_task') {
                 event.attendees = item.task_states.length > 0 ? item.task_states.map((state) => state.user.first_name + " " + state.user.last_name) : null;
+                event.users = item.task_states.length > 0 ? item.task_states.map((state) => state.user) : [];
                 event.id = `task-${item.parent_task.id}`;
                 event.category = 'allday';
                 event.start = `${item.due_date}T00:00:00`;
@@ -298,7 +359,7 @@ const fetchEvents = async () => {
 
                 const inProgress = item.task_states.some(state => state.state === 'pending');
                 if (item.parent_task.event) {
-                    const isPassed = item.parent_task.event.is_passed ;
+                    const isPassed = item.parent_task.event.is_passed;
                     const hasAssignedPhotographers = item.parent_task.event.has_assigned_photographers;
                     const allCompleted = item.parent_task.all_typed_tasks_completed;
                     if (!hasAssignedPhotographers && isPassed) {
@@ -350,57 +411,63 @@ const fetchEvents = async () => {
                 event.start = `${item.date}T${item.start_time}`;
                 event.end = `${item.date}T${item.end_time}`;
                 event.category = 'allday';
+
                 let info_message = '';
                 const isPassed = item.is_passed ?? false;
 
                 const photographers = [];
                 let assignedPhotographersCount = 0;
                 if (item.task && item.task.typed_tasks) {
-                   const statusMap = { photographer: 'green', copywriter: 'green', designer: 'green' };
-                   item.task.typed_tasks.forEach((typedTask) => {
-                       const has_pendingState = typedTask.task_states.some(state => state.state === 'pending');
-                       const all_completed = typedTask.task_states.filter(state => state.state === 'completed').length > 0 &&
+                    const statusMap = {photographer: 'green', copywriter: 'green', designer: 'green'};
+                    let users = [];
+                    item.task.typed_tasks.forEach((typedTask) => {
+                        if (typedTask.task_states.length > 0) {
+                            typedTask.task_states.forEach((state) => {
+                                users.push(state.user);
+                            });
+                        }
+                        const has_pendingState = typedTask.task_states.some(state => state.state === 'pending');
+                        const all_completed = typedTask.task_states.filter(state => state.state === 'completed').length > 0 &&
                             typedTask.task_states.every(typed_task => typed_task.state === 'completed' || typed_task.state === 'canceled');
-                       if (typedTask.due_date_passed && has_pendingState) {
-                           statusMap[typedTask.task_type] = 'red';
-                           info_message += `<span style="color: red"> Просрочен срок сдачи ${userTypesMap[typedTask.task_type]}. </span><br/>`;
-                       } else if (has_pendingState) {
-                           if (statusMap[typedTask.task_type] !== 'red'){
+                        if (typedTask.due_date_passed && has_pendingState) {
+                            statusMap[typedTask.task_type] = 'red';
+                            info_message += `<span style="color: red"> Просрочен срок сдачи ${userTypesMap[typedTask.task_type]}. </span><br/>`;
+                        } else if (has_pendingState) {
+                            if (statusMap[typedTask.task_type] !== 'red') {
                                 statusMap[typedTask.task_type] = 'yellow';
-                           }
-                       } else if (!all_completed && item.has_assigned_photographers) {
+                            }
+                        } else if (!all_completed && item.has_assigned_photographers) {
                             statusMap[typedTask.task_type] = 'red';
                             info_message += `<span style="color: red"> Не выполнена задача ${userTypesMap[typedTask.task_type]}. </span><br/>`;
-                       }
-                       if (typedTask.task_type === 'photographer' && typedTask.task_states) {
-                           const activeStates = typedTask.task_states.filter((state) => state.state !== 'canceled');
-                           assignedPhotographersCount += activeStates.length;
-                           typedTask.task_states.forEach((state) => {
-                               let name = state.user.first_name + " " + state.user.last_name;
-                               photographers.push(state.state === 'canseled' ? `<span style="color: red">${name}</span>` : name);
-                           });
-                       }
-                   });
+                        }
+                        if (typedTask.task_type === 'photographer' && typedTask.task_states) {
+                            const activeStates = typedTask.task_states.filter((state) => state.state !== 'canceled');
+                            assignedPhotographersCount += activeStates.length;
+                            typedTask.task_states.forEach((state) => {
+                                let name = state.user.first_name + " " + state.user.last_name;
+                                photographers.push(state.state === 'canceled' ? `<span style="color: red">${name}</span>` : name);
+                            });
+                        }
+                    });
+                    event.users = users;
+                    const colorMap = {red: '#e94e4e', yellow: '#ffd54f', green: '#6cc24a'};
 
-                   const colorMap = { red: '#e94e4e', yellow: '#ffd54f', green: '#6cc24a' };
+                    if (assignedPhotographersCount > 0) {
+                        let circles = '<div style="display:flex;gap:5px;flex-wrap: wrap;">';
+                        ['photographer', 'copywriter', 'designer'].forEach((type) => {
+                            const color = colorMap[statusMap[type]];
+                            const label = userTypesMap2[type] || type;
+                            circles += `<span style="display:inline-flex; padding: 1px 8px;border-radius: 10px;border: 1px solid black;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:50%;background:${color};display:inline-block"></span>${label}</span>`;
+                        });
+                        circles += '</div>';
+                        info_message += circles;
+                    }
 
-                   if (assignedPhotographersCount>0){
-                       let circles = '<div style="display:flex;gap:5px;flex-wrap: wrap;">';
-                       ['photographer', 'copywriter', 'designer'].forEach((type) => {
-                           const color = colorMap[statusMap[type]] ;
-                           const label = userTypesMap2[type] || type;
-                           circles += `<span style="display:inline-flex; padding: 1px 8px;border-radius: 10px;border: 1px solid black;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:50%;background:${color};display:inline-block"></span>${label}</span>`;
-                       });
-                       circles += '</div>';
-                       info_message += circles;
-                   }
-
-               }
+                }
                 if (info_message.length > 0) {
                     event.body = info_message;
                 }
                 event.attendees = photographers.length > 0 ? photographers : null;
-
 
 
                 if (isPassed) {
@@ -417,20 +484,17 @@ const fetchEvents = async () => {
                         event.borderColor = '#6e6e6e';
                         event.color = '#3b3b3b';
                     } else if (inProgress && !isPastAnyDeadline) {
-                        // event.backgroundColor = '#4a90e2'; // Синий для в процессе
-                        // event.borderColor = '#357abd';
-                        // event.color = '#ffffff';
-                        event.backgroundColor = '#ffd54f'; // Желтый для в процессе с просроченными
+                        event.backgroundColor = '#ffd54f'; // Yellow for in progress
                         event.borderColor = '#cca800';
                         event.color = '#000000';
                     } else if (isPastAnyDeadline) {
-                        event.backgroundColor = '#e94e4e'; // Красный для просроченных
+                        event.backgroundColor = '#e94e4e'; // Red for overdue
                         event.borderColor = '#b53232';
                         event.color = '#ffffff';
                         event.title = '! ' + event.title;
                     }
                 } else {
-                    event.backgroundColor = '#6cc24a'; // Зеленый для активных с фотографами
+                    event.backgroundColor = '#6cc24a'; // Green for active with photographers
                     event.borderColor = '#529235';
                     event.color = '#000000';
                 }
@@ -444,17 +508,15 @@ const fetchEvents = async () => {
     }
 };
 
-const formatDate = (d) => {
-    return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
-};
-
 const next = () => {
     if (!isSmallScreen.value && calendarRef.value) {
         const instance = calendarRef.value.getInstance();
         instance.next();
         currentDate.value = instance.getDate().toDate();
     } else {
-        currentDate.value = new Date(currentDate.value.setDate(currentDate.value.getDate() + 7));
+        const newDate = new Date(currentDate.value);
+        newDate.setDate(newDate.getDate() + 7);
+        currentDate.value = newDate;
     }
     fetchEvents();
 };
@@ -465,7 +527,9 @@ const prev = () => {
         instance.prev();
         currentDate.value = instance.getDate().toDate();
     } else {
-        currentDate.value = new Date(currentDate.value.setDate(currentDate.value.getDate() - 7));
+        const newDate = new Date(currentDate.value);
+        newDate.setDate(newDate.getDate() - 7);
+        currentDate.value = newDate;
     }
     fetchEvents();
 };
@@ -475,23 +539,21 @@ const toggleTypedTasks = () => {
 };
 
 onMounted(async () => {
+    isSmallScreen.value = window.innerWidth < 768;
+
     await nextTick();
+    console.log('Calendar activated, fetching events...');
     if (!isSmallScreen.value && calendarRef.value) {
         currentDate.value = calendarRef.value.getInstance().getDate().toDate();
     }
     fetchEvents();
 });
 
-function createEvent(event) {
-    myEvents.value.push(event);
-}
 
-function handleEventClick(ev) {
-    console.log('Event clicked:', ev);
+function goToEvent(ev) {
     if (ev.id.startsWith('task-')) {
         const parts = ev.id.split('-');
         const typedTaskId = parts.slice(1).join('-');
-        console.log('Typed Task ID:', typedTaskId);
         router.push({name: 'tasks-task_id', params: {task_id: typedTaskId}});
     } else if (ev.calendarId === 'photographer' || ev.title.startsWith('сдача репортажа')) {
         const typedTaskId = ev.id.split('-').slice(1).join('-');
@@ -499,8 +561,14 @@ function handleEventClick(ev) {
     }
 }
 
+const handleClickEvent = (ev) => {
+    if (!authStore.isAdmin) {
+        goToEvent(ev.event);
+    }
+};
+
 function handleCalendarUpdate(payload) {
-    handleEventClick(payload.event);
+    goToEvent(payload.event);
     return false;
 }
 
@@ -533,6 +601,12 @@ const options = computed(() => ({
 </script>
 
 <style lang="scss" scoped>
+.user-mode {
+    .toastui-calendar-section-button {
+        display: none !important;
+    }
+}
+
 .intro {
     display: flex;
     flex-direction: column;
@@ -541,8 +615,17 @@ const options = computed(() => ({
 
 .controls {
     display: flex;
+
     margin-bottom: 10px;
     gap: 5px;
+    @include md(true) {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        .period-label {
+            grid-column: 1 / -1;
+
+        }
+    }
 
     .period-label {
         border-radius: 10px;
@@ -552,7 +635,7 @@ const options = computed(() => ({
         justify-content: center;
         padding: 3px 20px;
         font-size: 16px;
-        color: $text-color-secondary;
+        color: #555;
         min-width: 200px;
     }
 }
@@ -568,18 +651,18 @@ const options = computed(() => ({
     gap: 20px;
     padding: 10px;
     overflow-y: auto;
-    height: calc(100% - 50px); /* Adjust for controls */
+    height: calc(100% - 50px);
 }
 
 .weekly-view h3 {
     font-size: 18px;
     margin: 0;
-    color: $text-color;
+    color: #222;
 }
 
 .weekly-view hr {
     border: 0;
-    border-top: 1px solid $border-color;
+    border-top: 1px solid #ccc;
     margin: 10px 0;
 }
 

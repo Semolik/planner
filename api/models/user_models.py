@@ -38,7 +38,7 @@ class User(SQLAlchemyBaseUserTableUUID, Base, AuditableMixin):
     )
 
     roles_objects = relationship(
-        "UserRoleAssociation", back_populates="user", cascade="all, delete-orphan"
+        "UserRoleAssociation", back_populates="user", cascade="all, delete-orphan", lazy='selectin'
     )
 
     @property
