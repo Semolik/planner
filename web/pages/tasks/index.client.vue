@@ -92,21 +92,23 @@
     </div>
 </template>
 <script setup>
+import {useRouter, useRoute} from 'vue-router';
+import {watch, onMounted, ref, computed, nextTick} from 'vue';
 import TuiCalendar from 'toast-ui-calendar-vue3';
 import 'toast-ui-calendar-vue3/styles.css';
 import {CalendarService} from '@/client';
 
-import {useRouter} from 'vue-router';
-
-import {useAuthStore} from "~/stores/auth.js";
+const router = useRouter();
+const route = useRoute();
 
 const isSmallScreen = ref(false);
-const authStore = useAuthStore();
-const router = useRouter();
 const calendarRef = ref();
+const currentDate = ref(new Date());
+
 const myEvents = ref([]);
 const showTypedTasks = useLocalStorage('showTypedTasks', false);
 const showCurrentUserTasks = useLocalStorage('showCurrentUserTasks', false);
+
 const userTypesMap = {
     photographer: 'Фотографов',
     copywriter: 'Копирайтеров',
@@ -162,7 +164,6 @@ const calendars = ref([
     },
 ]);
 
-const currentDate = ref(new Date());
 const colors = {
     inProgress: {
         backgroundColor: '#66b3ff',
@@ -181,6 +182,77 @@ const colors = {
     },
 };
 
+// Формат даты YYYY-MM-DD
+const formatDate = (d) => {
+  return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
+}
+// Формат месяца YYYY-MM
+const formatMonth = (d) => {
+  return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2,'0')}`;
+}
+
+// Получение начала и конца недели по дате (понедельник - воскресенье)
+const getWeekStartEnd = (date) => {
+  const day = date.getDay();
+  const diff = (day === 0 ? 6 : day - 1);
+  const start = new Date(date);
+  start.setHours(0,0,0,0);
+  start.setDate(start.getDate() - diff);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  end.setHours(23,59,59,999);
+  return {start, end};
+}
+
+// Обновление URL параметра period
+function updateUrl() {
+  const now = new Date();
+  if (isSmallScreen.value) {
+    const {start} = getWeekStartEnd(currentDate.value);
+    const startStr = formatDate(start);
+    const {start: currentWeekStart} = getWeekStartEnd(now);
+    const currentWeekStartStr = formatDate(currentWeekStart);
+    if (startStr === currentWeekStartStr) {
+      router.replace({query: {...route.query, period: undefined}});
+    } else {
+      router.replace({query: {...route.query, period: startStr}});
+    }
+  } else {
+    const monthStr = formatMonth(currentDate.value);
+    const currentMonthStr = formatMonth(now);
+    if (monthStr === currentMonthStr) {
+      router.replace({query: {...route.query, period: undefined}});
+    } else {
+      router.replace({query: {...route.query, period: monthStr}});
+    }
+  }
+}
+
+// Установка currentDate из параметра period в URL
+function setDateFromUrl() {
+  const periodParam = route.query.period;
+  if (periodParam && typeof periodParam === 'string') {
+    if (isSmallScreen.value) {
+      const d = new Date(periodParam);
+      if (!isNaN(d)) {
+        currentDate.value = d;
+      }
+    } else {
+      const parts = periodParam.split('-');
+      if (parts.length === 2) {
+        const y = parseInt(parts[0]);
+        const m = parseInt(parts[1]) - 1;
+        if (!isNaN(y) && !isNaN(m)) {
+          currentDate.value = new Date(y, m, 1);
+        }
+      }
+    }
+  } else {
+    currentDate.value = new Date();
+  }
+}
+
+// Период для отображения в шапке
 const periodLabel = computed(() => {
     const date = currentDate.value;
     if (!isSmallScreen.value) {
@@ -188,7 +260,6 @@ const periodLabel = computed(() => {
         const year = date.getFullYear();
         return `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
     } else {
-        // compute start and end of week: Monday to Sunday
         const day = date.getDay();
         const diff = (day === 0 ? 6 : day - 1);
         const start = new Date(date);
@@ -208,6 +279,7 @@ const periodLabel = computed(() => {
     }
 });
 
+// Фильтрация событий для отображения
 const filteredEvents = computed(() => {
     let events = myEvents.value;
     if (!showTypedTasks.value) {
@@ -215,30 +287,18 @@ const filteredEvents = computed(() => {
     }
     if (showCurrentUserTasks.value) {
         const currentUserId = authStore.userData?.id ?? null;
-        const currentUserName = `${authStore.userData?.first_name || ''} ${authStore.userData?.last_name || ''}`.trim();
-        if (!currentUserId && !currentUserName) return [];
+        if (!currentUserId) return [];
         events = events.filter(ev => {
             if (ev.users && ev.users.length) {
                 return ev.users.some(u => u?.id === currentUserId);
             }
-
             return false;
         });
     }
-
     return events;
 });
 
-const groupedByDate = computed(() => {
-    const groups = {};
-    myEvents.value.forEach((ev) => {
-        const dateKey = ev.start.split('T')[0];
-        if (!groups[dateKey]) groups[dateKey] = [];
-        groups[dateKey].push(ev);
-    });
-    return groups;
-});
-
+// Группировка событий по дате
 const filteredGroupedByDate = computed(() => {
     const groups = {};
     filteredEvents.value.forEach((ev) => {
@@ -256,35 +316,26 @@ const formatDateHeader = (dateStr) => {
     return d.toLocaleString('ru-RU', {weekday: 'long', day: 'numeric', month: 'long'});
 };
 
-const formatDate = (d) => {
-    return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
-};
+// Получение периода для запроса данных
+const getFetchPeriod = () => {
+  if (!isSmallScreen.value && calendarRef.value) {
+    const instance = calendarRef.value.getInstance();
+    return {
+      from: formatDate(instance.getDateRangeStart().toDate()),
+      to: formatDate(instance.getDateRangeEnd().toDate())
+    };
+  } else {
+    const {start, end} = getWeekStartEnd(currentDate.value);
+    return {
+      from: formatDate(start),
+      to: formatDate(end)
+    };
+  }
+}
 
-const getWeekStartEnd = (date) => {
-    const day = date.getDay();
-    const diff = (day === 0 ? 6 : day - 1);
-    const start = new Date(date);
-    start.setHours(0, 0, 0, 0);
-    start.setDate(start.getDate() - diff);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
-    end.setHours(23, 59, 59, 999);
-    return {start, end};
-};
-
+// Загрузка событий с сервера
 const fetchEvents = async () => {
-    let dateFrom, dateTo;
-    if (!isSmallScreen.value && calendarRef.value) {
-        const instance = calendarRef.value.getInstance();
-        const rangeStart = instance.getDateRangeStart().toDate();
-        const rangeEnd = instance.getDateRangeEnd().toDate();
-        dateFrom = formatDate(rangeStart);
-        dateTo = formatDate(rangeEnd);
-    } else {
-        const {start, end} = getWeekStartEnd(currentDate.value);
-        dateFrom = formatDate(start);
-        dateTo = formatDate(end);
-    }
+    const {from: dateFrom, to: dateTo} = getFetchPeriod();
 
     try {
         const response = await CalendarService.getCalendarCalendarGet(dateFrom, dateTo);
@@ -366,7 +417,6 @@ const fetchEvents = async () => {
                 } else {
                     event.title = eventName;
                 }
-
 
                 const inProgress = item.task_states.some(state => state.state === 'pending');
                 if (item.parent_task.event) {
@@ -553,14 +603,30 @@ const toggleTypedTasks = () => {
 onMounted(async () => {
     isSmallScreen.value = window.innerWidth < 768;
 
+    setDateFromUrl();
+
     await nextTick();
-    console.log('Calendar activated, fetching events...');
     if (!isSmallScreen.value && calendarRef.value) {
-        currentDate.value = calendarRef.value.getInstance().getDate().toDate();
+        calendarRef.value.getInstance().setDate(currentDate.value);
     }
     fetchEvents();
 });
 
+watch([currentDate, isSmallScreen], () => {
+    updateUrl();
+});
+
+window.addEventListener('resize', () => {
+    const newIsSmall = window.innerWidth < 768;
+    if (newIsSmall !== isSmallScreen.value) {
+        isSmallScreen.value = newIsSmall;
+        setDateFromUrl();
+        if (!isSmallScreen.value && calendarRef.value) {
+            calendarRef.value.getInstance().setDate(currentDate.value);
+        }
+        fetchEvents();
+    }
+});
 
 function goToEvent(ev) {
     if (ev.id.startsWith('task-')) {
@@ -572,6 +638,8 @@ function goToEvent(ev) {
         router.push({name: 'tasks-task_id', params: {task_id: typedTaskId}});
     }
 }
+
+const authStore = useAuthStore();
 
 const handleClickEvent = (ev) => {
     if (!authStore.isAdmin) {
@@ -611,6 +679,7 @@ const options = computed(() => ({
     },
 }));
 </script>
+
 
 <style lang="scss" scoped>
 .user-mode {
