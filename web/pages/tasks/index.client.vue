@@ -83,8 +83,9 @@
                         {{
                             ev.type == 'event' ? 'Фотографы' :
                                 (ev.attendees.length > 1 ? 'Исполнители' : 'Исполнитель')
-                        }}: {{ ev.attendees.join(', ') }}
+                        }}: <span v-html="ev.attendees.join(', ')"></span>
                     </div>
+                    <div v-if="ev.body" class="card-body" v-html="ev.body" />
 
                 </div>
             </div>
@@ -491,23 +492,25 @@ const fetchEvents = async () => {
                         const has_pendingState = typedTask.task_states.some(state => state.state === 'pending');
                         const all_completed = typedTask.task_states.filter(state => state.state === 'completed').length > 0 &&
                             typedTask.task_states.every(typed_task => typed_task.state === 'completed' || typed_task.state === 'canceled');
+                        let spanColor = isSmallScreen.value ? 'black' : 'red';
                         if (typedTask.due_date_passed && has_pendingState) {
                             statusMap[typedTask.task_type] = 'red';
-                            info_message += `<span style="color: red"> Просрочен срок сдачи ${userTypesMap[typedTask.task_type]}. </span><br/>`;
+                            info_message += `<span style="color: ${spanColor}"> Просрочен срок сдачи ${userTypesMap[typedTask.task_type]}. </span>`+(isSmallScreen.value?'':'<br>');
                         } else if (has_pendingState) {
                             if (statusMap[typedTask.task_type] !== 'red') {
                                 statusMap[typedTask.task_type] = 'yellow';
                             }
                         } else if (!all_completed && item.has_assigned_photographers) {
                             statusMap[typedTask.task_type] = 'red';
-                            info_message += `<span style="color: red"> Не выполнена задача ${userTypesMap[typedTask.task_type]}. </span><br/>`;
+                            info_message += `<span style="color: ${spanColor}"> Не выполнена задача ${userTypesMap[typedTask.task_type]}. </span>`+(isSmallScreen.value?'':'<br>');
                         }
                         if (typedTask.task_type === 'photographer' && typedTask.task_states) {
                             const activeStates = typedTask.task_states.filter((state) => state.state !== 'canceled');
                             assignedPhotographersCount += activeStates.length;
                             typedTask.task_states.forEach((state) => {
                                 let name = state.user.first_name + " " + state.user.last_name;
-                                photographers.push(state.state === 'canceled' ? `<span style="color: red">${name}</span>` : name);
+
+                                photographers.push(state.state === 'canceled' ? `<span style="color: ${spanColor}">${name}</span>` : name);
                             });
                         }
                     });
@@ -519,7 +522,7 @@ const fetchEvents = async () => {
                         ['photographer', 'copywriter', 'designer'].forEach((type) => {
                             const color = colorMap[statusMap[type]];
                             const label = userTypesMap2[type] || type;
-                            circles += `<span style="display:inline-flex; padding: 1px 8px;border-radius: 10px;border: 1px solid black;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:50%;background:${color};display:inline-block"></span>${label}</span>`;
+                            circles += `<span style="display:inline-flex; padding: 1px 8px;border-radius: 10px;border: 1px solid black;align-items:center;gap:6px;${isSmallScreen.value?'background-color: black;color: white;':''}"><span style="width:12px;height:12px;border-radius:50%;background:${color};display:inline-block"></span>${label}</span>`;
                         });
                         circles += '</div>';
                         info_message += circles;
@@ -535,7 +538,7 @@ const fetchEvents = async () => {
                 if (isPassed) {
                     const typedTasks = item.task?.typed_tasks || [];
                     const inProgress = typedTasks.some(tt => tt.task_states.some(s => s.state === 'pending'));
-                    const isPastAnyDeadline = typedTasks.some(tt => tt.due_date_passed && tt.task_states.some(s => s.state === 'pending'));
+                    const isPastAnyDeadline = typedTasks.some(tt => tt.due_date_passed && (tt.task_states.some(s => s.state === 'pending') || tt.task_states.length == 0));
 
                     if (!item.has_assigned_photographers) {
                         event.backgroundColor = '#d3d3d3';
@@ -552,7 +555,7 @@ const fetchEvents = async () => {
                     } else if (isPastAnyDeadline) {
                         event.backgroundColor = '#e94e4e'; // Red for overdue
                         event.borderColor = '#b53232';
-                        event.color = '#ffffff';
+                        event.color =isSmallScreen.value? 'black': 'white';
                         event.title = '! ' + event.title;
                     }
                 } else {
@@ -779,5 +782,12 @@ const options = computed(() => ({
 .card-attendees {
     font-size: 14px;
     color: inherit;
+}
+.card-body {
+    margin-top: 5px;
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
 </style>
