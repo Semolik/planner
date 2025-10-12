@@ -50,13 +50,14 @@
             @beforeUpdateEvent="handleCalendarUpdate"
             @clickEvent="handleClickEvent"
         />
-        <div v-else class="weekly-view">
-            <div class="h-full flex items-center justify-center text-gray-500" v-if="sortedDates.length === 0">
-                {{ (!showTypedTasks || showCurrentUserTasks)  ? 'Нет событий по выбранным фильтрам' : 'Нет событий на этой неделе' }}
+        <div v-else :class="['weekly-view', {empty: sortedDates.length === 0}]">
+            <div v-if="sortedDates.length === 0" class="h-full flex items-center justify-center text-gray-500">
+                {{
+                    (!showTypedTasks || showCurrentUserTasks) ? 'Нет событий по выбранным фильтрам' : 'Нет событий на этой неделе'
+                }}
             </div>
             <div v-for="(dateKey, index) in sortedDates" :key="index">
                 <h3>{{ formatDateHeader(dateKey) }}</h3>
-                <hr>
                 <div
                     v-for="ev in filteredGroupedByDate[dateKey]"
                     :key="ev.id"
@@ -80,7 +81,6 @@
         </div>
     </div>
 </template>
-
 <script setup>
 import TuiCalendar from 'toast-ui-calendar-vue3';
 import 'toast-ui-calendar-vue3/styles.css';
@@ -648,29 +648,32 @@ const options = computed(() => ({
 .weekly-view {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    padding: 10px;
-    overflow-y: auto;
-    height: calc(100% - 50px);
+    gap: 10px;
+    padding: 0px;
+
+    &.empty {
+
+        height: calc(100% - 50px);
+    }
 }
 
 .weekly-view h3 {
     font-size: 18px;
     margin: 0;
     color: #222;
+    margin-bottom: 5px;
+    margin-left: 5px;
 }
 
-.weekly-view hr {
-    border: 0;
-    border-top: 1px solid #ccc;
-    margin: 10px 0;
-}
 
 .event-card {
     padding: 10px;
     border-radius: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     cursor: pointer;
+    border: 1px solid #999999;
+    background-color: white;
+    color: #000000;
 }
 
 .card-title {
