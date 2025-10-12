@@ -69,13 +69,23 @@
                     class="event-card"
                     @click="goToEvent(ev)"
                 >
-                    <div class="card-title">{{ ev.title }}</div>
+                  <div class="flex justify-between">
+                      <div class="card-title">{{ ev.title }}</div>
+                      <div v-if="ev.type === 'typed_task'" class="deadline-icon">
+                          <Icon name="material-symbols:calendar-clock-outline"/>
+                      </div>
+                  </div>
+
                     <div v-if="ev.category === 'time'" class="card-time">
                         {{ ev.start.split('T')[1].slice(0, 5) }} - {{ ev.end.split('T')[1].slice(0, 5) }}
                     </div>
                     <div v-if="ev.attendees" class="card-attendees">
-                        Участники: {{ ev.attendees.join(', ') }}
+                        {{
+                            ev.type == 'event' ? 'Фотографы' :
+                                (ev.attendees.length > 1 ? 'Исполнители' : 'Исполнитель')
+                        }}: {{ ev.attendees.join(', ') }}
                     </div>
+
                 </div>
             </div>
         </div>
@@ -313,6 +323,7 @@ const fetchEvents = async () => {
                 state: null,
                 attendees: null,
                 users: [],
+                type: type,
             };
             if (type === 'user') {
                 event.title = `День рождения: ${item.first_name} ${item.last_name}`;
@@ -346,11 +357,11 @@ const fetchEvents = async () => {
                 if (item.parent_task.event) {
                     eventName = item.parent_task.event.name;
                     if (item.task_type === 'photographer') {
-                        event.title = `сдача репортажа "${eventName}"`;
+                        event.title = `Сдача репортажа "${eventName}"`;
                     } else if (item.task_type === 'copywriter') {
-                        event.title = `текст публикации к мероприятию "${eventName}"`;
+                        event.title = `Текст публикации к мероприятию "${eventName}"`;
                     } else if (item.task_type === 'designer') {
-                        event.title = `обложка на альбом "${eventName}"`;
+                        event.title = `Обложка на альбом "${eventName}"`;
                     }
                 } else {
                     event.title = eventName;
@@ -407,6 +418,7 @@ const fetchEvents = async () => {
                 event.body = item.description;
             } else if (type === 'event') {
                 event.id = `task-${item.task.id}`;
+
                 event.title = item.name;
                 event.start = `${item.date}T${item.start_time}`;
                 event.end = `${item.date}T${item.end_time}`;
@@ -615,13 +627,14 @@ const options = computed(() => ({
 
 .controls {
     display: flex;
-
     margin-bottom: 10px;
     gap: 5px;
     @include md(true) {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
+
         .period-label {
+             font-size: var(--text-sm) !important;
             grid-column: 1 / -1;
 
         }
@@ -674,6 +687,15 @@ const options = computed(() => ({
     border: 1px solid #999999;
     background-color: white;
     color: #000000;
+
+    .deadline-icon {
+        margin-left: 5px;
+        vertical-align: middle;
+        color: $text-color;
+        width: 18px;
+        height: 18px;
+        margin-top: 3px;
+    }
 }
 
 .card-title {
