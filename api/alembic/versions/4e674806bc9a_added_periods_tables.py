@@ -37,10 +37,12 @@ def upgrade() -> None:
                     sa.Column('id', sa.UUID(), autoincrement=False, nullable=False),
                     sa.Column('period_start', postgresql.TIMESTAMP(), autoincrement=False, nullable=False),
                     sa.Column('period_end', postgresql.TIMESTAMP(), autoincrement=False, nullable=False),
-                    sa.Column('user_role',  sa.Enum("PHOTOGRAPHER", "COPYWRITER", "DESIGNER", name="userrole"),
+                    sa.Column('user_role', postgresql.ENUM("PHOTOGRAPHER", "COPYWRITER", "DESIGNER", name="userrole",
+                                                           create_type=False),
                               autoincrement=False, nullable=False),
                     sa.PrimaryKeyConstraint('id', name='requirements_pkey')
                     )
+
     # ### end Alembic commands ###
 
 
