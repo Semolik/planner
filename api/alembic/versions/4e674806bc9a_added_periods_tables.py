@@ -33,6 +33,14 @@ def upgrade() -> None:
     op.alter_column('typed_tasks', 'due_date',
                     existing_type=postgresql.TIMESTAMP(timezone=True),
                     nullable=False)
+    op.create_table('required_periods',
+                    sa.Column('id', sa.UUID(), autoincrement=False, nullable=False),
+                    sa.Column('period_start', postgresql.TIMESTAMP(), autoincrement=False, nullable=False),
+                    sa.Column('period_end', postgresql.TIMESTAMP(), autoincrement=False, nullable=False),
+                    sa.Column('user_role', postgresql.ENUM('PHOTOGRAPHER', 'COPYWRITER', 'DESIGNER', name='userrole'),
+                              autoincrement=False, nullable=False),
+                    sa.PrimaryKeyConstraint('id', name='requirements_pkey')
+                    )
     # ### end Alembic commands ###
 
 
@@ -49,15 +57,5 @@ def downgrade() -> None:
                     existing_type=postgresql.TIMESTAMP(timezone=True),
                     nullable=True,
                     existing_server_default=sa.text('now()'))
-    op.add_column('required_periods',
-                  sa.Column('user_role', postgresql.ENUM('PHOTOGRAPHER', 'COPYWRITER', 'DESIGNER', name='userrole'),
-                            autoincrement=False, nullable=False))
-    op.create_table('requirements',
-                    sa.Column('id', sa.UUID(), autoincrement=False, nullable=False),
-                    sa.Column('period_start', postgresql.TIMESTAMP(), autoincrement=False, nullable=False),
-                    sa.Column('period_end', postgresql.TIMESTAMP(), autoincrement=False, nullable=False),
-                    sa.Column('user_role', postgresql.ENUM('PHOTOGRAPHER', 'COPYWRITER', 'DESIGNER', name='userrole'),
-                              autoincrement=False, nullable=False),
-                    sa.PrimaryKeyConstraint('id', name='requirements_pkey')
-                    )
+    op.drop_table('required_periods')
     # ### end Alembic commands ###
