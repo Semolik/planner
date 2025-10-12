@@ -9,23 +9,18 @@ import { request as __request } from '../core/request';
 export class StatisticsService {
     /**
      * Get Statistics
-     * Получить статистику пользователей за указанный период.
-     * Период задается датами начала и конца.
-     * @param periodStart
-     * @param periodEnd
+     * @param periodId
      * @returns StatsUser Successful Response
      * @throws ApiError
      */
     public static getStatisticsStatisticsGet(
-        periodStart: string,
-        periodEnd: string,
+        periodId: string,
     ): CancelablePromise<Array<StatsUser>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/statistics',
             query: {
-                'period_start': periodStart,
-                'period_end': periodEnd,
+                'period_id': periodId,
             },
             errors: {
                 422: `Validation Error`,

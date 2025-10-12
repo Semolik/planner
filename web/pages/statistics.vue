@@ -1,31 +1,28 @@
 <script setup>
-import { StatisticsService } from "@/client";
+import {StatisticsService, RequiredPeriodsService} from "@/client";
 
+const periodsRaw = await RequiredPeriodsService.getRequiredPeriodsRequiredPeriodsGet();
+const selectedPeriod = ref(periodsRaw[0]);
+const periods = computed(() => periodsRaw.map(p => ({
+    ...p,
+    active: selectedPeriod.value && p.id === selectedPeriod.value.id
+})));
 const UButton = resolveComponent("UButton");
 
-const periodStart = ref("");
-const periodEnd = ref("");
 
-const setDefaultPeriod = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-
-    periodStart.value = `${year}-01-01`;
-
-    periodEnd.value = `${year}-07-01`;
-};
-
-setDefaultPeriod();
 
 const rawData = ref([]);
 const loading = ref(false);
 
 const loadData = async () => {
+    if (!selectedPeriod.value) {
+        rawData.value = [];
+        return;
+    }
     loading.value = true;
     try {
         const data = await StatisticsService.getStatisticsStatisticsGet(
-            periodStart.value,
-            periodEnd.value
+            selectedPeriod.value.id
         );
 
         rawData.value = data;
@@ -36,7 +33,7 @@ const loadData = async () => {
     }
 };
 
-watch([periodStart, periodEnd], loadData, { immediate: true });
+watch(selectedPeriod, loadData, {immediate: true});
 
 const monthNames = [
     "Январь",
@@ -53,11 +50,50 @@ const monthNames = [
     "Декабрь",
 ];
 
+const monthNamesGenitive = [
+    "января",
+    "февраля",
+    "марта",
+    "апреля",
+    "мая",
+    "июня",
+    "июля",
+    "августа",
+    "сентября",
+    "октября",
+    "ноября",
+    "декабря",
+];
+
+const formatDate = (isoDate, showYear = false) => {
+    if (!isoDate) return "";
+    const parts = String(isoDate).split("-");
+    if (parts.length !== 3) return isoDate;
+    const [year, month, day] = parts;
+    const m = parseInt(month, 10) - 1;
+    const dd = String(parseInt(day, 10));
+    const monthName = monthNamesGenitive[m] || monthNames[m] || month;
+    return showYear ? `${dd} ${monthName} ${year}` : `${dd} ${monthName}`;
+};
+
+const formatPeriod = (period) => {
+    const start = period.period_start;
+    const end = period.period_end;
+    const startYear = start ? String(start).split("-")[0] : null;
+    const endYear = end ? String(end).split("-")[0] : null;
+    const currentYear = String(new Date().getFullYear());
+    const showYear =
+        startYear !== endYear || startYear !== currentYear || endYear !== currentYear;
+    return `${formatDate(start, showYear)} - ${formatDate(end, showYear)}`;
+};
+
 const allMonths = computed(() => {
     return [
         ...new Set(rawData.value.flatMap((u) => Object.keys(u.stats || {}))),
     ].sort();
 });
+
+
 
 const sortField = ref("fullName");
 const sortDirection = ref("asc");
@@ -91,7 +127,7 @@ const tableData = computed(() => {
 });
 
 const createSortableHeader = (title, field) => {
-    return ({ column }) => {
+    return ({column}) => {
         const isActive = sortField.value === field;
         const isAsc = sortDirection.value === "asc";
         return h(UButton, {
@@ -138,11 +174,14 @@ const columns = computed(() => {
 </script>
 
 <template>
-    <div class="flex gap-2 max-w-2xl">
-        <app-input v-model="periodStart" type="date" label="Начало периода" />
-        <app-input v-model="periodEnd" type="date" label="Конец периода" />
+    <div class="flex gap-2 max-w-2xl flex-wrap mb-4">
+        <app-button v-for="period in periods" active :outline="!period.active" @click="selectedPeriod = period" :key="period.id" class="flex-1 justify-between whitespace-nowrap min-w-[200px]">
+            <span class="text-sm">
+                  {{ formatPeriod(period) }}
+            </span>
+        </app-button>
     </div>
 
-    <UTable :data="tableData" :columns="columns" v-if="!loading" />
+    <UTable v-if="!loading" :columns="columns" :data="tableData"/>
     <p v-else>Загрузка данных...</p>
 </template>

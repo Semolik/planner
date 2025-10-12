@@ -1,6 +1,6 @@
 import uuid
 import enum
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import Column, Date, Integer, String, DateTime, func, ForeignKey, Enum
 from fastapi_users.db import SQLAlchemyBaseUserTableUUID
@@ -67,10 +67,31 @@ class Institute(Base):
     name = Column(String, nullable=False)
 
 
-class Requirements(Base):
-    __tablename__ = "requirements"
+class RequiredPeriod(Base):
+    __tablename__ = "required_periods"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    period_start = Column(DateTime, nullable=False)
-    period_end = Column(DateTime, nullable=False)
-    user_role = Column(Enum(UserRole), nullable=False)
+    period_start: Mapped[Date] = mapped_column(Date, nullable=False)
+    period_end: Mapped[Date] = mapped_column(Date, nullable=False)
+    roles_config = relationship(
+        "RolePeriodConfig",
+        back_populates="required_period",
+        cascade="all, delete-orphan",
+    )
+
+
+
+class RolePeriodConfig(Base):
+    __tablename__ = "required_period_configs"
+
+    required_period_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("required_periods.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    required_period: Mapped["RequiredPeriod"] = relationship(
+        "RequiredPeriod", back_populates="roles_config",
+        foreign_keys=[required_period_id],
+    )
+    user_role: Mapped[UserRole] = mapped_column(Enum(UserRole), primary_key=True)
+    count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

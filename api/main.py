@@ -8,6 +8,7 @@ from endpoints.files_endpoints import api_router as files_router
 from endpoints.users_endpoints import api_router as users_router
 from endpoints.auth_endpoints import api_router as auth_router
 from endpoints.events_endpoints import api_router as events_router
+from endpoints.required_periods import api_router as required_periods_router
 from endpoints.tasks_endpoints import api_router as tasks_router
 from endpoints.events_groups_endpoints import api_router as events_groups_router
 from endpoints.events_levels import api_router as events_levels_router
@@ -57,6 +58,7 @@ app.include_router(home_router)
 app.include_router(events_levels_router)
 app.include_router(calendar_router)
 app.include_router(events_router)
+app.include_router(required_periods_router)
 app.include_router(events_groups_router)
 app.include_router(tasks_router)
 app.include_router(typed_tasks_router)

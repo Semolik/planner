@@ -1,10 +1,13 @@
+import uuid
 from datetime import date
 from schemas.stats import StatsUser
 from core.users_controller import current_superuser
 from cruds.statistics_crud import StatisticsCRUD
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from db.session import get_async_session
+
+from cruds.periods_crud import PeriodsCRUD
 
 api_router = APIRouter(
     prefix="/statistics", tags=["statistics"], dependencies=[Depends(current_superuser)]
@@ -13,14 +16,16 @@ api_router = APIRouter(
 
 @api_router.get("", response_model=list[StatsUser])
 async def get_statistics(
-    period_start: date,
-    period_end: date,
+    period_id: uuid.UUID,
     db=Depends(get_async_session),
 ):
-    """
-    Получить статистику пользователей за указанный период.
-    Период задается датами начала и конца.
-    """
 
+    periods_crud = PeriodsCRUD(db)
+    period = await periods_crud.get_period_by_id(period_id)
+    if not period:
+        raise HTTPException(status_code=404, detail="Период не найден")
     statistics_crud = StatisticsCRUD(db)
-    return await statistics_crud.get_statistics(period_start, period_end)
+    return await statistics_crud.get_statistics(
+        period_start=period.period_start,
+        period_end=period.period_end
+    )

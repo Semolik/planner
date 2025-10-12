@@ -10,7 +10,7 @@ export type TaskRead = {
     event_id?: (string | null);
     name: string;
     id: string;
-    all_typed_tasks_completed?: boolean;
+    all_typed_tasks_completed: boolean;
     event?: (EventRead | null);
     typed_tasks: Array<TypedTaskRead>;
     images: Array<ImageInfo>;
