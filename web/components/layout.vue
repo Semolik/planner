@@ -102,7 +102,7 @@ const asideBlocks = computed(() => {
                 {
                     name: "Отчетные периоды",
                     icon: "material-symbols:date-range-rounded",
-                    path: routesNames.periods,
+                    path: routesNames.periods.index,
                 },
                 {
                     name: "Институты",
