@@ -1,12 +1,12 @@
 from datetime import date
 import uuid
-from schemas.stats import StatsUser
+from schemas.stats import StatsUser, StatsMonth
 from cruds.base_crud import BaseCRUD
-from models.user_models import User
-from models.events_models import TaskState, TypedTask, State
-from sqlalchemy import Integer, select, func, extract
+from models.user_models import User, UserRole
+from models.events_models import TaskState, TypedTask, State, Task, Event
+from sqlalchemy import Integer, select, func, extract, case, Date
 from sqlalchemy.orm import aliased
-from typing import List, Dict, Union
+from typing import List, Dict
 from sqlalchemy.orm import selectinload
 
 
@@ -45,58 +45,112 @@ class StatisticsCRUD(BaseCRUD):
         user_alias = aliased(User)
         task_state_alias = aliased(TaskState)
         typed_task_alias = aliased(TypedTask)
+        task_alias = aliased(Task)
+        event_alias = aliased(Event)
 
+        # Вычисляем дату для группировки: дата события если есть, иначе дата типизированной задачи
+        effective_date = case(
+            (event_alias.date.isnot(None), event_alias.date),
+            else_=func.cast(typed_task_alias.due_date, type_=Date)
+        )
+
+        # Subquery that groups by user_id, month, and role
+        # ВАЖНО: джоиним только по TypedTask.task_type, а не по UserRoleAssociation
         subquery = (
             select(
                 user_alias.id.label("user_id"),
-                extract("month", typed_task_alias.due_date)
+                extract("month", effective_date)
                 .cast(Integer)
                 .label("month"),
+                typed_task_alias.task_type.label("role"),
                 func.count(task_state_alias.id).label("count"),
             )
-            .outerjoin(task_state_alias.user.of_type(user_alias))
+            .join(task_state_alias.user.of_type(user_alias))
             .join(task_state_alias.typed_task.of_type(typed_task_alias))
+            .join(
+                task_alias,
+                typed_task_alias.task_id == task_alias.id
+            )
+            .outerjoin(  # LEFT JOIN потому что не у всех задач есть событие
+                event_alias,
+                task_alias.event_id == event_alias.id
+            )
             .where(
                 task_state_alias.state == State.COMPLETED,
-                typed_task_alias.due_date.between(period_start, period_end),
+                case(
+                    # Если есть событие, проверяем его дату
+                    (event_alias.date.isnot(None),
+                     event_alias.date.between(period_start, period_end)),
+                    # Иначе проверяем дату типизированной задачи
+                    else_=func.cast(typed_task_alias.due_date, type_=Date).between(
+                        period_start, period_end
+                    )
+                )
             )
             .group_by(
-                user_alias.id, extract("month", typed_task_alias.due_date).cast(Integer)
+                user_alias.id,
+                extract("month", effective_date).cast(Integer),
+                typed_task_alias.task_type  # Группируем по типу задачи, а не по ролям пользователя
             )
             .subquery()
         )
 
+        # Main query to get all users with their stats
         stmt = (
             select(User)
             .outerjoin(subquery, subquery.c.user_id == User.id)
-            .add_columns(subquery.c.month, subquery.c.count)
+            .add_columns(subquery.c.month, subquery.c.role, subquery.c.count)
             .order_by(User.last_name)
             .options(
                 selectinload(User.institute),
+                selectinload(User.roles_objects),
             )
         )
 
         result = await self.db.execute(stmt)
         rows = result.all()
 
-        stats_map: Dict[Union[str, uuid.UUID], Dict[int, int]] = {}
-        users_map: Dict[Union[str, uuid.UUID], User] = {}
+        # Build the statistics structure
+        stats_map: Dict[uuid.UUID, Dict[int, Dict[UserRole, int]]] = {}
+        users_map: Dict[uuid.UUID, User] = {}
 
         for row in rows:
             user = row[0]
             month = row[1]
-            count = row[2]
+            role = row[2]
+            count = row[3]
 
             user_id = user.id
 
+            # Initialize user entry if not exists
             if user_id not in stats_map:
-                stats_map[user_id] = {m: 0 for m in all_months_in_range}
+                # Initialize all months with zero counts for all roles
+                stats_map[user_id] = {
+                    m: {
+                        UserRole.PHOTOGRAPHER: 0,
+                        UserRole.COPYWRITER: 0,
+                        UserRole.DESIGNER: 0,
+                    }
+                    for m in all_months_in_range
+                }
                 users_map[user_id] = user
 
-            if month is not None:
-                stats_map[user_id][month] = count
+            # Update the count for the specific month and role
+            if month is not None and role is not None:
+                stats_map[user_id][month][role] = count
 
+        # Convert to Pydantic models
         return [
-            StatsUser(user=users_map[user_id], stats=stats_map[user_id])
+            StatsUser(
+                user=users_map[user_id],
+                stats={
+                    month: StatsMonth(
+                        photographer=month_stats[UserRole.PHOTOGRAPHER],
+                        copywriter=month_stats[UserRole.COPYWRITER],
+                        designer=month_stats[UserRole.DESIGNER],
+                    )
+                    for month, month_stats in stats_map[user_id].items()
+                }
+            )
             for user_id in stats_map
         ]
