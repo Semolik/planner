@@ -1,7 +1,7 @@
 import uuid
 from sqlalchemy import UUID, Column, Enum, Integer, String
-from models.user_models import UserRole
-from db.session import Base
+from api.models.user_models import UserRole
+from api.db.session import Base
 
 
 class Chat(Base):

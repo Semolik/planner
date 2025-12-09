@@ -1,9 +1,9 @@
-from cruds.file_cruds import FilesCRUD
+from api.cruds.file_cruds import FilesCRUD
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Path
 from fastapi.responses import FileResponse
-from utilities.files import get_file_path, get_image_path
-from db.session import get_async_session
+from api.utilities.files import get_file_path, get_image_path
+from api.db.session import get_async_session
 
 api_router = APIRouter(tags=["files"])
 
@@ -21,7 +21,7 @@ async def get_app_image(
 
 
 @api_router.get("/files/{file_id}", response_class=FileResponse)
-async def get_app_image(
+async def get_app_file(
     file_id: uuid.UUID = Path(...),
     db=Depends(get_async_session),
 ):

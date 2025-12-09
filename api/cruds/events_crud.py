@@ -6,11 +6,11 @@ import uuid
 from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import selectinload
 
-from cruds.tasks_crud import TasksCRUD
-from cruds.base_crud import BaseCRUD
-from models.user_models import User, UserRole
-from models.events_models import Event, State
-from models.events_models import Task, TypedTask, TaskState, EventGroup, EventLevel
+from api.cruds.tasks_crud import TasksCRUD
+from api.cruds.base_crud import BaseCRUD
+from api.models.user_models import User, UserRole
+from api.models.events_models import Event, State
+from api.models.events_models import Task, TypedTask, TaskState, EventGroup, EventLevel
 
 
 class EventsCRUD(BaseCRUD):
@@ -250,6 +250,7 @@ class EventsCRUD(BaseCRUD):
 
         result = await self.db.execute(actual_events_query)
         return result.scalars().all()
+
     async def get_events_by_period(self, date_from: date, date_to: date) -> list[Event]:
         query = (
             select(Event)

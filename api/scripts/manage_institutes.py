@@ -12,8 +12,8 @@ project_root = os.path.abspath(os.path.join(script_dir, ".."))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from models.user_models import Institute  # noqa: E402
-from db.session import get_async_session_context  # noqa: E402
+from api.models.user_models import Institute  # noqa: E402
+from api.db.session import get_async_session_context  # noqa: E402
 
 app = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]}, add_completion=False

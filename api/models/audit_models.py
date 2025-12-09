@@ -3,7 +3,7 @@ from sqlalchemy import event, inspect, select
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import Column, String, DateTime, ForeignKey
-from db.session import Base
+from api.db.session import Base
 import uuid
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship

@@ -1,8 +1,10 @@
+from datetime import date
+
 from fastapi_users.authentication import CookieTransport
 from sqlalchemy import select
-from cruds.base_crud import BaseCRUD
-from core.authenticator import CustomAuthenticator
-from schemas.users import UserCreate
+from api.cruds.base_crud import BaseCRUD
+from api.core.authenticator import CustomAuthenticator
+from api.schemas.users import UserCreate
 import uuid
 from typing import Optional
 import contextlib
@@ -14,10 +16,10 @@ from fastapi_users.authentication import (
 )
 from fastapi_users.exceptions import UserAlreadyExists, UserNotExists
 from fastapi_users.db import SQLAlchemyUserDatabase
-from models.user_models import User, UserRole, UserRoleAssociation
+from api.models.user_models import User, UserRole, UserRoleAssociation
 
-from db.session import get_async_session, AsyncSession, get_async_session_context
-from core.config import settings
+from api.db.session import get_async_session, AsyncSession, get_async_session_context
+from api.core.config import settings
 
 
 async def get_user_db(session: AsyncSession = Depends(get_async_session)):
@@ -118,7 +120,7 @@ async def create_user(
     institute_id: uuid.UUID,
     roles: list[UserRole],
     patronymic: str | None = None,
-    birth_date: str | None = None,
+    birth_date: date | None = None,
     vk_id: int | None = None,
     phone: str | None = None,
     is_superuser: bool = False,

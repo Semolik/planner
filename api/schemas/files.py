@@ -1,33 +1,33 @@
+from typing import Any, Annotated
+
 from fastapi import Query
-from pydantic import BaseModel, model_validator, validator
-from utilities.files import get_file_link, get_image_link
-from models.files_models import Image
+from pydantic import (
+    BaseModel,
+    model_validator,
+    validator,
+    BeforeValidator,
+    PlainSerializer,
+)
+from api.utilities.files import get_file_link, get_image_link
+from api.models.files_models import Image
 from uuid import UUID
-from pydantic_core import core_schema
 
 
-class ImageLink(BaseModel):
-    """convert relationship to image link"""
+def validate_image_link(v: Any) -> str | None:
+    if not v:
+        return None
+    if isinstance(v, str):  # уже строка
+        return v
+    if not isinstance(v, Image):
+        raise TypeError("ImageLink must be Image (model)")
+    return get_image_link(image_id=v.id)
 
-    @classmethod
-    def validate(cls, v: Image, handler) -> str | None:
-        if not v:
-            return None
-        if isinstance(v, str):  # regex test
-            return v
-        if not isinstance(v, Image):
-            raise TypeError("ImageLink must be Image (model)")
-        return get_image_link(image_id=v.id)
 
-    @classmethod
-    def __get_pydantic_core_schema__(
-        cls, source_type, _handler
-    ) -> core_schema.CoreSchema:
-        return core_schema.no_info_wrap_validator_function(
-            cls.validate,
-            core_schema.str_schema(),
-            serialization=core_schema.to_string_ser_schema(),
-        )
+ImageLink = Annotated[
+    str | None,
+    BeforeValidator(validate_image_link),
+    PlainSerializer(lambda x: x, return_type=str, when_used="always"),
+]
 
 
 class ImageInfo(BaseModel):

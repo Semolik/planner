@@ -1,10 +1,10 @@
 from typing import Literal
-from schemas.events import EventGroupCreate, EventGroupRead, EventGroupReadShort
+from api.schemas.events import EventGroupCreate, EventGroupRead, EventGroupReadShort
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
-from cruds.events_crud import EventsCRUD
-from core.users_controller import current_superuser, current_user
-from db.session import get_async_session
+from api.cruds.events_crud import EventsCRUD
+from api.core.users_controller import current_superuser, current_user
+from api.db.session import get_async_session
 
 api_router = APIRouter(prefix="/events/groups", tags=["events groups"])
 

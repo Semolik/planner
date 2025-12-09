@@ -12,7 +12,7 @@ from fastapi_users.authentication.strategy import Strategy
 from fastapi_users.manager import BaseUserManager
 from makefun import with_signature
 
-from models.user_models import UserRole
+from api.models.user_models import UserRole
 
 # метод определения подходимости уровня роли
 

@@ -1,9 +1,9 @@
-from schemas.events import EventLevelCreateOrUpdate, EventLevelRead
+from api.schemas.events import EventLevelCreateOrUpdate, EventLevelRead
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Path
-from cruds.events_crud import EventsCRUD
-from core.users_controller import current_superuser
-from db.session import get_async_session
+from api.cruds.events_crud import EventsCRUD
+from api.core.users_controller import current_superuser
+from api.db.session import get_async_session
 
 api_router = APIRouter(prefix="/events/levels", tags=["events levels"])
 

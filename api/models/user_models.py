@@ -4,8 +4,8 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import Column, Date, Integer, String, DateTime, func, ForeignKey, Enum
 from fastapi_users.db import SQLAlchemyBaseUserTableUUID
-from models.audit_models import AuditableMixin, register_audit_events
-from db.session import Base
+from api.models.audit_models import AuditableMixin, register_audit_events
+from api.db.session import Base
 
 
 class UserRole(enum.Enum):
@@ -38,7 +38,10 @@ class User(SQLAlchemyBaseUserTableUUID, Base, AuditableMixin):
     )
 
     roles_objects = relationship(
-        "UserRoleAssociation", back_populates="user", cascade="all, delete-orphan", lazy='selectin'
+        "UserRoleAssociation",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
     @property
@@ -80,7 +83,6 @@ class RequiredPeriod(Base):
     )
 
 
-
 class RolePeriodConfig(Base):
     __tablename__ = "required_period_configs"
 
@@ -90,7 +92,8 @@ class RolePeriodConfig(Base):
         primary_key=True,
     )
     required_period: Mapped["RequiredPeriod"] = relationship(
-        "RequiredPeriod", back_populates="roles_config",
+        "RequiredPeriod",
+        back_populates="roles_config",
         foreign_keys=[required_period_id],
     )
     user_role: Mapped[UserRole] = mapped_column(Enum(UserRole), primary_key=True)

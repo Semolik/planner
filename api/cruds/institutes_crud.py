@@ -2,8 +2,8 @@ import uuid
 
 from sqlalchemy import func, select
 
-from cruds.base_crud import BaseCRUD
-from models.user_models import Institute, User
+from api.cruds.base_crud import BaseCRUD
+from api.models.user_models import Institute, User
 
 
 class InstitutesCRUD(BaseCRUD):

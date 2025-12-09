@@ -43,6 +43,7 @@ export type { Settings } from './models/Settings';
 export type { SettingsUpdate } from './models/SettingsUpdate';
 export { State } from './models/State';
 export type { StatePeriod } from './models/StatePeriod';
+export type { StatsMonth } from './models/StatsMonth';
 export type { StatsUser } from './models/StatsUser';
 export type { TaskCreate } from './models/TaskCreate';
 export type { TaskRead } from './models/TaskRead';

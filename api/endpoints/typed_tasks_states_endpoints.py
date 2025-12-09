@@ -1,11 +1,11 @@
-from schemas.events import TypedTaskState, StatePeriod, UpdateTypedTaskState
+from api.schemas.events import TypedTaskState, StatePeriod, UpdateTypedTaskState
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
-from cruds.tasks_crud import TasksCRUD
+from api.cruds.tasks_crud import TasksCRUD
 
-from core.users_controller import current_user
-from db.session import get_async_session, AsyncSession
-from models.user_models import User
+from api.core.users_controller import current_user
+from api.db.session import get_async_session, AsyncSession
+from api.models.user_models import User
 
 api_router = APIRouter(prefix="/tasks/typed-tasks/states", tags=["typed tasks states"])
 

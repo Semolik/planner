@@ -1,8 +1,8 @@
-"""Added required tables
+"""initial migration
 
-Revision ID: 5c1ac0c523e9
+Revision ID: 91cba09a89be
 Revises:
-Create Date: 2025-08-20 16:14:56.856676
+Create Date: 2025-11-26 01:18:13.773492
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "5c1ac0c523e9"
+revision: str = "91cba09a89be"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -93,15 +93,10 @@ def upgrade() -> None:
         op.f("ix_personal_events_id"), "personal_events", ["id"], unique=False
     )
     op.create_table(
-        "requirements",
+        "required_periods",
         sa.Column("id", sa.UUID(), nullable=False),
-        sa.Column("period_start", sa.DateTime(), nullable=False),
-        sa.Column("period_end", sa.DateTime(), nullable=False),
-        sa.Column(
-            "user_role",
-            sa.Enum("PHOTOGRAPHER", "COPYWRITER", "DESIGNER", name="userrole"),
-            nullable=False,
-        ),
+        sa.Column("period_start", sa.Date(), nullable=False),
+        sa.Column("period_end", sa.Date(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
@@ -112,13 +107,13 @@ def upgrade() -> None:
             "created_at",
             sa.TIMESTAMP(timezone=True),
             server_default=sa.text("now()"),
-            nullable=True,
+            nullable=False,
         ),
         sa.Column(
             "updated_at",
             sa.TIMESTAMP(timezone=True),
             server_default=sa.text("now()"),
-            nullable=True,
+            nullable=False,
         ),
         sa.Column(
             "role",
@@ -148,6 +143,20 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_events_id"), "events", ["id"], unique=False)
+    op.create_table(
+        "required_period_configs",
+        sa.Column("required_period_id", sa.UUID(), nullable=False),
+        sa.Column(
+            "user_role",
+            sa.Enum("PHOTOGRAPHER", "COPYWRITER", "DESIGNER", name="userrole"),
+            nullable=False,
+        ),
+        sa.Column("count", sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["required_period_id"], ["required_periods.id"], ondelete="CASCADE"
+        ),
+        sa.PrimaryKeyConstraint("required_period_id", "user_role"),
+    )
     op.create_table(
         "users",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -201,6 +210,7 @@ def upgrade() -> None:
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("event_id", sa.UUID(), nullable=True),
+        sa.Column("due_date", sa.Date(), nullable=True),
         sa.ForeignKeyConstraint(["event_id"], ["events.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -237,7 +247,6 @@ def upgrade() -> None:
     )
     op.create_table(
         "typed_tasks",
-        sa.Column("due_date", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("task_id", sa.UUID(), nullable=False),
         sa.Column(
@@ -248,6 +257,7 @@ def upgrade() -> None:
         sa.Column("description", sa.Text(), nullable=False),
         sa.Column("for_single_user", sa.Boolean(), nullable=False),
         sa.Column("link", sa.Text(), nullable=False),
+        sa.Column("due_date", sa.TIMESTAMP(timezone=True), nullable=False),
         sa.ForeignKeyConstraint(["task_id"], ["tasks.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint(
@@ -315,11 +325,12 @@ def downgrade() -> None:
     op.drop_table("tasks")
     op.drop_table("audit_log")
     op.drop_table("users")
+    op.drop_table("required_period_configs")
     op.drop_index(op.f("ix_events_id"), table_name="events")
     op.drop_table("events")
     op.drop_index(op.f("ix_tasks_token_id"), table_name="tasks_token")
     op.drop_table("tasks_token")
-    op.drop_table("requirements")
+    op.drop_table("required_periods")
     op.drop_index(op.f("ix_personal_events_id"), table_name="personal_events")
     op.drop_table("personal_events")
     op.drop_table("institutes")

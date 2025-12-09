@@ -1,8 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 
-from schemas.users import UserReadShort
-
-from models.user_models import UserRole
+from api.schemas.users import UserReadShort
 
 
 class StatsMonth(BaseModel):

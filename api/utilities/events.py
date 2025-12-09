@@ -1,8 +1,8 @@
 from vkbottle import bold, italic
-from models.user_models import User, UserRole
-from cruds.events_crud import EventsCRUD
-from models.events_models import Event
-from db.session import AsyncSession
+from api.models.user_models import User, UserRole
+from api.cruds.events_crud import EventsCRUD
+from api.models.events_models import Event
+from api.db.session import AsyncSession
 from datetime import datetime, timedelta
 
 month_names = [

@@ -1,8 +1,7 @@
 import uuid
 from pydantic import BaseModel
-from models.user_models import UserRole
-
-from schemas.files import File
+from api.models.user_models import UserRole
+from api.schemas.files import File
 
 
 class HomeNoteRead(BaseModel):

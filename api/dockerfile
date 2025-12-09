@@ -1,6 +1,9 @@
-FROM tiangolo/uvicorn-gunicorn:python3.11-slim
-WORKDIR /usr/src
-COPY requirements.txt /tmp/requirements.txt
+FROM python:3.11-slim
+WORKDIR /app
+COPY ./requirements.txt /tmp/requirements.txt
 RUN pip cache purge
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
+COPY . /app/api
+ENV PYTHONPATH=.
+RUN chmod -R +x /app/api/scripts/*.sh

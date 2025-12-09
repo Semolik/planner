@@ -27,12 +27,12 @@ export class FilesService {
         });
     }
     /**
-     * Get App Image
+     * Get App File
      * @param fileId
      * @returns any Successful Response
      * @throws ApiError
      */
-    public static getAppImageFilesFileIdGet(
+    public static getAppFileFilesFileIdGet(
         fileId: string,
     ): CancelablePromise<any> {
         return __request(OpenAPI, {

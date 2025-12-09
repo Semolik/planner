@@ -1,11 +1,11 @@
-from utilities.vk import VKUtils
-from models.user_models import User
+from api.utilities.vk import VKUtils
+from api.models.user_models import User
 
 from sqlalchemy import event
 from pathlib import Path
-from utilities.files import get_file_path, get_image_path
-from models.files_models import File, Image
-from models.events_models import Event, TaskState
+from api.utilities.files import get_file_path, get_image_path
+from api.models.files_models import File, Image
+from api.models.events_models import Event, TaskState
 
 
 @event.listens_for(Image, "before_delete")

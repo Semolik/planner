@@ -3,7 +3,7 @@ from typing import Optional
 import uuid
 from pydantic import BaseModel
 from fastapi_users.schemas import CreateUpdateDictModel
-from models.user_models import UserRole
+from api.models.user_models import UserRole
 
 
 class BaseUserCustomFields(BaseModel):

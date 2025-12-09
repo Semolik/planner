@@ -4,9 +4,9 @@ import uuid
 
 from sqlalchemy.orm import selectinload, contains_eager
 
-from cruds.base_crud import BaseCRUD
-from models.user_models import User, UserRole
-from models.events_models import (
+from api.cruds.base_crud import BaseCRUD
+from api.models.user_models import User, UserRole
+from api.models.events_models import (
     Event,
     State,
     Task,

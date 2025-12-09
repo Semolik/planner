@@ -1,32 +1,32 @@
 from fastapi.staticfiles import StaticFiles
-from utilities.vk import VKUtils
+from api.utilities.vk import VKUtils
 from fastapi.middleware.cors import CORSMiddleware
-from core.config import settings
-from endpoints.settings_endpoints import api_router as settings_router
-from endpoints.institutes_endpoints import api_router as institutes_router
-from endpoints.files_endpoints import api_router as files_router
-from endpoints.users_endpoints import api_router as users_router
-from endpoints.auth_endpoints import api_router as auth_router
-from endpoints.events_endpoints import api_router as events_router
-from endpoints.required_periods import api_router as required_periods_router
-from endpoints.tasks_endpoints import api_router as tasks_router
-from endpoints.events_groups_endpoints import api_router as events_groups_router
-from endpoints.events_levels import api_router as events_levels_router
-from endpoints.typed_tasks_endpoints import api_router as typed_tasks_router
-from endpoints.typed_tasks_states_endpoints import (
+from api.core.config import settings
+from api.endpoints.settings_endpoints import api_router as settings_router
+from api.endpoints.institutes_endpoints import api_router as institutes_router
+from api.endpoints.files_endpoints import api_router as files_router
+from api.endpoints.users_endpoints import api_router as users_router
+from api.endpoints.auth_endpoints import api_router as auth_router
+from api.endpoints.events_endpoints import api_router as events_router
+from api.endpoints.required_periods import api_router as required_periods_router
+from api.endpoints.tasks_endpoints import api_router as tasks_router
+from api.endpoints.events_groups_endpoints import api_router as events_groups_router
+from api.endpoints.events_levels import api_router as events_levels_router
+from api.endpoints.typed_tasks_endpoints import api_router as typed_tasks_router
+from api.endpoints.typed_tasks_states_endpoints import (
     api_router as typed_tasks_states_router,
 )
-from endpoints.calendar_endpoints import api_router as calendar_router
-from endpoints.vk_endpoints import api_router as vk_router
+from api.endpoints.calendar_endpoints import api_router as calendar_router
+from api.endpoints.vk_endpoints import api_router as vk_router
 
-from endpoints.home_endpoints import api_router as home_router
-from endpoints.statistics_endpoints import api_router as statistics_router
-from db.session import async_session_maker
+from api.endpoints.home_endpoints import api_router as home_router
+from api.endpoints.statistics_endpoints import api_router as statistics_router
+from api.db.session import async_session_maker
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from db.init import init_db
-import event_listener
-from db.session import create_db_and_tables
+
+from api import event_listener
+
 from fastapi.openapi.docs import (
     get_swagger_ui_html,
     get_swagger_ui_oauth2_redirect_html,
@@ -34,7 +34,7 @@ from fastapi.openapi.docs import (
 
 
 app = FastAPI(docs_url=None, redoc_url=None)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=f"{'' if settings.DEV_MODE else 'api/'}static"), name="static")
 
 
 @app.get("/docs", include_in_schema=False)
@@ -76,21 +76,21 @@ main_app_lifespan = app.router.lifespan_context
 
 @asynccontextmanager
 async def lifespan_wrapper(app):
-    await create_db_and_tables()
-    await init_db()
-
-    async with async_session_maker() as session:
-        vk_utils = VKUtils(session=session)
-        token = await vk_utils.get_token()
-        if token:
-            await vk_utils.start_bot(token=token)
-        app.state.vk_utils = vk_utils
-        event_listener.add_vk_listeners(app.state.vk_utils)
+    try:
+        async with async_session_maker() as session:
+            vk_utils = VKUtils(session=session)
+            token = await vk_utils.get_token()
+            if token:
+                await vk_utils.start_bot(token=token)
+            app.state.vk_utils = vk_utils
+            event_listener.add_vk_listeners(app.state.vk_utils)
+    except Exception as exception:
+        print(exception)
     async with main_app_lifespan(app) as maybe_state:
         yield maybe_state
 
 
-app.router.lifespan_context = lifespan_wrapper
+# app.router.lifespan_context = lifespan_wrapper
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS_LIST,

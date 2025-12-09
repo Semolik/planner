@@ -3,7 +3,7 @@ from datetime import date
 
 from pydantic import BaseModel, Field
 
-from models.user_models import UserRole
+from api.models.user_models import UserRole
 
 
 class RoleConfig(BaseModel):
@@ -22,6 +22,7 @@ class RequiredPeriod(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 class CreateOrUpdatePeriodRequest(BaseModel):
     period_start: date

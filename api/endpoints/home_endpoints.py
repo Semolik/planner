@@ -1,14 +1,14 @@
-from utilities.files import save_file
-from cruds.home_crud import HomeCRUD
-from schemas.home import HomeNoteRead
-from models.user_models import User, UserRole
+from api.utilities.files import save_file
+from api.cruds.home_crud import HomeCRUD
+from api.schemas.home import HomeNoteRead
+from api.models.user_models import User, UserRole
 
 import uuid
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.exceptions import HTTPException
-from db.session import get_async_session
-from core.users_controller import current_superuser, current_user
-from schemas.files import File as FileSchema
+from api.db.session import get_async_session
+from api.core.users_controller import current_superuser, current_user
+from api.schemas.files import File as FileSchema
 
 api_router = APIRouter(tags=["home"], prefix="/home")
 

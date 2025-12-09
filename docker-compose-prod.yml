@@ -9,28 +9,11 @@ services:
       - ./uploads/files:/uploads/files
     env_file:
       - .env
-
     restart: always
-    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    command: bash /app/api/scripts/start.sh
     depends_on:
       database:
         condition: service_healthy
-      migration:
-        condition: service_completed_successfully
-    
-  migration:
-    build:
-      context: api
-    env_file:
-      - .env
-    environment:
-      - PYTHONPATH=/usr/src
-    command: "alembic upgrade head"
-    depends_on:
-      database:
-        condition: service_healthy
-    volumes:
-      - ./api:/usr/src
 
   database:
     env_file:

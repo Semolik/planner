@@ -1,7 +1,7 @@
 import uuid
 
-from cruds.base_crud import BaseCRUD
-from models.files_models import File, Image
+from api.cruds.base_crud import BaseCRUD
+from api.models.files_models import File, Image
 
 
 class FilesCRUD(BaseCRUD):

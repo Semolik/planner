@@ -1,8 +1,8 @@
 import uuid
 from pydantic import BaseModel
-from core.config import settings
+from api.core.config import settings
 
-from schemas.files import ImageLink
+from api.schemas.files import ImageLink
 
 
 class SettingsUpdate(BaseModel):

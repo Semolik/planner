@@ -1,15 +1,15 @@
-from schemas.events import (
+from api.schemas.events import (
     EventFullInfo,
     EventCreate,
     EventUpdate,
 )
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
-from cruds.events_crud import EventsCRUD
-from cruds.tasks_crud import TasksCRUD
-from core.users_controller import current_superuser, current_user
-from db.session import get_async_session
-from models.user_models import UserRole
+from api.cruds.events_crud import EventsCRUD
+from api.cruds.tasks_crud import TasksCRUD
+from api.core.users_controller import current_superuser, current_user
+from api.db.session import get_async_session
+from api.models.user_models import UserRole
 
 api_router = APIRouter(prefix="/events", tags=["events"])
 

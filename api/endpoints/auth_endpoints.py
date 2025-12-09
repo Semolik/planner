@@ -1,12 +1,12 @@
 import requests
-from core.users_controller import auth_backend, fastapi_users, get_jwt_strategy
-from schemas.users import UserCreate, UserRead, VKAuthParams
-from core.users_controller import create_user, optional_current_user
+from api.core.users_controller import auth_backend, fastapi_users, get_jwt_strategy
+from api.schemas.users import UserCreate, UserRead, VKAuthParams
+from api.core.users_controller import create_user, optional_current_user
 from fastapi import APIRouter, Depends, HTTPException, status
-from cruds.users_crud import UsersCRUD
-from cruds.institutes_crud import InstitutesCRUD
-from db.session import get_async_session
-from core.config import settings
+from api.cruds.users_crud import UsersCRUD
+from api.cruds.institutes_crud import InstitutesCRUD
+from api.db.session import get_async_session
+from api.core.config import settings
 
 from fastapi.logger import logger
 

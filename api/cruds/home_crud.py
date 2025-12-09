@@ -1,8 +1,8 @@
 import uuid
 from sqlalchemy import select
-from models.home_models import HomeFile, HomeNote
-from models.user_models import UserRole
-from cruds.base_crud import BaseCRUD
+from api.models.home_models import HomeFile, HomeNote
+from api.models.user_models import UserRole
+from api.cruds.base_crud import BaseCRUD
 from sqlalchemy.orm import selectinload
 
 

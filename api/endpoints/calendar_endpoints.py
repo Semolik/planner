@@ -2,31 +2,28 @@ from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from cruds.tasks_crud import TasksCRUD
-from db.session import get_async_session
-
-from cruds.users_crud import UsersCRUD
-
-from schemas.events import CalendarItem
-
-from models.events_models import Task, TypedTask
-from models.user_models import User
-
-from core.users_controller import current_user
-
-from cruds.events_crud import EventsCRUD
-from models.events_models import Event
+from api.cruds.tasks_crud import TasksCRUD
+from api.db.session import get_async_session
+from api.cruds.users_crud import UsersCRUD
+from api.schemas.events import CalendarItem
+from api.models.events_models import Task, TypedTask
+from api.models.user_models import User
+from api.core.users_controller import current_user
+from api.cruds.events_crud import EventsCRUD
+from api.models.events_models import Event
 
 api_router = APIRouter(prefix="/calendar", tags=["Calendar"])
 
 
 @api_router.get(
-    "", response_model=dict[date, list[CalendarItem]], dependencies=[Depends(current_user)]
+    "",
+    response_model=dict[date, list[CalendarItem]],
+    dependencies=[Depends(current_user)],
 )
 async def get_calendar(
     date_from: date = (date.today() - timedelta(days=date.today().weekday())),
     date_to: date = (date.today() + timedelta(days=6 - date.today().weekday())),
-    db=Depends(get_async_session)
+    db=Depends(get_async_session),
 ):
     if date_from > date_to:
         raise HTTPException(

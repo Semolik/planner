@@ -1,39 +1,8 @@
-services:
-  api:
-    build: ./api
-    ports:
-      - "${API_PORT}:8000"
-    volumes:
-      - ./api:/usr/src
-      - ./uploads/images:/uploads/images
-      - ./uploads/files:/uploads/files
-    env_file:
-      - .env
-    environment:
-      - HOST=http://localhost
-      - COOKIE_DOMAIN=localhost
-    restart: always
-    command: uvicorn main:app --host 0.0.0.0 --reload --port 8000
-    depends_on:
-      database:
-        condition: service_healthy
-      migration:
-        condition: service_completed_successfully
-  migration:
-    build:
-      context: api
-    env_file:
-      - .env
-    environment:
-      - PYTHONPATH=/usr/src
-    command: "alembic upgrade head"
-    depends_on:
-      database:
-        condition: service_healthy
-    volumes:
-      - ./api:/usr/src
+volumes:
+  postgres-data:
 
-  database:
+services:
+  postgres:
     env_file:
       - .env
     image: postgres:16
@@ -41,9 +10,10 @@ services:
       - "5432:5432"
     restart: always
     healthcheck:
-      test: pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}
-      interval: 5s
-      timeout: 5s
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
+      interval: 30s
+      timeout: 10s
       retries: 5
+      start_period: 60s
     volumes:
-      - ./db-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data

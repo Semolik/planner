@@ -2,9 +2,10 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { StatsMonth } from './StatsMonth';
 import type { UserReadShort } from './UserReadShort';
 export type StatsUser = {
     user: UserReadShort;
-    stats: Record<string, number>;
+    stats: Record<string, StatsMonth>;
 };
 

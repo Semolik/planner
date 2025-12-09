@@ -1,13 +1,17 @@
-from cruds.institutes_crud import InstitutesCRUD
-from models.user_models import User, UserRole
+from api.cruds.institutes_crud import InstitutesCRUD
+from api.models.user_models import User, UserRole
 from typing import List, Literal, Union
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import TypeAdapter
-from cruds.users_crud import UsersCRUD
-from schemas.users import UserRead, UserReadWithEmail, UserUpdate
-from core.users_controller import current_user, current_superuser, optional_current_user
-from db.session import get_async_session
+from api.cruds.users_crud import UsersCRUD
+from api.schemas.users import UserRead, UserReadWithEmail, UserUpdate
+from api.core.users_controller import (
+    current_user,
+    current_superuser,
+    optional_current_user,
+)
+from api.db.session import get_async_session
 
 
 api_router = APIRouter(prefix="/users", tags=["users"])

@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from uuid import UUID
 
-from models.user_models import UserRole
+from api.models.user_models import UserRole
 
 
 class Chat(BaseModel):

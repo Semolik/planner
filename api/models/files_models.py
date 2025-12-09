@@ -1,7 +1,7 @@
 import uuid
 from sqlalchemy import Column, String
 from sqlalchemy.dialects.postgresql import UUID
-from db.session import Base
+from api.db.session import Base
 
 
 class Image(Base):

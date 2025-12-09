@@ -1,10 +1,10 @@
 from pydantic import BaseModel
 from typing import List, Optional, Literal
-from datetime import datetime, date, time
+from datetime import date, time
 import uuid
-from schemas.files import ImageInfo, File
-from models.events_models import State
-from schemas.users import UserReadShort, UserRole
+from api.schemas.files import ImageInfo, File
+from api.models.events_models import State
+from api.schemas.users import UserReadShort, UserRole
 from pydantic import Field
 
 
@@ -78,6 +78,7 @@ class EventRead(EventBase):
     is_passed: bool = False
     group: EventGroupReadShort | None = None
     has_assigned_photographers: bool = False
+
     class Config:
         from_attributes = True
 

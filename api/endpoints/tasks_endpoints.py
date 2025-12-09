@@ -1,14 +1,18 @@
 from typing import Annotated, Literal, Union
-from utilities.files import save_file, save_image
-from schemas.events import CreateTypedTask, TaskCreate, TaskRead, TypedTaskReadFull
+from api.utilities.files import save_file, save_image
+from api.schemas.events import CreateTypedTask, TaskCreate, TaskRead, TypedTaskReadFull
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Header, UploadFile
-from cruds.tasks_crud import TasksCRUD
-from cruds.users_crud import UsersCRUD
-from core.users_controller import current_superuser, optional_current_user, current_user
-from db.session import get_async_session
-from models.user_models import User, UserRole
-from schemas.files import File, ImageInfo
+from api.cruds.tasks_crud import TasksCRUD
+from api.cruds.users_crud import UsersCRUD
+from api.core.users_controller import (
+    current_superuser,
+    optional_current_user,
+    current_user,
+)
+from api.db.session import get_async_session
+from api.models.user_models import User, UserRole
+from api.schemas.files import File, ImageInfo
 
 api_router = APIRouter(prefix="/tasks", tags=["tasks"])
 

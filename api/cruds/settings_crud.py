@@ -1,10 +1,10 @@
 import uuid
 from sqlalchemy import select
-from models.app_models import AppSettings
-from schemas.settings import Settings
-from cruds.base_crud import BaseCRUD
-from cruds.file_cruds import FilesCRUD
-from models.files_models import Image
+from api.models.app_models import AppSettings
+from api.schemas.settings import Settings
+from api.cruds.base_crud import BaseCRUD
+from api.cruds.file_cruds import FilesCRUD
+from api.models.files_models import Image
 
 
 class SettingsCRUD(BaseCRUD):

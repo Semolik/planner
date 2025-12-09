@@ -1,22 +1,51 @@
-from models.app_models import AppSettings
-from models.events_models import EventLevel, TasksToken
+from datetime import datetime
+
+from api.core.users_controller import get_user_db_context, get_user_manager_context
+from api.models.app_models import AppSettings
+from api.models.events_models import EventLevel, TasksToken
 from fastapi.logger import logger
-from models.user_models import User, UserRole
+from api.models.user_models import User, UserRole, Institute
 from sqlalchemy import select
-from db.session import async_session_maker
 import uuid
-from core.config import settings
+from api.core.config import settings
+from api.schemas.users import UserCreate
 
 
-async def init_db():
-    async with async_session_maker() as session:
-        await init_settings(session)
-        select_first_superuser = select(User).where(User.is_superuser == True)
-        result = await session.execute(select_first_superuser)
-        if not result.scalar():
-            logger.warning(
-                "Ожидается регистрация администратора (первый зарегистрированный пользователь будет администратором)"
-            )
+async def init_db(session):
+    await init_settings(session)
+
+    first_institute = select(Institute).where(
+        Institute.name == settings.FIRST_INSTITUTE
+    )
+    result = await session.execute(first_institute)
+    institute = result.scalar()
+    if not institute:
+        logger.warning("Создание института")
+        institute = Institute(name=settings.FIRST_INSTITUTE)
+        session.add(institute)
+        logger.warning("Институт создан")
+    select_first_superuser = select(User).where(User.is_superuser)
+    result = await session.execute(select_first_superuser)
+    if not result.scalar():
+        async with get_user_db_context(session) as user_db:
+            async with get_user_manager_context(user_db) as user_manager:
+                await user_manager.create(
+                    UserCreate(
+                        username=settings.FIRST_ADMIN_USERNAME,
+                        password=settings.FIRST_ADMIN_PASSWORD,
+                        first_name="Admin",
+                        last_name="Admin",
+                        patronymic=None,
+                        is_superuser=True,
+                        institute_id=institute.id,
+                        birth_date=datetime.now().date(),
+                        group="",
+                        vk_id=0,
+                        is_verified=True,
+                    )
+                )
+
+        logger.warning("Администратор создан")
 
 
 async def init_settings(session):

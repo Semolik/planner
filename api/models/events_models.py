@@ -19,10 +19,10 @@ from sqlalchemy import (
     case,
 )
 from sqlalchemy.sql import func
-from models.files_models import File, Image
-from models.user_models import UserRole
-from models.audit_models import AuditableMixin, register_audit_events
-from db.session import Base
+from api.models.files_models import File, Image
+from api.models.user_models import UserRole
+from api.models.audit_models import AuditableMixin, register_audit_events
+from api.db.session import Base
 
 
 class EventLevel(Base):
@@ -259,9 +259,7 @@ class TypedTask(Base, AuditableMixin):
     for_single_user: Mapped[bool] = mapped_column(Boolean, nullable=False)
     link: Mapped[str] = mapped_column(Text, nullable=False, default="")
     due_date: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False)
-    due_date_passed = column_property(
-        case((due_date < func.now(), True), else_=False)
-    )
+    due_date_passed = column_property(case((due_date < func.now(), True), else_=False))
     parent_task = relationship(
         "Task",
         foreign_keys=[task_id],
@@ -372,19 +370,22 @@ class TaskStatePeriod(Base):
         uselist=False,
         back_populates="period",
     )
+
+
 Event.has_assigned_photographers = column_property(
-            select(func.count(TaskState.user_id))
-            .select_from(TaskState)
-            .join(TypedTask, TypedTask.id == TaskState.type_task_id)
-            .join(Task, Task.id == TypedTask.task_id)
-            .where(
-                Task.event_id == Event.id,
-                TypedTask.task_type == UserRole.PHOTOGRAPHER,
-                TaskState.state != State.CANCELED,
-            )
-            .correlate_except(Task, TypedTask, TaskState)
-            .scalar_subquery() > 0
-        )
+    select(func.count(TaskState.user_id))
+    .select_from(TaskState)
+    .join(TypedTask, TypedTask.id == TaskState.type_task_id)
+    .join(Task, Task.id == TypedTask.task_id)
+    .where(
+        Task.event_id == Event.id,
+        TypedTask.task_type == UserRole.PHOTOGRAPHER,
+        TaskState.state != State.CANCELED,
+    )
+    .correlate_except(Task, TypedTask, TaskState)
+    .scalar_subquery()
+    > 0
+)
 Task.all_typed_tasks_completed = column_property(
     select(
         func.coalesce(

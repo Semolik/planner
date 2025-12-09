@@ -1,0 +1,39 @@
+volumes:
+  postgres-data:
+  uploads_images:
+  uploads_files:
+
+services:
+  api:
+    build: ./api
+    ports:
+      - "${API_PORT}:8000"
+    volumes:
+      - uploads_images:/uploads/images
+      - uploads_files:/uploads/files
+    env_file:
+      - .env.full
+    environment:
+      - HOST=http://localhost
+      - COOKIE_DOMAIN=localhost
+    restart: always
+    command: bash /app/api/scripts/start.sh
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    env_file:
+      - .env.full
+    image: postgres:16
+    ports:
+      - "5432:5432"
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    volumes:
+      - postgres-data:/var/lib/postgresql/data

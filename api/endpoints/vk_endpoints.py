@@ -1,11 +1,11 @@
-from cruds.vk_crud import VKCRUD
-from schemas.vk import ChatsSettingsResponse, UpdateChatSettings
-from utilities.vk import VKUtils
-from cruds.settings_crud import SettingsCRUD
+from api.cruds.vk_crud import VKCRUD
+from api.schemas.vk import ChatsSettingsResponse, UpdateChatSettings
+from api.utilities.vk import VKUtils
+from api.cruds.settings_crud import SettingsCRUD
 from fastapi import APIRouter, Depends, Form, Request
-from core.users_controller import current_superuser
-from db.session import get_async_session
-from models.user_models import User, UserRole
+from api.core.users_controller import current_superuser
+from api.db.session import get_async_session
+from api.models.user_models import User, UserRole
 
 api_router = APIRouter(prefix="/vk", tags=["vk"])
 

@@ -1,10 +1,10 @@
 from typing import List
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
-from cruds.institutes_crud import InstitutesCRUD
-from schemas.users import Institute, InstituteCreateOrEdit
-from core.users_controller import current_superuser
-from db.session import get_async_session
+from api.cruds.institutes_crud import InstitutesCRUD
+from api.schemas.users import Institute, InstituteCreateOrEdit
+from api.core.users_controller import current_superuser
+from api.db.session import get_async_session
 
 
 api_router = APIRouter(prefix="/institutes", tags=["institutes"])

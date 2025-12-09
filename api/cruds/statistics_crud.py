@@ -1,9 +1,9 @@
 from datetime import date
 import uuid
-from schemas.stats import StatsUser, StatsMonth
-from cruds.base_crud import BaseCRUD
-from models.user_models import User, UserRole
-from models.events_models import TaskState, TypedTask, State, Task, Event
+from api.schemas.stats import StatsUser, StatsMonth
+from api.cruds.base_crud import BaseCRUD
+from api.models.user_models import User, UserRole
+from api.models.events_models import TaskState, TypedTask, State, Task, Event
 from sqlalchemy import Integer, select, func, extract, case, Date
 from sqlalchemy.orm import aliased
 from typing import List, Dict
@@ -51,7 +51,7 @@ class StatisticsCRUD(BaseCRUD):
         # Вычисляем дату для группировки: дата события если есть, иначе дата типизированной задачи
         effective_date = case(
             (event_alias.date.isnot(None), event_alias.date),
-            else_=func.cast(typed_task_alias.due_date, type_=Date)
+            else_=func.cast(typed_task_alias.due_date, type_=Date),
         )
 
         # Subquery that groups by user_id, month, and role
@@ -59,38 +59,34 @@ class StatisticsCRUD(BaseCRUD):
         subquery = (
             select(
                 user_alias.id.label("user_id"),
-                extract("month", effective_date)
-                .cast(Integer)
-                .label("month"),
+                extract("month", effective_date).cast(Integer).label("month"),
                 typed_task_alias.task_type.label("role"),
                 func.count(task_state_alias.id).label("count"),
             )
             .join(task_state_alias.user.of_type(user_alias))
             .join(task_state_alias.typed_task.of_type(typed_task_alias))
-            .join(
-                task_alias,
-                typed_task_alias.task_id == task_alias.id
-            )
+            .join(task_alias, typed_task_alias.task_id == task_alias.id)
             .outerjoin(  # LEFT JOIN потому что не у всех задач есть событие
-                event_alias,
-                task_alias.event_id == event_alias.id
+                event_alias, task_alias.event_id == event_alias.id
             )
             .where(
                 task_state_alias.state == State.COMPLETED,
                 case(
                     # Если есть событие, проверяем его дату
-                    (event_alias.date.isnot(None),
-                     event_alias.date.between(period_start, period_end)),
+                    (
+                        event_alias.date.isnot(None),
+                        event_alias.date.between(period_start, period_end),
+                    ),
                     # Иначе проверяем дату типизированной задачи
                     else_=func.cast(typed_task_alias.due_date, type_=Date).between(
                         period_start, period_end
-                    )
-                )
+                    ),
+                ),
             )
             .group_by(
                 user_alias.id,
                 extract("month", effective_date).cast(Integer),
-                typed_task_alias.task_type  # Группируем по типу задачи, а не по ролям пользователя
+                typed_task_alias.task_type,  # Группируем по типу задачи, а не по ролям пользователя
             )
             .subquery()
         )
@@ -150,7 +146,7 @@ class StatisticsCRUD(BaseCRUD):
                         designer=month_stats[UserRole.DESIGNER],
                     )
                     for month, month_stats in stats_map[user_id].items()
-                }
+                },
             )
             for user_id in stats_map
         ]

@@ -1,10 +1,10 @@
 import uuid
 from sqlalchemy import Column, ForeignKey, Text, Enum
 from sqlalchemy.dialects.postgresql import UUID
-from models.user_models import UserRole
-from models.files_models import File
+from api.models.user_models import UserRole
+from api.models.files_models import File
 from sqlalchemy.orm import relationship
-from db.session import Base
+from api.db.session import Base
 
 
 class HomeNote(Base):

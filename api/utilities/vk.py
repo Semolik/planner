@@ -10,12 +10,12 @@ from vkbottle import (
     GroupTypes,
 )
 from vkbottle.tools import WaiterMachine
-from utilities.events import build_message
-from schemas.vk import Chat
-from cruds.vk_crud import VKCRUD
-from models.user_models import User, UserRole
-from models.app_models import AppSettings
-from db.session import AsyncSession
+from api.utilities.events import build_message
+from api.schemas.vk import Chat
+from api.cruds.vk_crud import VKCRUD
+from api.models.user_models import User, UserRole
+from api.models.app_models import AppSettings
+from api.db.session import AsyncSession
 from fastapi.logger import logger
 
 from vkbottle.dispatch.rules.base import PeerRule
@@ -42,9 +42,7 @@ class VKUtils:
         return token_setting.value
 
     async def get_superusers_vk_ids(self):
-        query = select(User.vk_id).where(
-            User.is_superuser == True, User.vk_id.is_not(None)
-        )
+        query = select(User.vk_id).where(User.is_superuser, User.vk_id.is_not(None))
         result = await self.session.execute(query)
         superusers_vk_ids = result.scalars().all()
         return superusers_vk_ids if superusers_vk_ids else []

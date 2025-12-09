@@ -1,11 +1,11 @@
 from sqlalchemy import select
 
 
-from schemas.vk import ChatsSettingsResponse
-from models.user_models import UserRole
-from cruds.base_crud import BaseCRUD
-from models.vk_models import Chat
-from models.app_models import AppSettings
+from api.schemas.vk import ChatsSettingsResponse
+from api.models.user_models import UserRole
+from api.cruds.base_crud import BaseCRUD
+from api.models.vk_models import Chat
+from api.models.app_models import AppSettings
 
 
 class VKCRUD(BaseCRUD):

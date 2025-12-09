@@ -4,10 +4,10 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, UploadFile
 from pathlib import Path
-from models.files_models import Image
+from api.models.files_models import Image
 from PIL import Image as PillowImage
-from cruds.base_crud import BaseCRUD
-from models.files_models import File
+from api.cruds.base_crud import BaseCRUD
+from api.models.files_models import File
 
 CONTENT_FOLDER = "/uploads"
 IMAGES_FOLDER = "images"

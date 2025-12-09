@@ -4,10 +4,10 @@ from datetime import date
 from sqlalchemy import delete, insert, select, or_, nulls_first, func
 from sqlalchemy.orm import selectinload
 
-from cruds.base_crud import BaseCRUD
-from models.user_models import User, UserRole, UserRoleAssociation
-from schemas.users import UserUpdate
-from core.users_controller import get_user_manager_context
+from api.cruds.base_crud import BaseCRUD
+from api.models.user_models import User, UserRole, UserRoleAssociation
+from api.schemas.users import UserUpdate
+from api.core.users_controller import get_user_manager_context
 
 
 class UsersCRUD(BaseCRUD):
@@ -30,42 +30,37 @@ class UsersCRUD(BaseCRUD):
         return result.scalars().first()
 
     async def get_users_by_birthday_period(
-           self, date_from: date, date_to: date
-       ) -> list[User]:
-           month = func.extract("month", User.birth_date)
-           day = func.extract("day", User.birth_date)
+        self, date_from: date, date_to: date
+    ) -> list[User]:
+        month = func.extract("month", User.birth_date)
+        day = func.extract("day", User.birth_date)
 
-           from_month = date_from.month
-           to_month = date_to.month
-           from_day = date_from.day
-           to_day = date_to.day
+        from_month = date_from.month
+        to_month = date_to.month
+        from_day = date_from.day
+        to_day = date_to.day
 
-           # Если период не переходит через конец года
-           if (from_month, from_day) <= (to_month, to_day):
-               condition = (
-                   (
-                       (month > from_month)
-                       | ((month == from_month) & (day >= from_day))
-                   )
-                   & (
-                       (month < to_month)
-                       | ((month == to_month) & (day <= to_day))
-                   )
-               )
-           else:
-               # Период переходит через конец года (например, с декабря по январь)
-               condition = (
-                   (month > from_month) | ((month == from_month) & (day >= from_day))
-                   | (month < to_month) | ((month == to_month) & (day <= to_day))
-               )
+        # Если период не переходит через конец года
+        if (from_month, from_day) <= (to_month, to_day):
+            condition = (
+                (month > from_month) | ((month == from_month) & (day >= from_day))
+            ) & ((month < to_month) | ((month == to_month) & (day <= to_day)))
+        else:
+            # Период переходит через конец года (например, с декабря по январь)
+            condition = (
+                (month > from_month)
+                | ((month == from_month) & (day >= from_day))
+                | (month < to_month)
+                | ((month == to_month) & (day <= to_day))
+            )
 
-           users = select(User).where(condition)
-           result = await self.db.execute(
-               users.options(
-                   selectinload(User.institute), selectinload(User.roles_objects)
-               )
-           )
-           return result.scalars().all()
+        users = select(User).where(condition)
+        result = await self.db.execute(
+            users.options(
+                selectinload(User.institute), selectinload(User.roles_objects)
+            )
+        )
+        return result.scalars().all()
 
     async def get_users(
         self,
@@ -104,7 +99,7 @@ class UsersCRUD(BaseCRUD):
                 )
             )
         if only_superusers:
-            users = users.where(User.is_superuser == True)
+            users = users.where(User.is_superuser)
         users = users.offset((page - 1) * page_size).limit(page_size)
         result = await self.db.execute(
             users.options(
@@ -170,5 +165,5 @@ class UsersCRUD(BaseCRUD):
         return user
 
     async def has_admin(self) -> bool:
-        query = await self.db.execute(select(User).where(User.is_superuser == True))
+        query = await self.db.execute(select(User).where(User.is_superuser))
         return query.scalar() is not None

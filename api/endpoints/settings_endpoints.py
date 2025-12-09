@@ -1,11 +1,11 @@
-from utilities.files import save_image
-from core.users_controller import current_superuser
-from schemas.settings import SettingsUpdate, Settings
+from api.utilities.files import save_image
+from api.core.users_controller import current_superuser
+from api.schemas.settings import SettingsUpdate, Settings
 from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.orm import Session
-from schemas.files import ImageLink
-from cruds.settings_crud import SettingsCRUD
-from db.session import get_async_session
+from api.schemas.files import ImageLink
+from api.cruds.settings_crud import SettingsCRUD
+from api.db.session import get_async_session
 
 api_router = APIRouter(prefix="/settings", tags=["settings"])
 
