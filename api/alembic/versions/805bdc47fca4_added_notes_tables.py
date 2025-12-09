@@ -1,6 +1,6 @@
 """added notes tables
 
-Revision ID: 2b5f35f65b4d
+Revision ID: 6bc441dd3461
 Revises: 91cba09a89be
 Create Date: 2025-12-10 04:33:26.155223
 
@@ -13,7 +13,7 @@ import fastapi_users_db_sqlalchemy
 from sqlalchemy.dialects.postgresql import ENUM
 
 # revision identifiers, used by Alembic.
-revision: str = '2b5f35f65b4d'
+revision: str = '6bc441dd3461'
 down_revision: Union[str, None] = '91cba09a89be'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
