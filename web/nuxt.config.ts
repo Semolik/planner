@@ -5,7 +5,7 @@ export default defineNuxtConfig({
 
     modules: [
         "@pinia/nuxt",
-        "@nuxtjs/google-fonts",
+        "@nuxt/fonts",
         "@nuxt/icon",
         "@formkit/auto-animate/nuxt",
         "@vueuse/nuxt",
@@ -43,12 +43,12 @@ export default defineNuxtConfig({
             collections: ["material-symbols", "mdi"],
         },
     },
-    googleFonts: {
-        families: {
-            Inter: [400, 600, 700, 800],
-        },
-        download: true,
-    },
+   fonts: {
+    provider: 'google',  // Only use Google provider
+    families: [
+        { name: 'Inter', weights: [400, 600, 700, 800] }
+    ]
+},
     vite: {
         css: {
             preprocessorOptions: {
