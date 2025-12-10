@@ -14,7 +14,8 @@
             active
             :outline="!period.active"
             @click="selectedPeriod = period"
-            class="flex-1 justify-between whitespace-nowrap min-w-[200px]"
+            mini
+            class="flex-1 justify-between whitespace-nowrap max-w-[300px]"
           >
             <span class="text-sm">
               {{ formatPeriod(period) }}
@@ -384,5 +385,16 @@ const groupingOptions = ref({
   @include md {
     border-bottom: 1px solid $border-color;
   }
+}
+:deep(tr:has(> td[colspan])) {
+  height: 0;
+  overflow: hidden;
+  border: 0 !important;
+}
+
+:deep(tr:has(> td[colspan]) > td) {
+  padding: 0 !important;
+  border: 0 !important;
+  height: 0 !important;
 }
 </style>
