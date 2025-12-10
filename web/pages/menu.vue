@@ -21,6 +21,11 @@ const asideBlocks = computed(() => {
                     icon: "material-symbols:task-alt-rounded",
                     path: routesNames.tasksMy,
                 },
+                   {
+                  name: "Моя статистика",
+                  icon: "material-symbols:bar-chart-rounded",
+                  path: routesNames.statisticsMe,
+                }
             ],
         },
         {
