@@ -45,19 +45,21 @@ async def get_calendar(
     for items in [tasks, typed_tasks, users, events]:
         for item in items:
             if isinstance(item, User):
-                day = item.birth_date.replace(year=date_from.year).isoformat()
+                day = item.birth_date.replace(year=date_from.year)
                 item_type = "user"
             elif isinstance(item, Task):
                 day = item.due_date
                 item_type = "task"
             elif isinstance(item, TypedTask):
-                day = item.due_date
+                day = item.due_date.date() if item.due_date else None
                 item_type = "typed_task"
             elif isinstance(item, Event):
                 day = item.date
                 item_type = "event"
 
             else:
+                continue
+            if day is None:
                 continue
             if day not in days:
                 days[day] = []

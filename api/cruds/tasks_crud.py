@@ -17,7 +17,7 @@ from api.models.events_models import (
     TasksToken,
     TaskStatePeriod,
 )
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select, and_, or_, func, Date
 from sqlalchemy.sql import exists
 from sqlalchemy.sql import case
 
@@ -443,6 +443,30 @@ class TasksCRUD(BaseCRUD):
             select(TypedTask)
             .where(
                 TypedTask.due_date.between(date_from, date_to),
+            )
+            .options(*self.get_typed_task_options())
+        )
+        result = await self.db.execute(query)
+        return result.scalars().all()
+
+    async def get_user_completed_typed_tasks(
+            self, user_id: uuid.UUID, period_start: date, period_end: date
+    ) -> list[TypedTask]:
+        query = (
+            select(TypedTask)
+            .join(TaskState, TypedTask.id == TaskState.type_task_id)
+            .where(
+                TaskState.user_id == user_id,
+                TaskState.state == State.COMPLETED,
+                case(
+                    (
+                        TypedTask.due_date.isnot(None),
+                        func.cast(TypedTask.due_date, Date).between(
+                            period_start, period_end
+                        ),
+                    ),
+                    else_=False,
+                ),
             )
             .options(*self.get_typed_task_options())
         )

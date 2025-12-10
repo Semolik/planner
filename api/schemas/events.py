@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional, Literal
-from datetime import date, time
+from datetime import date, time, datetime
 import uuid
 from api.schemas.files import ImageInfo, File
 from api.models.events_models import State
@@ -140,6 +140,7 @@ class TypedTaskRead(CreateTypedTask):
     id: uuid.UUID
     task_states: List[TypedTaskState]
     due_date_passed: bool = False
+    due_date: datetime
 
     class Config:
         from_attributes = True

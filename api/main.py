@@ -34,7 +34,11 @@ from fastapi.openapi.docs import (
 
 
 app = FastAPI(docs_url=None, redoc_url=None)
-app.mount("/static", StaticFiles(directory=f"{'' if settings.DEV_MODE else 'api/'}static"), name="static")
+app.mount(
+    "/static",
+    StaticFiles(directory=f"{'' if settings.DEV_MODE else 'api/'}static"),
+    name="static",
+)
 
 
 @app.get("/docs", include_in_schema=False)

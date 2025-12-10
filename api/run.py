@@ -1,6 +1,7 @@
 import uvicorn
 import sys
-sys.path.append('../')
+
+sys.path.append("../")
 from api.core.config import settings
 
 
@@ -11,6 +12,7 @@ def run():
         port=settings.API_PORT,
         reload=settings.DEV_MODE,
     )
+
 
 if __name__ == "__main__":
     run()

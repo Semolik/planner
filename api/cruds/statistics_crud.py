@@ -38,7 +38,10 @@ def get_months_between(start_date: date, end_date: date) -> set:
 
 class StatisticsCRUD(BaseCRUD):
     async def get_statistics(
-        self, period_start: date, period_end: date
+        self,
+        period_start: date,
+        period_end: date,
+        user_ids: List[uuid.UUID] | None = None,
     ) -> List[StatsUser]:
         all_months_in_range = get_months_between(period_start, period_end)
 
@@ -55,8 +58,7 @@ class StatisticsCRUD(BaseCRUD):
         )
 
         # Subquery that groups by user_id, month, and role
-        # ВАЖНО: джоиним только по TypedTask.task_type, а не по UserRoleAssociation
-        subquery = (
+        subquery_stmt = (
             select(
                 user_alias.id.label("user_id"),
                 extract("month", effective_date).cast(Integer).label("month"),
@@ -66,18 +68,14 @@ class StatisticsCRUD(BaseCRUD):
             .join(task_state_alias.user.of_type(user_alias))
             .join(task_state_alias.typed_task.of_type(typed_task_alias))
             .join(task_alias, typed_task_alias.task_id == task_alias.id)
-            .outerjoin(  # LEFT JOIN потому что не у всех задач есть событие
-                event_alias, task_alias.event_id == event_alias.id
-            )
+            .outerjoin(event_alias, task_alias.event_id == event_alias.id)
             .where(
                 task_state_alias.state == State.COMPLETED,
                 case(
-                    # Если есть событие, проверяем его дату
                     (
                         event_alias.date.isnot(None),
                         event_alias.date.between(period_start, period_end),
                     ),
-                    # Иначе проверяем дату типизированной задачи
                     else_=func.cast(typed_task_alias.due_date, type_=Date).between(
                         period_start, period_end
                     ),
@@ -86,10 +84,14 @@ class StatisticsCRUD(BaseCRUD):
             .group_by(
                 user_alias.id,
                 extract("month", effective_date).cast(Integer),
-                typed_task_alias.task_type,  # Группируем по типу задачи, а не по ролям пользователя
+                typed_task_alias.task_type,
             )
-            .subquery()
         )
+
+        if user_ids:
+            subquery_stmt = subquery_stmt.where(user_alias.id.in_(user_ids))
+
+        subquery = subquery_stmt.subquery()
 
         # Main query to get all users with their stats
         stmt = (
@@ -102,6 +104,9 @@ class StatisticsCRUD(BaseCRUD):
                 selectinload(User.roles_objects),
             )
         )
+
+        if user_ids:
+            stmt = stmt.where(User.id.in_(user_ids))
 
         result = await self.db.execute(stmt)
         rows = result.all()
@@ -120,7 +125,6 @@ class StatisticsCRUD(BaseCRUD):
 
             # Initialize user entry if not exists
             if user_id not in stats_map:
-                # Initialize all months with zero counts for all roles
                 stats_map[user_id] = {
                     m: {
                         UserRole.PHOTOGRAPHER: 0,

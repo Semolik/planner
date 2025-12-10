@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { TypedTaskReadFull } from '../models/TypedTaskReadFull';
 import type { UserRead } from '../models/UserRead';
 import type { UserReadWithEmail } from '../models/UserReadWithEmail';
 import type { UserRole } from '../models/UserRole';
@@ -117,6 +118,31 @@ export class UsersService {
                 'superusers_to_top': superusersToTop,
                 'only_superusers': onlySuperusers,
                 'filter_role': filterRole,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Get User Completed Typed Tasks
+     * @param userId
+     * @param periodId
+     * @returns TypedTaskReadFull Successful Response
+     * @throws ApiError
+     */
+    public static getUserCompletedTypedTasksUsersUserIdTypedTasksCompletedGet(
+        userId: string,
+        periodId: string,
+    ): CancelablePromise<Array<TypedTaskReadFull>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/users/{user_id}/typed_tasks/completed',
+            path: {
+                'user_id': userId,
+            },
+            query: {
+                'period_id': periodId,
             },
             errors: {
                 422: `Validation Error`,

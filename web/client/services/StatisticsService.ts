@@ -27,4 +27,29 @@ export class StatisticsService {
             },
         });
     }
+    /**
+     * Get User Statistics
+     * @param userId
+     * @param periodId
+     * @returns StatsUser Successful Response
+     * @throws ApiError
+     */
+    public static getUserStatisticsStatisticsUserIdGet(
+        userId: string,
+        periodId: string,
+    ): CancelablePromise<StatsUser> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/statistics/{user_id}',
+            path: {
+                'user_id': userId,
+            },
+            query: {
+                'period_id': periodId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
 }

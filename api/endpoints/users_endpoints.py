@@ -1,10 +1,13 @@
 from api.cruds.institutes_crud import InstitutesCRUD
+from api.cruds.periods_crud import PeriodsCRUD
+from api.cruds.tasks_crud import TasksCRUD
 from api.models.user_models import User, UserRole
 from typing import List, Literal, Union
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import TypeAdapter
 from api.cruds.users_crud import UsersCRUD
+from api.schemas.events import TypedTaskReadFull
 from api.schemas.users import UserRead, UserReadWithEmail, UserUpdate
 from api.core.users_controller import (
     current_user,
@@ -118,3 +121,28 @@ async def delete_user(
     if user is None:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
     await users_crud.delete(user)
+
+
+@api_router.get(
+    "/{user_id}/typed_tasks/completed", response_model=list[TypedTaskReadFull]
+)
+async def get_user_completed_typed_tasks(
+    user_id: uuid.UUID,
+    period_id: uuid.UUID = Query(...),
+    db=Depends(get_async_session),
+    current_db_user: User = Depends(current_user),
+):
+    user = await UsersCRUD(db).get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    if user.id != current_db_user.id and not current_db_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Доступ запрещен")
+    periods_crud = PeriodsCRUD(db)
+    period = await periods_crud.get_period_by_id(period_id)
+    if not period:
+        raise HTTPException(status_code=404, detail="Период не найден")
+    return await TasksCRUD(db).get_user_completed_typed_tasks(
+        user_id=user_id,
+        period_start=period.period_start,
+        period_end=period.period_end,
+    )
