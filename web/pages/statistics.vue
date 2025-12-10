@@ -1,7 +1,120 @@
-<script setup>
+<template>
+    <page-container header="Статистика по периодам">
+        <div class="flex-1 md:divide-accented w-full">
+            <div class="flex md:items-center gap-2 min-h-[60px] overflow-x-auto px-2 head md:flex-row flex-col-reverse justify-between">
+                <div class="text-lg font-semibold">Статистика</div>
+            </div>
+
+            <div class="space-y-4 p-4">
+                <!-- Селектор периода -->
+                <div class="flex gap-2 max-w-2xl flex-wrap">
+                    <app-button
+                        v-for="period in periods"
+                        :key="period.id"
+                        active
+                        :outline="!period.active"
+                        @click="selectedPeriod = period"
+                        class="flex-1 justify-between whitespace-nowrap min-w-[200px]"
+                    >
+                        <span class="text-sm">
+                            {{ formatPeriod(period) }}
+                        </span>
+                    </app-button>
+                </div>
+
+                <!-- Бейджи с минимальными требованиями -->
+                <div v-if="formattedRequirements.length > 0" class="flex gap-2 flex-wrap items-center">
+                    <span class="text-sm text-gray-600 font-medium">Минимум задач:</span>
+                    <UBadge
+                        v-for="req in formattedRequirements"
+                        :key="req.role"
+                        color="neutral"
+                        size="md"
+                    >
+                        {{ req.label }}: {{ req.count }}
+                    </UBadge>
+                </div>
+            </div>
+
+            <div ref="tableContainer" class="overflow-auto">
+                <UTable
+                    v-if="!loading"
+                    :columns="columns"
+                    :data="tableData"
+                    :grouping="['user_id']"
+                    :grouping-options="groupingOptions"
+                    :ui="{
+                        root: 'min-w-full',
+                        td: 'empty:p-0'
+                    }"
+                    sticky
+                >
+                    <template #title-cell="{ row }">
+                        <div v-if="row.getIsGrouped()" class="flex items-center">
+                            <UButton
+                                variant="ghost"
+                                color="neutral"
+                                class="mr-2"
+                                size="xs"
+                                :icon="row.getIsExpanded() ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
+                                @click="row.toggleExpanded()"
+                            />
+                            <strong>{{ row.original.fullName }}</strong>
+                        </div>
+                        <div v-else class="ml-8 text-gray-600">
+                            {{ activityTypeLabels[row.original.activityType] }}
+                        </div>
+                    </template>
+
+                    <template v-for="month in allMonths" :key="`month_${month}`" #[`month_${month}-cell`]="{ row }">
+                        <div v-if="row.getIsGrouped()" class="text-center font-semibold">
+                            {{ row.getValue(`month_${month}`) === 0 ? '-' : row.getValue(`month_${month}`) }}
+                        </div>
+                        <div v-else class="text-center">
+                            {{ row.getValue(`month_${month}`) }}
+                        </div>
+                    </template>
+
+                    <template #total-cell="{ row }">
+                        <div v-if="row.getIsGrouped()" class="text-center font-semibold">
+                            {{ row.getValue('total') }}
+                        </div>
+                        <div
+                            v-else
+                            class="text-center font-semibold"
+                            :class="{
+                                'bg-red-100 text-red-700': !isTaskCountSufficient(row.original.activityType, row.getValue('total')),
+                                'bg-green-100 text-green-700': isTaskCountSufficient(row.original.activityType, row.getValue('total'))
+                            }"
+                        >
+                            {{ row.getValue('total') }}
+                        </div>
+                    </template>
+                </UTable>
+                <div v-else class="flex justify-center items-center py-12">
+                    <p class="text-gray-500">Загрузка данных...</p>
+                </div>
+            </div>
+        </div>
+    </page-container>
+</template>
+
+<script setup lang="ts">
 import { StatisticsService, RequiredPeriodsService } from "@/client";
-import { h, resolveComponent } from 'vue';
+import { resolveComponent, ref, computed, watch } from 'vue';
 import { getGroupedRowModel } from '@tanstack/vue-table';
+
+definePageMeta({
+    middleware: ["admin"],
+    layout: "no-padding",
+});
+
+useSeoMeta({
+    title: "Статистика по периодам",
+});
+
+const UButton = resolveComponent("UButton");
+const UBadge = resolveComponent("UBadge");
 
 const periodsRaw = await RequiredPeriodsService.getRequiredPeriodsRequiredPeriodsGet();
 const selectedPeriod = ref(periodsRaw[0]);
@@ -9,11 +122,10 @@ const periods = computed(() => periodsRaw.map(p => ({
     ...p,
     active: selectedPeriod.value && p.id === selectedPeriod.value.id
 })));
-const UButton = resolveComponent("UButton");
-const UBadge = resolveComponent("UBadge");
 
 const rawData = ref([]);
 const loading = ref(false);
+const tableContainer = ref(null);
 
 const loadData = async () => {
     if (!selectedPeriod.value) {
@@ -45,7 +157,7 @@ const monthNamesGenitive = [
     "июля", "августа", "сентября", "октября", "ноября", "декабря"
 ];
 
-const formatDate = (isoDate, showYear = false) => {
+const formatDate = (isoDate: string, showYear = false): string => {
     if (!isoDate) return "";
     const parts = String(isoDate).split("-");
     if (parts.length !== 3) return isoDate;
@@ -56,7 +168,7 @@ const formatDate = (isoDate, showYear = false) => {
     return showYear ? `${dd} ${monthName} ${year}` : `${dd} ${monthName}`;
 };
 
-const formatPeriod = (period) => {
+const formatPeriod = (period: any): string => {
     const start = period.period_start;
     const end = period.period_end;
     const startYear = start ? String(start).split("-")[0] : null;
@@ -69,48 +181,44 @@ const formatPeriod = (period) => {
 
 const allMonths = computed(() => {
     return [
-        ...new Set(rawData.value.flatMap((u) => Object.keys(u.stats || {}))),
-    ].sort((a, b) => parseInt(a) - parseInt(b));
+        ...new Set(rawData.value.flatMap((u: any) => Object.keys(u.stats || {}))),
+    ].sort((a: string, b: string) => parseInt(a) - parseInt(b));
 });
 
-// Маппинг требуемого количества задач по ролям
 const requiredTasksMap = computed(() => {
     if (!selectedPeriod.value?.roles_config) return {};
-    const map = {};
-    selectedPeriod.value.roles_config.forEach(config => {
+    const map: Record<string, number> = {};
+    selectedPeriod.value.roles_config.forEach((config: any) => {
         map[config.user_role] = config.count;
     });
     return map;
 });
 
-// Форматированные требования для отображения в бейджах
 const formattedRequirements = computed(() => {
     if (!selectedPeriod.value?.roles_config) return [];
 
-    const roleLabels = {
+    const roleLabels: Record<string, string> = {
         photographer: 'Фотограф',
         copywriter: 'Копирайтер',
         designer: 'Дизайнер'
     };
 
-    return selectedPeriod.value.roles_config.map(config => ({
+    return selectedPeriod.value.roles_config.map((config: any) => ({
         label: roleLabels[config.user_role] || config.user_role,
         count: config.count,
         role: config.user_role
     }));
 });
 
-// Преобразуем данные в плоскую структуру
 const tableData = computed(() => {
-    const data = [];
+    const data: any[] = [];
 
-    rawData.value.forEach((user) => {
+    rawData.value.forEach((user: any) => {
         const userId = user.user.id;
         const fullName = `${user.user.last_name} ${user.user.first_name}`;
 
-        // Создаем строки для каждого типа активности
         ['photographer', 'copywriter', 'designer'].forEach((activityType) => {
-            const row = {
+            const row: any = {
                 id: `${userId}_${activityType}`,
                 user_id: userId,
                 fullName: fullName,
@@ -122,7 +230,7 @@ const tableData = computed(() => {
                 row[`month_${month}`] = value === 0 ? "-" : value;
             });
 
-            row.total = allMonths.value.reduce((sum, month) => {
+            row.total = allMonths.value.reduce((sum: number, month: string) => {
                 const val = row[`month_${month}`];
                 return sum + (val === "-" ? 0 : val);
             }, 0);
@@ -134,14 +242,13 @@ const tableData = computed(() => {
     return data;
 });
 
-const activityTypeLabels = {
+const activityTypeLabels: Record<string, string> = {
     photographer: 'Фотограф',
     copywriter: 'Копирайтер',
     designer: 'Дизайнер'
 };
 
-// Проверка, достаточно ли выполнено задач
-const isTaskCountSufficient = (activityType, total) => {
+const isTaskCountSufficient = (activityType: string, total: number): boolean => {
     const required = requiredTasksMap.value[activityType] || 0;
     return total >= required;
 };
@@ -156,23 +263,23 @@ const columns = computed(() => {
             id: 'user_id',
             accessorKey: 'user_id'
         },
-        ...allMonths.value.map((month) => ({
+        ...allMonths.value.map((month: string) => ({
             accessorKey: `month_${month}`,
             header: monthNames[parseInt(month) - 1],
-            cell: ({ row }) => {
+            cell: ({ row }: any) => {
                 if (row.getIsGrouped()) {
                     return '';
                 }
                 return row.getValue(`month_${month}`);
             },
-            aggregatedCell: ({ getValue }) => {
+            aggregatedCell: ({ getValue }: any) => {
                 const value = getValue();
                 return value === 0 || value === '-' ? '-' : value;
             },
-            aggregationFn: (columnId, leafRows) => {
-                const sum = leafRows.reduce((total, row) => {
+            aggregationFn: (columnId: string, leafRows: any[]) => {
+                const sum = leafRows.reduce((total: number, row: any) => {
                     const val = row.getValue(columnId);
-                    return total + (val === "-" ? 0 : val);
+                    return total + (val === "-" ? 0 : parseInt(val) || 0);
                 }, 0);
                 return sum;
             },
@@ -186,13 +293,13 @@ const columns = computed(() => {
         {
             accessorKey: 'total',
             header: 'Итого',
-            cell: ({ row }) => {
+            cell: ({ row }: any) => {
                 if (row.getIsGrouped()) {
                     return '';
                 }
                 return row.getValue('total');
             },
-            aggregatedCell: ({ getValue }) => {
+            aggregatedCell: ({ getValue }: any) => {
                 return getValue();
             },
             aggregationFn: 'sum',
@@ -206,100 +313,16 @@ const columns = computed(() => {
     ];
 });
 
-// Настройки группировки
 const groupingOptions = ref({
     groupedColumnMode: 'remove',
     getGroupedRowModel: getGroupedRowModel()
 });
 </script>
 
-<template>
-    <div class="space-y-4">
-        <!-- Селектор периода -->
-        <div class="flex gap-2 max-w-2xl flex-wrap">
-            <app-button
-                v-for="period in periods"
-                :key="period.id"
-                active
-                :outline="!period.active"
-                @click="selectedPeriod = period"
-                class="flex-1 justify-between whitespace-nowrap min-w-[200px]"
-            >
-                <span class="text-sm">
-                    {{ formatPeriod(period) }}
-                </span>
-            </app-button>
-        </div>
-
-        <!-- Бейджи с минимальными требованиями -->
-        <div v-if="formattedRequirements.length > 0" class="flex gap-2 flex-wrap items-center">
-            <span class="text-sm text-gray-600 font-medium">Минимум задач:</span>
-            <UBadge
-                v-for="req in formattedRequirements"
-                :key="req.role"
-               color="neutral"
-                size="md"
-            >
-                {{ req.label }}: {{ req.count }}
-            </UBadge>
-        </div>
-    </div>
-
-    <UTable
-        v-if="!loading"
-        :columns="columns"
-        :data="tableData"
-        :grouping="['user_id']"
-        :grouping-options="groupingOptions"
-        :ui="{
-            root: 'min-w-full',
-            td: 'empty:p-0'
-        }"
-        class="mt-4"
-    >
-        <template #title-cell="{ row }">
-            <div v-if="row.getIsGrouped()" class="flex items-center">
-                <UButton
-                    variant="ghost"
-                    color="neutral"
-                    class="mr-2"
-                    size="xs"
-                    :icon="row.getIsExpanded() ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
-                    @click="row.toggleExpanded()"
-                />
-                <strong>{{ row.original.fullName }}</strong>
-            </div>
-            <div v-else class="ml-8 text-gray-600">
-                {{ activityTypeLabels[row.original.activityType] }}
-            </div>
-        </template>
-
-        <!-- Слоты для отображения агрегированных значений в ячейках месяцев -->
-        <template v-for="month in allMonths" :key="`month_${month}`" #[`month_${month}-cell`]="{ row }">
-            <div v-if="row.getIsGrouped()" class="text-center font-semibold">
-                {{ row.getValue(`month_${month}`) === 0 ? '-' : row.getValue(`month_${month}`) }}
-            </div>
-            <div v-else class="text-center">
-                {{ row.getValue(`month_${month}`) }}
-            </div>
-        </template>
-
-        <!-- Слот для колонки "Итого" с условной подсветкой -->
-        <template #total-cell="{ row }">
-            <div v-if="row.getIsGrouped()" class="text-center font-semibold">
-                {{ row.getValue('total') }}
-            </div>
-            <div
-                v-else
-                class="text-center font-semibold"
-                :class="{
-                    'bg-red-100 text-red-700': !isTaskCountSufficient(row.original.activityType, row.getValue('total')),
-                    'bg-green-100 text-green-700': isTaskCountSufficient(row.original.activityType, row.getValue('total'))
-                }"
-            >
-                {{ row.getValue('total') }}
-            </div>
-        </template>
-    </UTable>
-    <p v-else>Загрузка данных...</p>
-</template>
+<style scoped lang="scss">
+.head {
+    @include md {
+        border-bottom: 1px solid $border-color;
+    }
+}
+</style>
