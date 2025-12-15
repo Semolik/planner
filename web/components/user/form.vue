@@ -21,12 +21,12 @@
             />
 
             <app-input
+                v-if="!viewMode"
                 v-model="password"
                 label="Пароль"
                 type="password"
                 required
                 white
-                v-if="!viewMode"
             />
         </div>
         <div class="group">
@@ -112,10 +112,10 @@
                 />
             </div>
         </div>
-        <div class="flex flex-col gap-1" v-if="!viewMode">
+        <div v-if="!viewMode" class="flex flex-col gap-1">
             <div class="event-form-label">Тип пользователя</div>
 
-            <UTabs color="neutral" :items="userTypes" v-model="userType" />
+            <UTabs v-model="userType" color="neutral" :items="userTypes" />
         </div>
         <template v-if="!viewMode">
             <app-button :active="buttonActive" @click="submit">
@@ -132,10 +132,10 @@
         </template>
     </app-form>
     <user-delete-modal
+        v-if="!createMode"
         v-model:open="deleteUserModalOpen"
         :user="userData"
         @deleted="emit('deleted', userId)"
-        v-if="!createMode"
     />
 </template>
 <script setup>

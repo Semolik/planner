@@ -6,6 +6,7 @@ import type { TypedTaskState } from './TypedTaskState';
 import type { UserRole } from './UserRole';
 export type TypedTaskRead = {
     description: string;
+    name: (string | null);
     link: string;
     for_single_user: boolean;
     due_date: string;

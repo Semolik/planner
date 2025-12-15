@@ -16,6 +16,7 @@ from api.models.events_models import (
     TaskState,
     TasksToken,
     TaskStatePeriod,
+    EventGroup,
 )
 from sqlalchemy import select, and_, or_, func, Date
 from sqlalchemy.sql import exists
@@ -23,10 +24,13 @@ from sqlalchemy.sql import case
 
 
 class TasksCRUD(BaseCRUD):
-    async def create_task(self, name: str, event_id: uuid.UUID | None = None) -> Task:
+    async def create_task(
+        self, name: str, use_in_pgas: bool, event_id: uuid.UUID | None = None
+    ) -> Task:
         task = Task(
             name=name,
             event_id=event_id,
+            use_in_pgas=use_in_pgas,
         )
         return await self.create(task)
 
@@ -38,7 +42,11 @@ class TasksCRUD(BaseCRUD):
             .options(selectinload(User.institute)),
             selectinload(TypedTask.parent_task)
             .selectinload(Task.event)
-            .options(selectinload(Event.group)),
+            .options(
+                selectinload(Event.group).options(
+                    selectinload(EventGroup.aggregate_task)
+                )
+            ),
             selectinload(TypedTask.task_states).selectinload(TaskState.period),
         ]
 
@@ -116,7 +124,8 @@ class TasksCRUD(BaseCRUD):
         task_id: uuid.UUID,
         task_type: UserRole,
         for_single_user: bool,
-        due_date: datetime | None = None,
+        name: str | None = None,
+        due_date: date | None = None,
         description: str | None = None,
         link: str = "",
     ) -> TypedTask:
@@ -126,6 +135,7 @@ class TasksCRUD(BaseCRUD):
             description=description,
             due_date=due_date,
             link=link,
+            name=name,
             for_single_user=for_single_user,
         )
         return await self.create(typed_task)
@@ -350,6 +360,7 @@ class TasksCRUD(BaseCRUD):
                 selectinload(Task.typed_tasks).options(*self.get_typed_task_options()),
                 selectinload(Task.files),
                 selectinload(Task.images),
+                selectinload(Task.group),
             )
         )
         result = await self.db.execute(query)
@@ -387,7 +398,7 @@ class TasksCRUD(BaseCRUD):
         filter: Literal["all", "active"] = "active",
         page: int = 1,
         per_page: int = 10,
-    ):
+    ) -> list[Task]:
         query = (
             select(Task)
             .join(TypedTask, TypedTask.task_id == Task.id)
@@ -409,9 +420,12 @@ class TasksCRUD(BaseCRUD):
                         selectinload(User.roles_objects)
                     ),
                 ),
-                selectinload(Task.event).options(selectinload(Event.group)),
+                selectinload(Task.event).options(
+                    selectinload(Event.group).selectinload(EventGroup.aggregate_task)
+                ),
                 selectinload(Task.files),
                 selectinload(Task.images),
+                selectinload(Task.group),
             )
             .offset((page - 1) * per_page)
             .limit(per_page)
@@ -450,7 +464,7 @@ class TasksCRUD(BaseCRUD):
         return result.scalars().all()
 
     async def get_user_completed_typed_tasks(
-            self, user_id: uuid.UUID, period_start: date, period_end: date
+        self, user_id: uuid.UUID, period_start: date, period_end: date
     ) -> list[TypedTask]:
         query = (
             select(TypedTask)

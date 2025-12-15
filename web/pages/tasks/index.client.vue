@@ -14,9 +14,11 @@
             <div class="period-label">
                 {{ periodLabel }}
             </div>
-            <UTooltip :delay-duration="0" :disabled="isSmallScreen"
+            <UTooltip
+:delay-duration="0" :disabled="isSmallScreen"
                       :text="(showTypedTasks ? 'Скрыть' : 'Показать') + ' дедлайны'">
-                <app-button :outline="isSmallScreen? showTypedTasks:!showTypedTasks" active class="toggle-button"
+                <app-button
+:outline="isSmallScreen? showTypedTasks:!showTypedTasks" active class="toggle-button"
                             @click="toggleTypedTasks">
                     <Icon v-if="!isSmallScreen" class="active" name="material-symbols:calendar-clock-outline"/>
                     <span v-else class="text-sm">
@@ -25,7 +27,8 @@
                 </app-button>
             </UTooltip>
             <UTooltip :delay-duration="0" :disabled="isSmallScreen" text="Только мои задачи">
-                <app-button :outline="!showCurrentUserTasks" active
+                <app-button
+:outline="!showCurrentUserTasks" active
                             class="toggle-button" @click="showCurrentUserTasks = !showCurrentUserTasks">
                     <Icon v-if="!isSmallScreen" class="active" name="mdi:account"/>
                     <span v-else class="text-sm">
@@ -45,10 +48,11 @@
             :use-detail-popup="authStore.isAdmin"
             :week="options.week"
             class="my-calendar"
-            isReadOnly
+            is-read-only
             view="month"
-            @beforeUpdateEvent="handleCalendarUpdate"
-            @clickEvent="handleClickEvent"
+            @before-update-event="handleCalendarUpdate"
+            @before-delete-event="handleDeleteEvent"
+            @click-event="handleClickEvent"
         />
         <div v-else :class="['weekly-view', {empty: sortedDates.length === 0}]">
             <div v-if="sortedDates.length === 0" class="h-full flex items-center justify-center text-gray-500">
@@ -83,7 +87,7 @@
                         {{
                             ev.type == 'event' ? 'Фотографы' :
                                 (ev.attendees.length > 1 ? 'Исполнители' : 'Исполнитель')
-                        }}: <span v-html="ev.attendees.join(', ')"></span>
+                        }}: <span v-html="ev.attendees.join(', ')"/>
                     </div>
                     <div v-if="ev.body" class="card-body" v-html="ev.body" />
 
@@ -91,16 +95,93 @@
             </div>
         </div>
     </div>
+
+    <!-- Модальное окно редактирования -->
+    <UModal
+        v-model:open="editModalOpen"
+        title="Быстрое редактирование мероприятия"
+        :ui="{ width: 'sm:max-w-2xl' }"
+    >
+        <template #body>
+            <div v-if="editingTask" class="flex flex-col gap-3">
+                <app-input
+                    v-model="editForm.name"
+                    label="Название мероприятия"
+                    required
+                    white
+                />
+                <app-input
+                    v-model="editForm.date"
+                    type="date"
+                    label="Дата мероприятия"
+                    required
+                    white
+                />
+                <div class="flex gap-2">
+                    <app-input
+                        v-model="editForm.timeStart"
+                        type="time"
+                        label="Время начала"
+                        white
+                    />
+                    <app-input
+                        v-model="editForm.timeEnd"
+                        type="time"
+                        label="Время окончания"
+                        white
+                    />
+                </div>
+                <app-input
+                    v-model="editForm.location"
+                    label="Место проведения"
+                    required
+                    white
+                />
+                <div class="flex flex-col gap-2 mt-2">
+                    <app-button :active="editFormValid && editFormChanged" @click="saveEdit">
+                        Сохранить
+                    </app-button>
+                    <app-button active @click="openFullEditPage">
+                        Открыть полную форму
+                    </app-button>
+                </div>
+            </div>
+        </template>
+    </UModal>
+
+    <!-- Модальное окно удаления -->
+    <UModal
+        v-model:open="deleteModalOpen"
+        title="Удаление мероприятия"
+    >
+        <template #body>
+            <div v-if="editingTask" class="text-md">
+                Вы действительно хотите удалить мероприятие "{{ editingTask.event?.name || editingTask.name }}"?
+            </div>
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <app-button active red @click="confirmDelete">
+                    Удалить
+                </app-button>
+                <app-button @click="deleteModalOpen = false">
+                    Отмена
+                </app-button>
+            </div>
+        </template>
+    </UModal>
 </template>
+
 <script setup>
 import {useRouter, useRoute} from 'vue-router';
-import {watch, onMounted, ref, computed, nextTick} from 'vue';
+import {watch, onMounted, onBeforeUnmount, ref, computed, nextTick} from 'vue';
 import TuiCalendar from 'toast-ui-calendar-vue3';
 import 'toast-ui-calendar-vue3/styles.css';
-import {CalendarService} from '@/client';
+import {CalendarService, TasksService, EventsService} from '@/client';
+import { useAppSettingsStore } from '~/stores/app-settings';
+import { routesNames } from '@typed-router';
 
 const router = useRouter();
 const route = useRoute();
+const appSettingsStore = useAppSettingsStore();
 
 const isSmallScreen = ref(false);
 const calendarRef = ref();
@@ -109,6 +190,9 @@ const currentDate = ref(new Date());
 const myEvents = ref([]);
 const showTypedTasks = useLocalStorage('showTypedTasks', false);
 const showCurrentUserTasks = useLocalStorage('showCurrentUserTasks', false);
+
+// Сохраняем текущее событие для кнопки "Открыть"
+const currentPopupEvent = ref(null);
 
 const userTypesMap = {
     photographer: 'Фотографов',
@@ -120,6 +204,7 @@ const userTypesMap2 = {
     copywriter: 'Копирайтеры',
     designer: 'Дизайнеры',
 };
+
 const calendars = ref([
     {
         id: 'user',
@@ -187,6 +272,7 @@ const colors = {
 const formatDate = (d) => {
   return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
 }
+
 // Формат месяца YYYY-MM
 const formatMonth = (d) => {
   return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2,'0')}`;
@@ -364,7 +450,7 @@ const fetchEvents = async () => {
 
         const newEvents = sortedItems.map((entry) => {
             const {date, item, type} = entry;
-            let event = {
+            const event = {
                 id: `${type}-${item.id}`,
                 title: '',
                 start: '',
@@ -387,7 +473,7 @@ const fetchEvents = async () => {
                 event.start = `${date}T00:00:00`;
                 event.end = `${date}T23:59:59`;
                 event.category = 'allday';
-                let users = [];
+                const users = [];
                 for (const typedTask of item.typed_tasks) {
                     if (typedTask.task_states.length > 0) {
                         typedTask.task_states.forEach((state) => {
@@ -482,7 +568,7 @@ const fetchEvents = async () => {
                 let assignedPhotographersCount = 0;
                 if (item.task && item.task.typed_tasks) {
                     const statusMap = {photographer: 'green', copywriter: 'green', designer: 'green'};
-                    let users = [];
+                    const users = [];
                     item.task.typed_tasks.forEach((typedTask) => {
                         if (typedTask.task_states.length > 0) {
                             typedTask.task_states.forEach((state) => {
@@ -492,7 +578,7 @@ const fetchEvents = async () => {
                         const has_pendingState = typedTask.task_states.some(state => state.state === 'pending');
                         const all_completed = typedTask.task_states.filter(state => state.state === 'completed').length > 0 &&
                             typedTask.task_states.every(typed_task => typed_task.state === 'completed' || typed_task.state === 'canceled');
-                        let spanColor = isSmallScreen.value ? 'black' : 'red';
+                        const spanColor = isSmallScreen.value ? 'black' : 'red';
                         if (typedTask.due_date_passed && has_pendingState) {
                             statusMap[typedTask.task_type] = 'red';
                             info_message += `<span style="color: ${spanColor}"> Просрочен срок сдачи ${userTypesMap[typedTask.task_type]}. </span>`+(isSmallScreen.value?'':'<br>');
@@ -508,7 +594,7 @@ const fetchEvents = async () => {
                             const activeStates = typedTask.task_states.filter((state) => state.state !== 'canceled');
                             assignedPhotographersCount += activeStates.length;
                             typedTask.task_states.forEach((state) => {
-                                let name = state.user.first_name + " " + state.user.last_name;
+                                const name = state.user.first_name + " " + state.user.last_name;
 
                                 photographers.push(state.state === 'canceled' ? `<span style="color: ${spanColor}">${name}</span>` : name);
                             });
@@ -549,17 +635,17 @@ const fetchEvents = async () => {
                         event.borderColor = '#6e6e6e';
                         event.color = '#3b3b3b';
                     } else if (inProgress && !isPastAnyDeadline) {
-                        event.backgroundColor = '#ffd54f'; // Yellow for in progress
+                        event.backgroundColor = '#ffd54f';
                         event.borderColor = '#cca800';
                         event.color = '#000000';
                     } else if (isPastAnyDeadline) {
-                        event.backgroundColor = '#e94e4e'; // Red for overdue
+                        event.backgroundColor = '#e94e4e';
                         event.borderColor = '#b53232';
-                        event.color =isSmallScreen.value? 'black': 'white';
+                        event.color = isSmallScreen.value? 'black': 'white';
                         event.title = '! ' + event.title;
                     }
                 } else {
-                    event.backgroundColor = '#6cc24a'; // Green for active with photographers
+                    event.backgroundColor = '#6cc24a';
                     event.borderColor = '#529235';
                     event.color = '#000000';
                 }
@@ -603,6 +689,204 @@ const toggleTypedTasks = () => {
     showTypedTasks.value = !showTypedTasks.value;
 };
 
+// Инициализация кнопки "Открыть" в popup'е
+const setupPopupOpenButton = () => {
+    let mutationObserver;
+
+    const setupButton = () => {
+        const popup = document.querySelector('.toastui-calendar-popup-container');
+        if (!popup || popup.querySelector('.popup-open-btn')) return;
+
+        const buttonContainer = popup.querySelector('.toastui-calendar-section-button');
+        if (!buttonContainer) return;
+
+        const openBtn = document.createElement('button');
+        openBtn.className = 'popup-open-btn';
+        openBtn.textContent = 'Открыть';
+        openBtn.style.width = '100%';
+        openBtn.style.textAlign = 'center';
+        openBtn.style.display = 'flex';
+        openBtn.style.alignItems = 'center';
+        openBtn.style.justifyContent = 'center';
+        openBtn.style.padding = '12px';
+        openBtn.style.borderTop = '1px solid #e5e5e5';
+
+
+        openBtn.addEventListener('click', (e) => {
+            if (currentPopupEvent.value) {
+                goToEvent(currentPopupEvent.value);
+            }
+        });
+
+        buttonContainer.appendChild(openBtn);
+    };
+
+    mutationObserver = new MutationObserver(setupButton);
+    mutationObserver.observe(document.body, { childList: true, subtree: true });
+
+    return () => mutationObserver?.disconnect();
+};
+
+const authStore = useAuthStore();
+
+// Модальные окна
+const editModalOpen = ref(false);
+const deleteModalOpen = ref(false);
+const editingTask = ref(null);
+const editForm = ref({
+    name: '',
+    date: '',
+    timeStart: '',
+    timeEnd: '',
+    location: '',
+});
+
+const editFormValid = computed(() => {
+    return editForm.value.name.length > 0 &&
+           editForm.value.date.length > 0 &&
+           editForm.value.location.length > 0;
+});
+
+// Флаг изменения формы относительно исходных данных задачи
+const editFormChanged = computed(() => {
+    if (!editingTask.value) return false;
+    const ev = editingTask.value.event;
+    if (!ev) return false;
+    const origName = ev.name || '';
+    const origDate = ev.date || '';
+    const origStart = ev.start_time ? ev.start_time.slice(0,5) : '';
+    const origEnd = ev.end_time ? ev.end_time.slice(0,5) : '';
+    const origLoc = ev.location || '';
+
+    return (
+        editForm.value.name !== origName ||
+        editForm.value.date !== origDate ||
+        editForm.value.timeStart !== origStart ||
+        editForm.value.timeEnd !== origEnd ||
+        editForm.value.location !== origLoc
+    );
+});
+
+const openEditModal = async (taskId) => {
+    try {
+        const task = await TasksService.getTaskByIdTasksTaskIdGet(taskId);
+        editingTask.value = task;
+        if (task.event) {
+            editForm.value = {
+                name: task.event.name,
+                date: task.event.date,
+                timeStart: task.event.start_time ? task.event.start_time.slice(0, 5) : '',
+                timeEnd: task.event.end_time ? task.event.end_time.slice(0, 5) : '',
+                location: task.event.location,
+            };
+        }
+        editModalOpen.value = true;
+    } catch (error) {
+        console.error('Ошибка загрузки задачи:', error);
+    }
+};
+
+const openDeleteModal = async (taskId) => {
+    try {
+        const task = await TasksService.getTaskByIdTasksTaskIdGet(taskId);
+        editingTask.value = task;
+        deleteModalOpen.value = true;
+    } catch (error) {
+        console.error('Ошибка загрузки задачи:', error);
+    }
+};
+
+const saveEdit = async () => {
+    if (!editingTask.value || !editFormValid.value) return;
+
+    try {
+        if (editingTask.value.event) {
+            await EventsService.updateEventEventsEventIdPut(editingTask.value.event.id, {
+                ...editingTask.value.event  ,
+                name: editForm.value.name,
+                date: editForm.value.date,
+                start_time: editForm.value.timeStart ? `${editForm.value.timeStart}:00` : null,
+                end_time: editForm.value.timeEnd ? `${editForm.value.timeEnd}:00` : null,
+                location: editForm.value.location,
+            });
+        }
+        editModalOpen.value = false;
+        fetchEvents();
+    } catch (error) {
+        console.error('Ошибка сохранения:', error);
+    }
+};
+
+const confirmDelete = async () => {
+    if (!editingTask.value) return;
+
+    try {
+        await TasksService.deleteTaskTasksTaskIdDelete(editingTask.value.id);
+        deleteModalOpen.value = false;
+        fetchEvents();
+    } catch (error) {
+        console.error('Ошибка удаления:', error);
+    }
+};
+
+const openFullEditPage = () => {
+    if (editingTask.value) {
+        editModalOpen.value = false;
+        router.push({
+            name: routesNames.tasksTaskIdEdit.index,
+            params: { task_id: editingTask.value.id }
+        });
+    }
+};
+
+// ✅ ПРАВИЛЬНЫЕ обработчики - возвращают false для отмены дефолтного поведения
+function handleCalendarUpdate(payload) {
+    if (!payload?.event) return false;
+
+    const eventId = payload.event.id;
+    if (eventId?.startsWith('task-')) {
+        const taskId = eventId.replace('task-', '');
+        openEditModal(taskId);
+    }
+
+    // ✅ ВАЖНО: Возвращаем false чтобы отменить дефолтное поведение
+    return false;
+}
+
+const handleDeleteEvent = (payload) => {
+    if (!payload?.event) return false;
+
+    const eventId = payload.event.id;
+    if (eventId?.startsWith('task-')) {
+        const taskId = eventId.replace('task-', '');
+        openDeleteModal(taskId);
+    }
+
+    // ✅ ВАЖНО: Возвращаем false чтобы отменить дефолтное поведение
+    return false;
+};
+
+function goToEvent(ev) {
+    if (ev.id.startsWith('task-')) {
+        const parts = ev.id.split('-');
+        const typedTaskId = parts.slice(1).join('-');
+        router.push({name: 'tasks-task_id', params: {task_id: typedTaskId}});
+    } else if (ev.calendarId === 'photographer' || ev.title.startsWith('сдача репортажа')) {
+        const typedTaskId = ev.id.split('-').slice(1).join('-');
+        router.push({name: 'tasks-task_id', params: {task_id: typedTaskId}});
+    }
+}
+
+const handleClickEvent = (ev) => {
+
+    currentPopupEvent.value = ev.event;
+
+
+    if (!authStore.isAdmin) {
+        goToEvent(ev.event);
+    }
+};
+
 onMounted(async () => {
     isSmallScreen.value = window.innerWidth < 768;
 
@@ -612,7 +896,16 @@ onMounted(async () => {
     if (!isSmallScreen.value && calendarRef.value) {
         calendarRef.value.getInstance().setDate(currentDate.value);
     }
+
+    // Инициализируем кнопку "Открыть"
+    const cleanupPopupButton = setupPopupOpenButton();
+
     fetchEvents();
+
+    // Cleanup при размонтировании
+    onBeforeUnmount(() => {
+        cleanupPopupButton?.();
+    });
 });
 
 watch([currentDate, isSmallScreen], () => {
@@ -630,30 +923,6 @@ window.addEventListener('resize', () => {
         fetchEvents();
     }
 });
-
-function goToEvent(ev) {
-    if (ev.id.startsWith('task-')) {
-        const parts = ev.id.split('-');
-        const typedTaskId = parts.slice(1).join('-');
-        router.push({name: 'tasks-task_id', params: {task_id: typedTaskId}});
-    } else if (ev.calendarId === 'photographer' || ev.title.startsWith('сдача репортажа')) {
-        const typedTaskId = ev.id.split('-').slice(1).join('-');
-        router.push({name: 'tasks-task_id', params: {task_id: typedTaskId}});
-    }
-}
-
-const authStore = useAuthStore();
-
-const handleClickEvent = (ev) => {
-    if (!authStore.isAdmin) {
-        goToEvent(ev.event);
-    }
-};
-
-function handleCalendarUpdate(payload) {
-    goToEvent(payload.event);
-    return false;
-}
 
 const popupTemplates = ref({
     popupEdit: () => 'Редактировать',
@@ -682,7 +951,6 @@ const options = computed(() => ({
     },
 }));
 </script>
-
 
 <style lang="scss" scoped>
 .user-mode {
@@ -737,7 +1005,6 @@ const options = computed(() => ({
     padding: 0px;
 
     &.empty {
-
         height: calc(100% - 50px);
     }
 }
@@ -749,7 +1016,6 @@ const options = computed(() => ({
     margin-bottom: 5px;
     margin-left: 5px;
 }
-
 
 .event-card {
     padding: 10px;
@@ -783,11 +1049,43 @@ const options = computed(() => ({
     font-size: 14px;
     color: inherit;
 }
+
 .card-body {
     margin-top: 5px;
     font-size: 14px;
     display: flex;
     flex-direction: column;
     gap: 5px;
+}
+
+:deep(.select-menu) {
+    --ui-border-accented: transparent !important;
+}
+
+// Стилизуем кнопку "Открыть" в попапе под стиль Toast UI
+:deep(.toastui-calendar-popup-section .popup-open-btn) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px; // как у стандартных кнопок
+  font-size: 12px; // ближе к их размеру
+  line-height: 1;
+  font-weight: 500;
+  color: var(--toastui-font-color, #333);
+  background: transparent; // убрать синюю заливку
+  border: none; // убрать кастомную рамку
+  border-radius: 0; // убрать скругление
+  cursor: pointer;
+  transition: opacity .2s ease;
+  margin-right: 0; // убрать отступ, чтобы не выбивалась из ряда
+}
+
+:deep(.toastui-calendar-popup-section .popup-open-btn:hover) {
+  opacity: .8; // как у остальных кнопок на hover
+}
+
+// Чтобы не ломать вертикальный разделитель, добавим небольшой отступ как у соседних
+:deep(.toastui-calendar-popup-section .popup-open-btn + .toastui-calendar-vertical-line) {
+  margin-left: 4px;
 }
 </style>

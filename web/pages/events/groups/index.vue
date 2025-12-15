@@ -1,6 +1,6 @@
 <template>
     <page-container header="Группы">
-        <div class="groups-page" ref="container">
+        <div ref="container" class="groups-page">
             <div class="flex gap-2 md:flex-row flex-col">
                 <app-input
                     v-model="searchQuery"
@@ -8,12 +8,12 @@
                     type="text"
                 />
                 <app-button
+                    v-if="authStore.isAdmin"
                     active
                     class="whitespace-nowrap"
                     :to="{
                         name: routesNames.eventsGroupsNew,
                     }"
-                    v-if="authStore.isAdmin"
                 >
                     Создать группу
                 </app-button>
@@ -35,13 +35,13 @@
                         </div>
                         <template v-if="group.period_start && group.period_end">
                             <div
-                                class="period"
                                 v-if="group.period_start !== group.period_end"
+                                class="period"
                             >
                                 {{ getDateString(group.period_start) }} -
                                 {{ getDateString(group.period_end) }}
                             </div>
-                            <div class="period" v-else>
+                            <div v-else class="period">
                                 {{ getDateString(group.period_start) }}
                             </div>
                         </template>

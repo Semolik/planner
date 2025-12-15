@@ -1,5 +1,5 @@
 <template>
-    <app-aside :blocks="asideBlocks"></app-aside>
+    <app-aside :blocks="asideBlocks"/>
 </template>
 <script setup>
 import { routesNames } from "@typed-router";

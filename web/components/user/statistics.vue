@@ -22,9 +22,9 @@
                         :key="period.id"
                         active
                         :outline="!period.active"
-                        @click="selectedPeriod = period"
                         mini
                         class="flex-1 justify-between whitespace-nowrap max-w-[300px]"
+                        @click="selectedPeriod = period"
                     >
                         <span class="text-sm">
                             {{ formatPeriod(period) }}

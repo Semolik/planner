@@ -30,8 +30,22 @@
                 >
                     Ссылка на публикацию
                 </UBadge>
+                <UBadge
+                    v-if="group.aggregate_task"
+                    color="info"
+                    icon="material-symbols:assignment"
+                    size="lg"
+                    as="nuxt-link"
+                    @click="()=> $router.push({
+                        name: routesNames.tasksTaskId,
+                        params: { task_id: group.aggregate_task.id },
+                    })"
+                    class="cursor-pointer"
+                >
+                    Общая публикация
+                </UBadge>
             </div>
-            <div class="description" v-if="group.description">
+            <div v-if="group.description" class="description">
                 {{ group.description }}
             </div>
         </div>
@@ -39,7 +53,7 @@
         <div class="tasks-grid">
             <task-card v-for="task in tasks" :key="task.id" :task="task" />
         </div>
-        <template #header v-if="authStore.isAdmin">
+        <template v-if="authStore.isAdmin" #header>
             <app-button
                 active
                 mini
@@ -52,13 +66,13 @@
             </app-button>
         </template>
         <app-button
+            v-if="authStore.isAdmin"
             active
             :to="{
                 name: routesNames.eventsGroupsGroupIdEdit,
                 params: { group_id },
             }"
             class="lg:!hidden mt-auto"
-            v-if="authStore.isAdmin"
         >
             Редактировать
         </app-button>
@@ -77,9 +91,9 @@ useSeoMeta({
     title: `Группа: ${group.name}`,
 });
 const tasks = group.events.map((event) => {
-    let eventCopy = { ...event };
+    const eventCopy = { ...event };
     delete eventCopy.task;
-    let task = { ...event.task, event: eventCopy };
+    const task = { ...event.task, event: eventCopy };
     return task;
 });
 const sections = [

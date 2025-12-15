@@ -4,12 +4,12 @@
             <nuxt-link class="header_logo" href="/">
                 {{ appSettingsStore.settings.app_name }}
             </nuxt-link>
-            <div class="roles" v-if="authStore.logined">
+            <div v-if="authStore.logined" class="roles">
                 <template v-if="!authStore.isAdmin">
                     <span
                         v-for="role in authStore.userData.roles"
-                        :class="['role', role]"
                         :key="role.id"
+                        :class="['role', role]"
                     >
                         {{ roleNames[role] }}
                     </span>
@@ -29,11 +29,11 @@
                             </div>
                         </nuxt-link>
                         <div
+                            id="notifications"
                             :class="[
                                 'notifications',
                                 { 'has-notifications': hasUnreadNotifications },
                             ]"
-                            id="notifications"
                             @click="toggleNotificationsOverlay"
                         >
                             <Icon name="material-symbols:notifications" />
@@ -46,17 +46,17 @@
             <Icon name="ci:hamburger-lg" />
         </div>
         <Teleport
+            v-if="mounted && authStore.logined"
             to="#notifications"
             :disabled="$viewport.isLessOrEquals('sm')"
-            v-if="mounted && authStore.logined"
         >
             <div
+                ref="notificationsOverlay"
                 :class="[
                     'notifications-overlay',
                     { open: notificationsOverlayOpen },
                     { active: notificationsShown },
                 ]"
-                ref="notificationsOverlay"
                 @click.stop
             >
                 <div v-if="notifications.length === 0" class="no-notifications">
@@ -100,7 +100,7 @@ const toggleNotificationsOverlay = () => {
     }
 };
 onClickOutside(notificationsOverlay, (event) => {
-    let notificationButton = document.getElementById("notifications");
+    const notificationButton = document.getElementById("notifications");
     if (
         (notificationButton && notificationButton.contains(event.target)) ||
         notificationButton === event.target

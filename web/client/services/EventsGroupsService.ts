@@ -29,10 +29,56 @@ export class EventsGroupsService {
         });
     }
     /**
+     * Convert Event Group To Aggregated
+     * @param groupId
+     * @param isSingleAlbum
+     * @returns EventGroupRead Successful Response
+     * @throws ApiError
+     */
+    public static convertEventGroupToAggregatedEventsGroupsGroupIdConvertToAggregatedPost(
+        groupId: string,
+        isSingleAlbum: boolean,
+    ): CancelablePromise<EventGroupRead> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/events/groups/{group_id}/convert-to-aggregated',
+            path: {
+                'group_id': groupId,
+            },
+            query: {
+                'is_single_album': isSingleAlbum,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Remove Aggregation From Event Group
+     * @param groupId
+     * @returns EventGroupRead Successful Response
+     * @throws ApiError
+     */
+    public static removeAggregationFromEventGroupEventsGroupsGroupIdRemoveAggregationPost(
+        groupId: string,
+    ): CancelablePromise<EventGroupRead> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/events/groups/{group_id}/remove-aggregation',
+            path: {
+                'group_id': groupId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * Search Event Groups
      * @param query
      * @param page
      * @param filter
+     * @param withAggregateTask
      * @returns EventGroupReadShort Successful Response
      * @throws ApiError
      */
@@ -40,6 +86,7 @@ export class EventsGroupsService {
         query?: string,
         page: number = 1,
         filter: 'all' | 'active' | 'passed' = 'all',
+        withAggregateTask?: (boolean | null),
     ): CancelablePromise<Array<EventGroupReadShort>> {
         return __request(OpenAPI, {
             method: 'GET',
@@ -48,6 +95,7 @@ export class EventsGroupsService {
                 'query': query,
                 'page': page,
                 'filter': filter,
+                'with_aggregate_task': withAggregateTask,
             },
             errors: {
                 422: `Validation Error`,

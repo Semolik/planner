@@ -15,8 +15,8 @@
             v-if="institute"
             active
             red
-            @click="deleteInstitute"
             type="button"
+            @click="deleteInstitute"
         >
             Удалить
         </app-button>

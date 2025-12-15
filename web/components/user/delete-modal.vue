@@ -38,10 +38,10 @@ const confirmDelete = async () => {
 
 <template>
     <UModal
-        :open="open"
-        @update:open="emit('update:open', $event)"
-        title="Удаление пользователя"
         v-if="user"
+        :open="open"
+        title="Удаление пользователя"
+        @update:open="emit('update:open', $event)"
     >
         <template #body>
             <p>
@@ -50,14 +50,14 @@ const confirmDelete = async () => {
                 будет отменить.
             </p>
             <div class="grid grid-cols-2 gap-2 mt-4">
-                <app-button active @click="close" :disabled="isLoading">
+                <app-button active :disabled="isLoading" @click="close">
                     Отмена
                 </app-button>
                 <app-button
                     active
                     red
-                    @click="confirmDelete"
                     :loading="isLoading"
+                    @click="confirmDelete"
                 >
                     Удалить
                 </app-button>

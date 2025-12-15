@@ -2,26 +2,26 @@
     <aside>
         <slot name="head" />
 
-        <div class="aside-block" v-for="(block, index) in blocks" :key="index">
-            <div class="block-name" v-if="block.name">{{ block.name }}</div>
+        <div v-for="(block, index) in blocks" :key="index" class="aside-block">
+            <div v-if="block.name" class="block-name">{{ block.name }}</div>
             <div class="items">
                 <template v-if="index === 0 && authStore.isAdmin">
                     <div
+                        v-if="$viewport.isGreaterOrEquals('lg')"
+                        v-auto-animate
                         class="dropdown-button"
                         :class="{ open: dropdownOpen }"
-                        v-if="$viewport.isGreaterOrEquals('lg')"
                         @click="dropdownOpen = !dropdownOpen"
-                        v-auto-animate
                     >
                         <div class="button-content">
                             Создать
                             <Icon name="i-lucide-chevron-down" />
                         </div>
-                        <div class="links" v-if="dropdownOpen" @click.stop>
+                        <div v-if="dropdownOpen" class="links" @click.stop>
                             <nuxt-link
                                 class="link"
-                                @click.stop.prevent="dropdownOpen = false"
                                 :to="{ name: routesNames.tasksAdd }"
+                                @click.stop.prevent="dropdownOpen = false"
                             >
                                 задачу
                             </nuxt-link>
@@ -52,9 +52,9 @@
                     </div>
                 </template>
                 <nuxt-link
-                    class="aside-item"
                     v-for="item in block.items"
                     :key="item.path"
+                    class="aside-item"
                     :to="{
                         name: item.path,
                     }"

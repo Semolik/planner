@@ -5,6 +5,7 @@
 import type { UserRole } from './UserRole';
 export type CreateTypedTask = {
     description: string;
+    name: (string | null);
     link: string;
     for_single_user: boolean;
     due_date: string;

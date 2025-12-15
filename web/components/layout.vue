@@ -5,20 +5,20 @@
         <div class="default-layout">
             <template v-if="authStore.logined">
                 <app-head v-if="$viewport.isLessThan('lg')" />
-                <app-aside :blocks="asideBlocks" v-else>
+                <app-aside v-else :blocks="asideBlocks">
                     <template #head>
                         <app-head />
                     </template>
                 </app-aside>
             </template>
 
-            <div id="teleports"></div>
+            <div id="teleports"/>
             <div :class="['default-layout__content', { padding: !noPadding }]">
                 <slot />
             </div>
             <div
-                class="bottom-bar"
                 v-if="authStore.logined && $viewport.isLessThan('lg')"
+                class="bottom-bar"
             >
                 <nuxt-link class="bottom-bar-item" to="/">
                     <Icon name="material-symbols:home-rounded" />
@@ -37,8 +37,8 @@
 </template>
 <script setup>
 import { routesNames } from "@typed-router";
-const { $viewport } = useNuxtApp();
 import { useAuthStore } from "~/stores/auth";
+const { $viewport } = useNuxtApp();
 const { noPadding } = defineProps({
     noPadding: {
         type: Boolean,

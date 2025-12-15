@@ -5,12 +5,12 @@
             { white, red, 'validation-error': validationError },
         ]"
     >
-        <div class="label-container" v-if="label || labelRight">
-            <label class="app-input__label" v-if="label">{{ label }}</label>
+        <div v-if="label || labelRight" class="label-container">
+            <label v-if="label" class="app-input__label">{{ label }}</label>
             <nuxt-link
+                v-if="labelRight"
                 class="app-input__label label-right"
                 :to="labelRight.to"
-                v-if="labelRight"
             >
                 {{ labelRight.text }}
             </nuxt-link>
@@ -24,7 +24,7 @@
             rows="7"
             @blur="validateInput"
             @input="onInput"
-        ></textarea>
+        />
         <input
             v-else-if="type === 'date'"
             v-model="modelValue"
@@ -42,8 +42,9 @@
                     );
                 }
             "
-        />
+        >
         <input
+            v-else
             v-model="modelValue"
             class="app-input__input"
             v-bind="$attrs"
@@ -51,8 +52,7 @@
             :type="type"
             @blur="validateInput"
             @input="onInput"
-            v-else
-        />
+        >
     </div>
 </template>
 <script setup>

@@ -13,7 +13,7 @@ class Settings(BaseSettings):
         extra="allow",
     )
     DEV_MODE: bool = True
-    SECRET: str = secrets.token_urlsafe(32)
+    SECRET: str
     BACKEND_CORS_ORIGINS: str
     API_DOMAIN: str
     API_PORT: int

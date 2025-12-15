@@ -6,10 +6,10 @@
             >
                 <div class="text-lg font-semibold">Отчетные периоды</div>
                 <app-button
+                    v-if="authStore.isAdmin"
                     active
                     mini
                     @click="createPeriodModalOpen = true"
-                    v-if="authStore.isAdmin"
                 >
                     Создать период
                 </app-button>

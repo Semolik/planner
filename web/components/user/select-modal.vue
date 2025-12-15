@@ -1,10 +1,10 @@
 <template>
-    <UModal :title="title" v-model:open="active">
+    <UModal v-model:open="active" :title="title">
         <template #body>
             <div class="flex flex-col gap-2 min-h-[40vh]">
                 <app-input
-                    class="search-input"
                     v-model="searchUsersQuery"
+                    class="search-input"
                     placeholder="Поиск по пользователям"
                     type="text"
                 />
@@ -13,15 +13,15 @@
 
                 <div
                     ref="scrollContainer"
-                    class="flex flex-col gap-2"
                     v-auto-animate
+                    class="flex flex-col gap-2"
                     :style="{ 'max-height': '40vh', 'overflow-y': 'auto' }"
                 >
                     <div
-                        class="user-item"
-                        :class="{ excluded: user.excluded }"
                         v-for="user in searchUsersResults"
                         :key="user.id"
+                        class="user-item"
+                        :class="{ excluded: user.excluded }"
                         @click="() => !user.excluded && emit('select', user)"
                     >
                         <div class="user-item-info">
@@ -29,10 +29,10 @@
                                 {{ useFullName(user) }}
                             </div>
                             <div
-                                class="badge"
                                 v-if="
                                     user.excluded && props.excludeUserBadgeText
                                 "
+                                class="badge"
                             >
                                 {{ props.excludeUserBadgeText }}
                             </div>
@@ -41,16 +41,16 @@
 
                     <!-- Сообщение, если нет результатов -->
                     <div
-                        class="text-md text-gray-500 text-center"
                         v-if="searchUsersResults.length === 0 && !loading"
+                        class="text-md text-gray-500 text-center"
                     >
                         Ничего не найдено
                     </div>
 
                     <!-- Лоадер подгрузки -->
                     <div
-                        class="text-center py-2 text-sm text-gray-500"
                         v-if="loading"
+                        class="text-center py-2 text-sm text-gray-500"
                     >
                         Загрузка...
                     </div>

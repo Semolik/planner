@@ -6,6 +6,7 @@ import type { TypedTaskRead } from './TypedTaskRead';
 export type TaskWithoutEventRead = {
     event_id?: (string | null);
     name: string;
+    use_in_pgas: boolean;
     id: string;
     all_typed_tasks_completed: boolean;
     typed_tasks: Array<TypedTaskRead>;

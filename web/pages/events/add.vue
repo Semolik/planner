@@ -3,115 +3,152 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
             <div class="flex flex-col gap-2 w-full">
                 <app-input
-                    v-model="name"
-                    label="Название мероприятия"
-                    required
-                    white
+                      v-model="name"
+                      label="Название мероприятия"
+                      required
+                      white
                 />
                 <app-input
-                    v-model="date"
-                    type="date"
-                    label="Дата мероприятия"
-                    required
-                    white
+                      v-model="date"
+                      type="date"
+                      label="Дата мероприятия"
+                      required
+                      white
                 />
                 <div class="flex gap-1">
                     <app-input
-                        v-model="timeStart"
-                        type="time"
-                        label="Время начала"
-                        required
-                        white
+                          v-model="timeStart"
+                          type="time"
+                          label="Время начала"
+                          white
                     />
                     <app-input
-                        v-model="timeEnd"
-                        type="time"
-                        label="Время окончания"
-                        required
-                        white
+                          v-model="timeEnd"
+                          type="time"
+                          label="Время окончания"
+                          white
                     />
                 </div>
                 <app-input
-                    v-model="location"
-                    label="Место проведения"
-                    required
-                    white
+                      v-model="location"
+                      label="Место проведения"
+                      required
+                      white
                 />
             </div>
             <div class="flex flex-col">
                 <app-input
-                    v-model="description"
-                    label="Описание мероприятия"
-                    type="textarea"
-                    white
-                    rows="3"
-                    class="max-h-[150px]"
+                      v-model="description"
+                      label="Описание мероприятия"
+                      type="textarea"
+                      white
+                      rows="3"
+                      class="max-h-[150px]"
                 />
                 <div class="flex flex-col gap-1 w-full">
                     <div class="event-form-label">Уровень мероприятия</div>
                     <client-only>
                         <USelectMenu
-                            v-model="event_level"
-                            :items="eventLevels"
-                            class="select-menu"
-                            color="neutral"
-                            size="lg"
-                            :content="{
+                              v-model="event_level"
+                              :items="eventLevels"
+                              class="select-menu"
+                              color="neutral"
+                              size="lg"
+                              :content="{
                                 align: 'start',
                                 side: 'bottom',
                                 sideOffset: 8,
                             }"
-                            :search-input="{
+                              :search-input="{
                                 placeholder: 'Поиск',
                             }"
                         />
                     </client-only>
                     <app-input
-                        v-model="organizer"
-                        label="Контакт организатора"
-                        required
-                        white
+                          v-model="organizer"
+                          label="Контакт организатора"
+                          required
+                          white
                     />
                 </div>
             </div>
         </div>
 
+        <div class="flex flex-wrap gap-2">
+            <!-- Чекбокс агрегированной публикации -->
+            <UCheckbox
+                  v-model="useAggregatePublication"
+                  color="neutral"
+                  variant="card"
+                  label="Одна публикация на несколько мероприятий"
+                  class="flex-1"
+            />
+
+            <!-- Чекбокс учитывать в ПГАС -->
+            <UCheckbox
+                  v-model="useInPgas"
+                  color="neutral"
+                  variant="card"
+                  label="Учитывать в ПГАС"
+                  class="flex-1"
+            />
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
             <event-group-selector
-                v-model="selectedGroup"
-                v-model:open="selectGroupOpen"
+                  v-model="selectedGroup"
+                  v-model:open="selectGroupOpen"
+                  :aggregate-mode="useAggregatePublication"
+                  :required="useAggregatePublication"
+                  :event-date="date"
             />
 
             <div
-                :class="['button', { active: tasksSettingsOpen }]"
-                @click="tasksSettingsOpen = !tasksSettingsOpen"
+                  :class="['button', { active: tasksSettingsOpen }, {'pointer-events-none opacity-50': useAggregatePublication}]"
+                  @click="tasksSettingsOpen = !tasksSettingsOpen"
+
             >
                 <span class="text"> Настройки подзадач </span>
-                <Icon name="i-lucide-chevron-down" />
+                <Icon name="i-lucide-chevron-down"/>
             </div>
         </div>
+
         <UCollapsible
-            v-model:open="tasksSettingsOpen"
-            class="flex flex-col gap-[10px] hide-if-child-empty"
+              v-model:open="tasksSettingsOpen"
+              class="flex flex-col gap-[10px] hide-if-child-empty"
         >
             <template #content>
                 <div
-                    class="flex flex-col gap-[10px] p-2 border border-solid rounded-[10px]"
+                      class="flex flex-col gap-[10px] p-2 border border-solid rounded-[10px]"
+                      :class="{ 'opacity-50 pointer-events-none': useAggregatePublication }"
                 >
                     <USwitch
-                        label="Создать подзадачу для фотографов"
-                        v-model="createPhotographersSubTask"
-                        color="neutral"
+                          v-model="createCopywritersSubTask"
+                          label="Создать подзадачу для копирайтеров"
+                          color="neutral"
+                          :disabled="useAggregatePublication"
+                    />
+                    <app-input
+                          v-if="createCopywritersSubTask"
+                          v-model="copywriterDescription"
+                          label="Описание для копирайтеров"
+                          type="textarea"
+                          white
+                          rows="2"
                     />
                     <USwitch
-                        label="Создать подзадачу для копирайтеров"
-                        v-model="createCopywritersSubTask"
-                        color="neutral"
+                          v-model="createDesignersSubTask"
+                          label="Создать подзадачу для дизайнеров"
+                          color="neutral"
+                          :disabled="useAggregatePublication"
                     />
-                    <USwitch
-                        label="Создать подзадачу для дизайнеров"
-                        v-model="createDesignersSubTask"
-                        color="neutral"
+                    <app-input
+                          v-if="createDesignersSubTask"
+                          v-model="designerDescription"
+                          label="Описание для дизайнеров"
+                          type="textarea"
+                          white
+                          rows="2"
                     />
                 </div>
             </template>
@@ -119,20 +156,20 @@
 
         <div class="flex gap-2">
             <UDropdownMenu
-                :items="items"
-                :content="{
+                  :items="items"
+                  :content="{
                     align: 'start',
                     side: 'top',
                     sideOffset: 8,
                 }"
             >
                 <app-button active>
-                    <Icon name="material-symbols:attach-file" />
+                    <Icon name="material-symbols:attach-file"/>
                 </app-button>
                 <template #item="{ item }">
                     <app-button active class="!rounded-sm">
                         <div class="flex items-center gap-1">
-                            <Icon :name="item.icon" />
+                            <Icon :name="item.icon"/>
                             {{ item.label }}
                         </div>
                     </app-button>
@@ -140,19 +177,21 @@
             </UDropdownMenu>
 
             <app-button
-                :active="buttonActive"
-                @click="createEvent"
-                class="w-full"
+                  :active="buttonActive"
+                  class="w-full"
+                  @click="createEvent"
             >
                 Создать мероприятие
             </app-button>
         </div>
     </app-form>
 </template>
+
 <script setup>
-import { useAppSettingsStore } from "~/stores/app-settings";
-import { EventsService, EventsGroupsService } from "~/client";
-import { routesNames } from "@typed-router";
+import {useAppSettingsStore} from "~/stores/app-settings";
+import {EventsService, EventsGroupsService} from "~/client";
+import {routesNames} from "@typed-router";
+
 const appSettingsStore = useAppSettingsStore();
 definePageMeta({
     middleware: ["admin"],
@@ -160,8 +199,10 @@ definePageMeta({
 
 const tasksSettingsOpen = ref(false);
 const selectGroupOpen = ref(false);
+const useAggregatePublication = ref(false);
+const useInPgas = ref(true);
 
-const { $toast } = useNuxtApp();
+const {$toast} = useNuxtApp();
 const name = ref("");
 const date = ref("");
 const description = ref("");
@@ -170,9 +211,10 @@ const timeEnd = ref("");
 const currentDate = ref(new Date().toISOString().slice(0, 10));
 const location = ref("");
 const organizer = ref("");
-const createPhotographersSubTask = ref(true);
 const createCopywritersSubTask = ref(true);
-const createDesignersSubTask = ref(true);
+const createDesignersSubTask = ref(false);
+const copywriterDescription = ref("");
+const designerDescription = ref("");
 const items = ref([
     [
         {
@@ -190,26 +232,44 @@ const eventLevels = appSettingsStore.eventsLevels.map((level) => ({
     label: level.name,
 }));
 const event_level = ref(
-    eventLevels.find(
-        (level) => level.id === appSettingsStore.settings.default_event_level_id
-    )
+      eventLevels.find(
+            (level) => level.id === appSettingsStore.settings.default_event_level_id
+      )
 );
 
 const selectedGroup = ref(null);
+
 const buttonActive = computed(() => {
-    return (
-        name.value.length > 0 &&
-        date.value.length > 0 &&
-        timeStart.value.length > 0 &&
-        timeEnd.value.length > 0 &&
-        location.value.length > 0 &&
-        event_level.value !== null
-    );
+    const baseValidation =
+          name.value.length > 0 &&
+          date.value.length > 0 &&
+          location.value.length > 0 &&
+          event_level.value !== null;
+    console.log("Base validation:", baseValidation);
+
+    // Группа обязательна только при aggregate_task
+    if (useAggregatePublication.value) {
+        console.log("Aggregate mode active, checking group selection:", selectedGroup.value);
+        return baseValidation && selectedGroup.value !== null;
+    }
+
+    return baseValidation;
 });
+
+// Блокируем подзадачи при агрегированном режиме
+watch(useAggregatePublication, (value) => {
+    if (value) {
+        tasksSettingsOpen.value = false; // Закрываем секцию настроек
+        createCopywritersSubTask.value = false;
+        createDesignersSubTask.value = false;
+    }
+    selectedGroup.value = null; // Сбрасываем группу при изменении режима
+});
+
 watch(timeStart, (value) => {
     if (
-        new Date(`${currentDate.value}T${value}`) >=
-        new Date(`${currentDate.value}T${timeEnd.value}`)
+          new Date(`${currentDate.value}T${value}`) >=
+          new Date(`${currentDate.value}T${timeEnd.value}`)
     ) {
         const endTime = new Date(`${currentDate.value}T${value}`);
         if (endTime.getHours() < 23) {
@@ -225,10 +285,11 @@ watch(timeStart, (value) => {
         timeEnd.value = endTime.toTimeString().slice(0, 5);
     }
 });
+
 watch(timeEnd, (value) => {
     if (
-        new Date(`${currentDate.value}T${value}`) <=
-        new Date(`${currentDate.value}T${timeStart.value}`)
+          new Date(`${currentDate.value}T${value}`) <=
+          new Date(`${currentDate.value}T${timeStart.value}`)
     ) {
         const startTime = new Date(`${currentDate.value}T${value}`);
         if (startTime.getHours() > 0) {
@@ -247,21 +308,29 @@ watch(timeEnd, (value) => {
 
 const createEvent = async () => {
     if (!buttonActive.value) return;
-    if (selectedGroup.value && !selectedGroup.value.id) {
-        searchGroup.value =
-            await EventsGroupsService.createEventGroupEventsGroupsPost({
+
+    // Создаем группу если она новая (только для агрегированного режима)
+    if (selectedGroup.value && !selectedGroup.value.id && useAggregatePublication.value) {
+        try {
+            selectedGroup.value = await EventsGroupsService.createEventGroupEventsGroupsPost({
                 name: selectedGroup.value.name,
                 description: selectedGroup.value.description,
                 organizer: selectedGroup.value.organizer,
                 link: "",
+                aggregate_task_params: selectedGroup.value.aggregate_task_params,
             });
+        } catch (error) {
+            $toast.error("Ошибка создания группы: " + HandleOpenApiError(error).message);
+            return;
+        }
     }
+
     try {
         const event = await EventsService.createEventEventsPost({
             name: name.value,
             date: date.value,
-            start_time: `${timeStart.value}:00Z`,
-            end_time: `${timeEnd.value}:00Z`,
+            start_time: timeStart.value ? `${timeStart.value}:00Z` : null,
+            end_time: timeEnd.value ? `${timeEnd.value}:00Z` : null,
             name_approved: false,
             location: location.value,
             link: "",
@@ -271,44 +340,42 @@ const createEvent = async () => {
             description: description.value,
             level_id: event_level.value.id,
             photographer_description: "",
-            copywriter_description: "",
-            designer_description: "",
-            photographers_deadline: createPhotographersSubTask.value
-                ? addDaysToDate(
-                      date.value,
-                      appSettingsStore.settings.photographers_deadline
-                  )
-                : null,
-            copywriters_deadline: createCopywritersSubTask.value
-                ? addDaysToDate(
-                      date.value,
-                      appSettingsStore.settings.copywriters_deadline
-                  )
-                : null,
+            copywriter_description: createCopywritersSubTask.value ? copywriterDescription.value : "",
+            designer_description: createDesignersSubTask.value ? designerDescription.value : "",
+            photographers_deadline: addDaysToDate(
+                  date.value,
+                  appSettingsStore.settings.photographers_deadline
+            ),
+            copywriters_deadline: useAggregatePublication.value ? null :
+                  createCopywritersSubTask.value ?
+                        addDaysToDate(date.value, appSettingsStore.settings.copywriters_deadline) : null,
             designers_deadline: createDesignersSubTask.value
-                ? addDaysToDate(
-                      date.value,
-                      appSettingsStore.settings.photographers_deadline +
-                          appSettingsStore.settings.designers_deadline
-                  )
-                : null,
+                  ? (useAggregatePublication.value && selectedGroup.value?.aggregate_task_params?.designers_deadline
+                       ? null
+                       : addDaysToDate(date.value, appSettingsStore.settings.designers_deadline))
+                  : null,
+            aggregate_task: useAggregatePublication.value,
+            use_in_pgas: useInPgas.value
         });
+
         const router = useRouter();
         $toast.success("Мероприятие успешно создано");
         router.push({
             name: routesNames.tasksTaskId,
-            params: { task_id: event.task.id },
+            params: {task_id: event.task.id},
         });
     } catch (error) {
         $toast.error(HandleOpenApiError(error).message);
     }
 };
 </script>
+
 <style lang="scss">
 .select-menu {
     --ui-border-accented: transparent !important;
 }
 </style>
+
 <style scoped lang="scss">
 .button {
     background-color: black;
@@ -326,62 +393,35 @@ const createEvent = async () => {
     overflow: hidden;
     text-overflow: ellipsis;
     position: relative;
+    transition: all 0.2s ease;
 
     &.active .iconify {
         transform: rotate(-180deg);
     }
+
     &.group-select {
         justify-content: center;
         text-align: center;
         flex-grow: 1;
     }
+
     &:not(.group-select) {
         height: 40px;
+
         .text {
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
             font-weight: 500;
         }
+
         .iconify {
             position: absolute;
             right: 32px;
         }
     }
 }
-.groups-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-height: 500px;
-    height: 100%;
 
-    .group {
-        border: 1px solid $text-color-tertiary;
-        border-radius: 10px;
-        padding: 10px;
-        cursor: pointer;
-        user-select: none;
-
-        &:hover {
-            background-color: $tertiary-bg;
-        }
-
-        &.selected {
-            background-color: black;
-            color: white;
-        }
-    }
-    .empty {
-        text-align: center;
-        color: $text-color-secondary;
-        font-size: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-    }
-}
 .hide-if-child-empty:has(> :empty) {
     display: none;
 }

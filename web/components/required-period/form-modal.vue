@@ -1,9 +1,9 @@
 <template>
     <UModal
         :open="open"
-        @update:open="$emit('update:open', $event)"
         :title="period ? 'Редактирование периода' : 'Создание периода'"
         class="max-w-2xl"
+        @update:open="$emit('update:open', $event)"
     >
         <template #body>
             <div class="flex flex-col gap-4">
@@ -62,8 +62,8 @@
                 <div class="grid grid-cols-2 gap-4 mt-6">
                     <app-button
                         active
-                        @click="$emit('update:open', false)"
                         :disabled="isLoading"
+                        @click="$emit('update:open', false)"
                     >
                         Отмена
                     </app-button>

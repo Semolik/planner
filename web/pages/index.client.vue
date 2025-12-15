@@ -1,12 +1,12 @@
 <template>
     <div class="index-page">
-        <div class="block" v-if="typed_tasks.length">
+        <div v-if="typed_tasks.length" class="block">
             <div class="head">Мои задачи</div>
             <div class="tasks">
                 <nuxt-link
-                    class="task"
                     v-for="typed_task in typed_tasks.slice(0, 2)"
                     :key="typed_task.id"
+                    class="task"
                     :to="`/tasks/${typed_task.parent_task.id}`"
                 >
                     <div class="name">
@@ -28,7 +28,7 @@
             </app-button>
         </div>
         <template v-for="role in sections" :key="role">
-            <div class="block" v-if="notes[role] && notes[role].length">
+            <div v-if="notes[role] && notes[role].length" class="block">
                 <div class="head">
                     {{ blockLabel[role] }}
                 </div>
@@ -38,15 +38,15 @@
                         notes[role][0].text.replaceAll('\n', '<br>') ||
                         'Нет заметки'
                     "
-                ></div>
-                <div class="files" v-if="notes[role][0].files?.length">
+                />
+                <div v-if="notes[role][0].files?.length" class="files">
                     <a
+                        v-for="(file, idx) in notes[role][0].files"
+                        :key="idx"
                         :href="file.url"
                         class="file-link"
                         target="_blank"
                         download
-                        v-for="(file, idx) in notes[role][0].files"
-                        :key="idx"
                     >
                         {{ file.name || file.file_name }}
                     </a>
@@ -61,8 +61,8 @@
                 </app-button>
             </div>
             <div
-                class="block create"
                 v-else-if="authStore.isAdmin"
+                class="block create"
                 @click="
                     selectedRole = role;
                     createNoteModalOpen = true;
@@ -74,8 +74,8 @@
     </div>
 
     <UModal
-        v-model:open="createNoteModalOpen"
         v-if="selectedRole"
+        v-model:open="createNoteModalOpen"
         :title="modalTitle"
     >
         <template #body>
@@ -94,12 +94,12 @@
                     @drop="handleDrop"
                 >
                     <input
+                        ref="fileInput"
                         type="file"
                         multiple
-                        @change="handleFileUpload"
-                        ref="fileInput"
                         hidden
-                    />
+                        @change="handleFileUpload"
+                    >
                     <p @click="$refs.fileInput.click()">
                         Выберите файлы или перетащите их сюда
                     </p>
@@ -129,10 +129,10 @@
                                 ({{ formatBytes(file.size) }})
                             </template>
                             <app-button
-                                @click="removeCurrentFile(file.id)"
                                 red
                                 active
                                 mini
+                                @click="removeCurrentFile(file.id)"
                             >
                                 Удалить
                             </app-button>
@@ -146,11 +146,11 @@
                         Сохранить
                     </app-button>
                     <app-button
+                        v-if="isEditing"
                         active
                         red
                         mini
                         @click="deleteNote"
-                        v-if="isEditing"
                     >
                         Удалить
                     </app-button>

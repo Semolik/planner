@@ -1,11 +1,12 @@
 <template>
-    <div :class="['results', { group }]" v-auto-animate>
+    <div v-auto-animate :class="['results', { group }]">
         <list-item
             v-for="(item, index) in items"
             :key="index"
             :name="getName(item)"
             class="card"
             :to="linkBuilder && linkBuilder(item)"
+            :color="itemColor"
             @click="
                 () => {
                     if (onItemClick) {
@@ -13,7 +14,6 @@
                     }
                 }
             "
-            :color="itemColor"
         >
             <template #prepend>
                 <slot name="prepend" :item="item" />

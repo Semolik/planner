@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { routesNames } from "@typed-router";
 import { h, resolveComponent, ref } from "vue";
+import { useInfiniteScroll } from "@vueuse/core";
+import type { TableColumn } from "@nuxt/ui";
+import { UsersService, type UserReadWithEmail, UserRole } from "~/client";
 definePageMeta({
     middleware: ["admin"],
     layout: "no-padding",
 });
-import { useInfiniteScroll } from "@vueuse/core";
-import type { TableColumn } from "@nuxt/ui";
-import { UsersService, type UserReadWithEmail, UserRole } from "~/client";
 useHead({
     title: "Пользователи",
 });

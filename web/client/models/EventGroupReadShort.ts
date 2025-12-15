@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { TaskReadShortWithoutEvent } from './TaskReadShortWithoutEvent';
 export type EventGroupReadShort = {
     name: string;
     description: string;
@@ -11,5 +12,6 @@ export type EventGroupReadShort = {
     events_count: number;
     period_start?: (string | null);
     period_end?: (string | null);
+    aggregate_task?: (TaskReadShortWithoutEvent | null);
 };
 

@@ -11,8 +11,8 @@ from pydantic import Field
 class EventBase(BaseModel):
     name: str = Field(..., min_length=1, strip_whitespace=True)
     date: date
-    start_time: time
-    end_time: time
+    start_time: time | None
+    end_time: time | None
     name_approved: bool = False
     location: str
     link: str
@@ -24,20 +24,26 @@ class EventBase(BaseModel):
 
 class EventUpdate(EventBase):
     level_id: uuid.UUID
+    use_in_pgas: bool
 
 
-class EventCreate(EventUpdate):
-    photographer_description: str
+class PublicationTypedTasksParams(BaseModel):
     copywriter_description: str
     designer_description: str
-    photographers_deadline: date | None = None
     copywriters_deadline: date | None = None
     designers_deadline: date | None = None
+
+
+class EventCreate(EventUpdate, PublicationTypedTasksParams):
+    photographers_deadline: date
+    photographer_description: str | None = None
+    aggregate_task: bool = False
 
 
 class TaskBase(BaseModel):
     event_id: Optional[uuid.UUID] = None
     name: str
+    use_in_pgas: bool
 
 
 class TaskStateBase(UserReadShort):
@@ -57,8 +63,20 @@ class EventGroupBase(BaseModel):
     link: str
 
 
+class GroupPublicationTypedTasksParams(PublicationTypedTasksParams):
+    copywriters_deadline: date
+
+
 class EventGroupCreate(EventGroupBase):
-    pass
+    aggregate_task_params: GroupPublicationTypedTasksParams | None
+
+
+class TaskReadShortWithoutEvent(TaskBase):
+    id: uuid.UUID
+    all_typed_tasks_completed: bool
+
+    class Config:
+        from_attributes = True
 
 
 class EventGroupReadShort(EventGroupBase):
@@ -66,6 +84,7 @@ class EventGroupReadShort(EventGroupBase):
     events_count: int
     period_start: date | None = None
     period_end: date | None = None
+    aggregate_task: TaskReadShortWithoutEvent | None = None
 
     class Config:
         from_attributes = True
@@ -122,6 +141,7 @@ class TypedTaskState(UpdateTypedTaskState):
 
 class UpdateTypedTask(BaseModel):
     description: str
+    name: str | None
     link: str
     for_single_user: bool
     due_date: date
@@ -134,6 +154,7 @@ class CreateTypedTask(UpdateTypedTask):
 class TaskCreate(BaseModel):
     name: str
     typed_tasks: dict[UserRole, UpdateTypedTask | None] = {}
+    use_in_pgas: bool
 
 
 class TypedTaskRead(CreateTypedTask):
@@ -144,11 +165,6 @@ class TypedTaskRead(CreateTypedTask):
 
     class Config:
         from_attributes = True
-
-
-class TaskReadShortWithoutEvent(TaskBase):
-    id: uuid.UUID
-    all_typed_tasks_completed: bool
 
 
 class TaskReadShort(TaskReadShortWithoutEvent):
@@ -166,6 +182,7 @@ class TaskRead(TaskReadShort):
     typed_tasks: List[TypedTaskRead]
     images: List[ImageInfo]
     files: List[File]
+    group: EventGroupReadShort | None = None
 
     class Config:
         from_attributes = True
@@ -187,6 +204,7 @@ class EventFullInfo(EventRead):
 
 class EventGroupRead(EventGroupReadShort):
     events: List[EventFullInfo]
+    aggregate_task: TaskReadShortWithoutEvent | None = None
 
     class Config:
         from_attributes = True

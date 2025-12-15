@@ -1,12 +1,12 @@
 <template>
-    <user-statistics :userId="authStore.userData?.id" />
+    <user-statistics :user-id="authStore.userData?.id" />
 
 </template>
 
 <script setup>
+import { useAuthStore } from "~/stores/auth";
 definePageMeta({
     layout: "no-padding",
 });
-import { useAuthStore } from "~/stores/auth";
 const authStore = useAuthStore();
 </script>

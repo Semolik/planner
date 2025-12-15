@@ -4,13 +4,13 @@
             <div v-for="(label, role) in labels" :key="role" class="task-role">
                 <div class="header">
                     <div class="label">{{ label[0] }}</div>
-                    <div class="badges" v-if="typedTasks[role]">
+                    <div v-if="typedTasks[role]" class="badges">
                         <div class="badge">
                             дедлайн {{ typedTasks[role].due_date_string }}
                         </div>
                         <div
-                            class="badge"
                             v-if="typedTasks[role].task_states.length > 0"
+                            class="badge"
                         >
                             {{ typedTasks[role].task_states.length }}
                             {{
@@ -27,15 +27,15 @@
                     </div>
                     <div class="actions">
                         <div
-                            class="button"
                             v-if="!!typedTasks[role]"
+                            class="button"
                             @click="openEditModal(typedTasks[role])"
                         >
                             <Icon name="material-symbols:edit" />
                         </div>
                         <div
-                            class="button remove"
                             v-if="!!typedTasks[role]"
+                            class="button remove"
                             @click="
                                 () => {
                                     typedTaskToRemove = typedTasks[role];
@@ -46,8 +46,8 @@
                             <Icon name="material-symbols:delete" />
                         </div>
                         <div
-                            class="button"
                             v-else
+                            class="button"
                             @click="openCreateModal(role)"
                         >
                             <Icon name="material-symbols:add" />
@@ -98,6 +98,11 @@
                     label="Для одного исполнителя"
                     color="neutral"
                     variant="card"
+                />
+                <app-input
+                    v-model="form.name"
+                    label="Название подзадачи"
+                    placeholder="Например: Обложка на альбом"
                 />
                 <app-input
                     v-model="form.dueDate"
@@ -169,6 +174,7 @@ const isEditing = ref(false);
 const currentTypedTask = ref(null);
 
 const form = ref({
+    name: "",
     description: "",
     dueDate: "",
     forSingleUser: false,
@@ -180,12 +186,14 @@ watch([() => editModalOpened.value, currentEditRole], ([isOpen, role]) => {
     if (!isOpen) return;
 
     form.value = {
+        name: "",
         description: "",
         dueDate: "",
         forSingleUser: false,
     };
 
     if (isEditing.value && currentTypedTask.value) {
+        form.value.name = currentTypedTask.value.name || "";
         form.value.description = currentTypedTask.value.description || "";
         form.value.dueDate = currentTypedTask.value
             ? currentTypedTask.value.due_date.split("T")[0]
@@ -205,6 +213,7 @@ watch([() => editModalOpened.value, currentEditRole], ([isOpen, role]) => {
                     appSettingsStore.settings.photographers_deadline
                 );
                 form.value.forSingleUser = false;
+                form.value.name = "Сдача репортажа";
                 break;
             case UserRole.COPYWRITER:
                 form.value.dueDate = addDaysToDate(
@@ -212,6 +221,7 @@ watch([() => editModalOpened.value, currentEditRole], ([isOpen, role]) => {
                     appSettingsStore.settings.copywriters_deadline
                 );
                 form.value.forSingleUser = true;
+                form.value.name = task.value.event ? `Текст публикации к мероприятию "${task.value.event.name}"` : "Текст публикации";
                 break;
             case UserRole.DESIGNER:
                 form.value.dueDate = addDaysToDate(
@@ -220,6 +230,7 @@ watch([() => editModalOpened.value, currentEditRole], ([isOpen, role]) => {
                         appSettingsStore.settings.designers_deadline
                 );
                 form.value.forSingleUser = false;
+                form.value.name = task.value.event ? `Обложка на альбом "${task.value.event.name}"` : "Обложка на альбом";
                 break;
         }
     }
@@ -227,6 +238,7 @@ watch([() => editModalOpened.value, currentEditRole], ([isOpen, role]) => {
 
 const hasFormChanged = computed(() => {
     return (
+        form.value.name !== initialFormState.value.name ||
         form.value.description !== initialFormState.value.description ||
         form.value.dueDate !== initialFormState.value.dueDate ||
         form.value.forSingleUser !== initialFormState.value.forSingleUser
@@ -235,9 +247,10 @@ const hasFormChanged = computed(() => {
 
 const formValid = computed(() => {
     const isValidDueDate = form.value.dueDate !== "";
+    const isValidName = form.value.name.trim().length > 0;
     return isEditing.value
-        ? isValidDueDate && hasFormChanged.value
-        : isValidDueDate;
+        ? isValidDueDate && isValidName && hasFormChanged.value
+        : isValidDueDate && isValidName;
 });
 
 function openCreateModal(role) {
@@ -266,6 +279,7 @@ async function createTypedTask() {
                 task.value.id,
                 {
                     task_type: currentEditRole.value,
+                    name: form.value.name,
                     description: form.value.description,
                     link: "",
                     for_single_user: form.value.forSingleUser,
@@ -291,6 +305,7 @@ async function updateTypedTask() {
             await TypedTasksService.updateTypedTaskTasksTypedTasksTypedTaskIdPut(
                 currentTypedTask.value.id,
                 {
+                    name: form.value.name,
                     description: form.value.description,
                     link: "",
                     for_single_user: form.value.forSingleUser,

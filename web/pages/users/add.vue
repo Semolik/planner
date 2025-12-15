@@ -1,5 +1,5 @@
 <template>
-    <user-form createMode @created="onCreated" />
+    <user-form create-mode @created="onCreated" />
 </template>
 <script setup>
 import { routesNames } from "@typed-router";

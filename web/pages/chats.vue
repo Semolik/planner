@@ -1,6 +1,6 @@
 <template>
     <app-form full-height headline="Настройки чатов">
-        <div class="flex gap-2" v-if="status.vk_token_set">
+        <div v-if="status.vk_token_set" class="flex gap-2">
             <app-input
                 model-value="установлен"
                 label="Статус токена ВКонтакте"
@@ -9,23 +9,23 @@
             />
             <app-button
                 :active="!removeToken"
+                red
+                class="remove-button"
                 @click="
                     () => {
                         removeToken = true;
                     }
                 "
-                red
-                class="remove-button"
             >
                 <Icon name="material-symbols:delete" />
             </app-button>
         </div>
         <app-input
+            v-else
             v-model="token"
             label="Токен ВКонтакте"
             required
             white
-            v-else
         />
         <template v-if="status.vk_token_set">
             <UCheckbox
@@ -35,7 +35,7 @@
                 color="neutral"
             />
             <template v-if="status.vk_chat_photographers_enabled">
-                <div class="chat" v-if="status.photographers_chat">
+                <div v-if="status.photographers_chat" class="chat">
                     <div class="name">
                         {{ status.photographers_chat.name }}
                     </div>
@@ -49,7 +49,7 @@
                         }}
                     </div>
                 </div>
-                <div class="chat empty" v-else>Чат не подключен</div>
+                <div v-else class="chat empty">Чат не подключен</div>
             </template>
             <UCheckbox
                 v-model="vk_chat_copywriters_enabled"
@@ -58,7 +58,7 @@
                 color="neutral"
             />
             <template v-if="status.vk_chat_copywriters_enabled">
-                <div class="chat" v-if="status.copywriters_chat">
+                <div v-if="status.copywriters_chat" class="chat">
                     <div class="name">
                         {{ status.copywriters_chat.name }}
                     </div>
@@ -72,7 +72,7 @@
                         }}
                     </div>
                 </div>
-                <div class="chat empty" v-else>Чат не подключен</div></template
+                <div v-else class="chat empty">Чат не подключен</div></template
             >
             <UCheckbox
                 v-model="vk_chat_designers_enabled"
@@ -81,7 +81,7 @@
                 color="neutral"
             />
             <template v-if="status.vk_chat_designers_enabled">
-                <div class="chat" v-if="status.designers_chat">
+                <div v-if="status.designers_chat" class="chat">
                     <div class="name">
                         {{ status.designers_chat.name }}
                     </div>
@@ -96,7 +96,7 @@
                         }}
                     </div>
                 </div>
-                <div class="chat empty" v-else>Чат не подключен</div>
+                <div v-else class="chat empty">Чат не подключен</div>
             </template>
         </template>
         <app-button :active="saveButtonActive" @click="handleSave">

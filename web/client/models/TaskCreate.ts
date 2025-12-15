@@ -6,5 +6,6 @@ import type { UpdateTypedTask } from './UpdateTypedTask';
 export type TaskCreate = {
     name: string;
     typed_tasks?: Record<string, (UpdateTypedTask | null)>;
+    use_in_pgas: boolean;
 };
 

@@ -27,7 +27,11 @@ async def get_actual_events(db=Depends(get_async_session)):
     "", response_model=EventFullInfo, dependencies=[Depends(current_superuser)]
 )
 async def create_event(event: EventCreate, db=Depends(get_async_session)):
-    if event.start_time > event.end_time:
+    if (
+        (event.start_time is not None)
+        and (event.end_time is not None)
+        and event.start_time > event.end_time
+    ):
         raise HTTPException(
             status_code=400, detail="Время начала не может быть позже времени окончания"
         )
@@ -40,6 +44,23 @@ async def create_event(event: EventCreate, db=Depends(get_async_session)):
         group = await EventsCRUD(db).get_event_group(event.group_id)
         if group is None:
             raise HTTPException(status_code=404, detail="Группа мероприятий не найдена")
+        if event.aggregate_task:
+            if group.aggregate_task_id is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Группа мероприятий не имеет агрегированной задачи",
+                )
+            if event.copywriters_deadline or event.designers_deadline:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Нельзя задать дедлайны для копирайтеров и дизайнеров при создании мероприятия с агрегированной задачей",
+                )
+
+    elif event.aggregate_task:
+        raise HTTPException(
+            status_code=400,
+            detail="Нельзя создать мероприятие с агрегированной задачей без группы мероприятий",
+        )
     level = await EventsCRUD(db).get_event_level(level_id=event.level_id)
     if level is None:
         raise HTTPException(status_code=404, detail="Уровень мероприятия не найден")
@@ -60,31 +81,35 @@ async def create_event(event: EventCreate, db=Depends(get_async_session)):
     task = await TasksCRUD(db).create_task(
         name="Освещение мероприятия",
         event_id=db_event.id,
+        use_in_pgas=True,
     )
-    if event.photographers_deadline:
-        await TasksCRUD(db).create_typed_task(
-            task_id=task.id,
-            task_type=UserRole.PHOTOGRAPHER,
-            description=event.photographer_description,
-            for_single_user=False,
-            due_date=event.photographers_deadline,
-        )
-    if event.copywriters_deadline:
-        await TasksCRUD(db).create_typed_task(
-            task_id=task.id,
-            task_type=UserRole.COPYWRITER,
-            description=event.copywriter_description,
-            for_single_user=True,
-            due_date=event.copywriters_deadline,
-        )
-    if event.designers_deadline:
-        await TasksCRUD(db).create_typed_task(
-            task_id=task.id,
-            task_type=UserRole.DESIGNER,
-            description=event.designer_description,
-            for_single_user=True,
-            due_date=event.designers_deadline,
-        )
+    if not event.aggregate_task:
+        if event.copywriters_deadline:
+            await TasksCRUD(db).create_typed_task(
+                task_id=task.id,
+                task_type=UserRole.COPYWRITER,
+                name=f"Публикация по группе мероприятий '{db_event.name}'",
+                description=event.copywriter_description,
+                for_single_user=True,
+                due_date=event.copywriters_deadline,
+            )
+        if event.designers_deadline:
+            await TasksCRUD(db).create_typed_task(
+                task_id=task.id,
+                task_type=UserRole.DESIGNER,
+                name=f"Обложка на общий альбом по мероприятию '{db_event.name}'",
+                description=event.designer_description,
+                for_single_user=True,
+                due_date=event.designers_deadline,
+            )
+    await TasksCRUD(db).create_typed_task(
+        task_id=task.id,
+        task_type=UserRole.PHOTOGRAPHER,
+        description=event.photographer_description,
+        name=f"Съемка мероприятия '{db_event.name}'",
+        for_single_user=False,
+        due_date=event.photographers_deadline,
+    )
 
     return await EventsCRUD(db).get_full_event(db_event.id)
 
@@ -157,6 +182,9 @@ async def update_event(
         group_id=event.group_id,
         link=event.link,
     )
+    if db_event.task.use_in_pgas != event.use_in_pgas:
+        db_event.task.use_in_pgas = event.use_in_pgas
+        await db.commit()
     return await EventsCRUD(db).get_full_event(db_event.id)
 
 

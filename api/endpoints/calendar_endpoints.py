@@ -51,7 +51,7 @@ async def get_calendar(
                 day = item.due_date
                 item_type = "task"
             elif isinstance(item, TypedTask):
-                day = item.due_date.date() if item.due_date else None
+                day = item.due_date
                 item_type = "typed_task"
             elif isinstance(item, Event):
                 day = item.date

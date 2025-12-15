@@ -17,11 +17,11 @@ class EventsCRUD(BaseCRUD):
     async def create_event(
         self,
         name: str,
-        date: datetime,
+        date: date,
         location: str,
         organizer: str,
-        start_time: datetime,
-        end_time: datetime,
+        start_time: time,
+        end_time: time,
         name_approved: bool,
         required_photographers: int,
         description: str,
@@ -104,9 +104,14 @@ class EventsCRUD(BaseCRUD):
         description: str = None,
         organizer: str = None,
         link: str = None,
+        aggregate_task_id: uuid.UUID | None = None,
     ) -> EventGroup:
         event_group = EventGroup(
-            name=name, description=description, organizer=organizer, link=link
+            name=name,
+            description=description,
+            organizer=organizer,
+            link=link,
+            aggregate_task_id=aggregate_task_id,
         )
         return await self.create(event_group)
 
@@ -114,7 +119,10 @@ class EventsCRUD(BaseCRUD):
         return (
             select(EventGroup)
             .where(EventGroup.id == group_id)
-            .options(selectinload(EventGroup.events).options(self._get_event_options()))
+            .options(
+                selectinload(EventGroup.events).options(self._get_event_options()),
+                selectinload(EventGroup.aggregate_task),
+            )
         )
 
     async def get_event_group(self, group_id: uuid.UUID) -> EventGroup:
@@ -169,12 +177,22 @@ class EventsCRUD(BaseCRUD):
         page: int = 1,
         per_page: int = 10,
         filter: Literal["all", "active", "passed"] = "all",
+        with_aggregate_task: bool | None = None,
     ) -> list[EventGroup]:
         end = page * per_page
         start = end - per_page
         search_query = select(EventGroup)
         if query:
             search_query = search_query.where(EventGroup.name.ilike(f"%{query}%"))
+        if with_aggregate_task is not None:
+            if with_aggregate_task:
+                search_query = search_query.where(
+                    EventGroup.aggregate_task_id.isnot(None)
+                )
+            else:
+                search_query = search_query.where(
+                    EventGroup.aggregate_task_id.is_(None)
+                )
         search_query = (
             search_query.order_by(
                 select(Event.date > datetime.now())
@@ -196,7 +214,8 @@ class EventsCRUD(BaseCRUD):
                 .selectinload(Event.task)
                 .selectinload(Task.typed_tasks)
                 .selectinload(TypedTask.task_states)
-                .selectinload(TaskState.user)
+                .selectinload(TaskState.user),
+                selectinload(EventGroup.aggregate_task),
             )
         )
 

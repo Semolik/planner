@@ -1,6 +1,6 @@
 <template>
     <app-form full-height headline="Создание задачи">
-        <div class="flex flex-col gap-2" v-auto-animate>
+        <div v-auto-animate class="flex flex-col gap-2">
             <app-input v-model="name" label="Название задачи" required white />
 
             <div v-for="(label, role) in labels" :key="role" class="flex gap-2">

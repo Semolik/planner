@@ -2,8 +2,8 @@
     <page-container header="Tasks">
         <div class="filters">
             <div
-                class="filter-item"
                 v-for="filter in filters"
+                class="filter-item"
                 :class="{ active: filter.active }"
                 @click="selectFilter(filter)"
             >
@@ -11,7 +11,7 @@
                 <span>{{ filter.label }}</span>
             </div>
         </div>
-        <div class="tasks-page" ref="container">
+        <div ref="container" class="tasks-page">
             <div v-if="gridInitialized" ref="scroller" class="scroller">
                 <div class="tasks-grid">
                     <task-card-my

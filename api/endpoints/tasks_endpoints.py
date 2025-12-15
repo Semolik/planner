@@ -53,10 +53,9 @@ async def get_my_tasks(
     db=Depends(get_async_session),
     filter: Literal["all", "active"] = "active",
 ):
-    tasks = await TasksCRUD(db).get_my_tasks(
+    return await TasksCRUD(db).get_my_tasks(
         user_id=current_user.id, filter=filter, page=page
     )
-    return tasks
 
 
 @api_router.get(
@@ -136,6 +135,7 @@ async def create_task(data: TaskCreate, db=Depends(get_async_session)):
     task = await TasksCRUD(db).create_task(
         name=data.name,
         event_id=None,
+        use_in_pgas=data.use_in_pgas,
     )
     for role, typed_task_data in data.typed_tasks.items():
         if typed_task_data is not None:

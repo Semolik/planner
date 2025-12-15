@@ -1,5 +1,5 @@
 <template>
-    <user-statistics :userId="params.user_sid" />
+    <user-statistics :user-id="params.user_sid" />
 </template>
 
 <script setup>

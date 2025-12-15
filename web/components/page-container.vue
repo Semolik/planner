@@ -1,7 +1,7 @@
 <template>
     <div class="page-container" :class="{ 'full-height': fullHeight }">
         <div class="header">
-            <UBreadcrumb :items="items" v-if="items" class="breadcrumb" />
+            <UBreadcrumb v-if="items" :items="items" class="breadcrumb" />
             <slot name="header" />
         </div>
         <div class="content">

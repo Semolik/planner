@@ -17,13 +17,13 @@
                             {{ dateTextFormat(task.event.date) }}
                         </UBadge>
                         <UBadge
+                            v-if="task.event.start_time || task.event.end_time"
                             color="neutral"
                             variant="outline"
                             size="lg"
                             icon="material-symbols:nest-clock-farsight-analog-outline"
                         >
-                            {{ getTime(task.event.start_time) }} -
-                            {{ getTime(task.event.end_time) }}
+                            {{ getTimeRange(task.event.start_time, task.event.end_time) }}
                         </UBadge>
                         <UBadge
                             color="neutral"
@@ -42,9 +42,11 @@
                             {{ getWaitingTime(task.event) }}
                         </UBadge>
                         <UBadge
+                            v-if="task.event.group"
                             color="info"
                             size="lg"
-                            v-if="task.event.group"
+                            class="cursor-pointer"
+                            icon="material-symbols:folder"
                             @click="
                                 () =>
                                     $router.push({
@@ -54,8 +56,6 @@
                                         },
                                     })
                             "
-                            class="cursor-pointer"
-                            icon="material-symbols:folder"
                         >
                             {{ task.event.group.name }}
                         </UBadge>
@@ -84,7 +84,7 @@
                             Пост
                         </UBadge>
                     </div>
-                    <div class="section" v-if="task.event.group?.description">
+                    <div v-if="task.event.group?.description" class="section">
                         <div class="section-head">
                             Описание группы мероприятий
                         </div>
@@ -92,17 +92,17 @@
                             {{ task.event.group.description }}
                         </div>
                     </div>
-                    <div class="section" v-if="task.event.description">
+                    <div v-if="task.event.description" class="section">
                         <div class="section-head">Описание</div>
                         <div class="section-content">
                             {{ task.event.description }}
                         </div>
                     </div>
                     <div
-                        class="section"
                         v-if="
                             task.event.organizer || task.event.group?.organizer
                         "
+                        class="section"
                     >
                         <div class="section-head">Контакт организатора</div>
                         <div class="section-content">
@@ -124,10 +124,51 @@
                         </div>
                     </div>
                 </template>
+                <div v-else-if="task.group" class="badges">
+                    <UBadge
+                        color="info"
+                        size="lg"
+                        class="cursor-pointer"
+                        icon="material-symbols:folder"
+                        @click="
+                            () =>
+                                $router.push({
+                                    name: routesNames.eventsGroupsGroupId,
+                                    params: { group_id: task.group.id },
+                                })
+                        "
+                    >
+                        {{ task.group.name }}
+                    </UBadge>
+                </div>
+                <div v-if="task.event?.group?.aggregate_task" class="section">
+                    <UAlert
+                        color="neutral"
+                        variant="outline"
+                        icon="material-symbols:folder"
+                        title="Одна публикация на несколько мероприятий"
+                        :description="`Это мероприятие входит в группу мероприятий «${task.event.group.name}», для которой создана общая задача публикации.`"
+                        class="border border-dashed"
+                        :actions="[
+                            {
+                          label: 'Перейти к задаче публикации',
+                          color: 'neutral',
+                          variant: 'subtle',
+                          to: {
+                              name: routesNames.tasksTaskId,
+                              params: {
+                                  task_id: task.event.group.aggregate_task.id,
+                              },
+                          },
+                        }
+                        ]"
+                    />
+                </div>
+
                 <div
-                    class="section"
                     v-for="typed_task in typed_tasks"
                     :key="typed_task.id"
+                    class="section"
                 >
                     <div class="section-head">
                         <div class="flex justify-between items-center">
@@ -147,19 +188,19 @@
 
                     <div class="section-content">
                         <div
-                            class="section-description"
                             v-if="typed_task.description"
+                            class="section-description"
                         >
                             {{ typed_task.description }}
                         </div>
                        <div :class="['gap-2', authStore.isAdmin ? 'grid md:grid-cols-2 grid-cols-1' : 'flex flex-col md:flex-row md:flex-wrap']">
                             <app-button
-                                active
-                                :mini="$viewport.isGreaterThan('md')"
                                 v-if="
                                     showTakeInWorkButton &&
                                     !typed_task.has_my_state
                                 "
+                                active
+                                :mini="$viewport.isGreaterThan('md')"
                                 class="w-full"
                                 @click="
                                     () => {
@@ -172,10 +213,10 @@
                                 Взять в работу
                             </app-button>
                             <app-button
+                                v-else-if="typed_task.has_my_state"
                                 active
                                 :mini="$viewport.isGreaterThan('md')"
                                 class="w-full"
-                                v-else-if="typed_task.has_my_state"
                                 outline
                                 @click="
                                     () => {
@@ -188,10 +229,10 @@
                                 Отказаться от задачи
                             </app-button>
                             <app-button
+                                v-if="authStore.isAdmin"
                                 active
                                 :mini="$viewport.isGreaterThan('md')"
                                 class="w-full"
-                                v-if="authStore.isAdmin"
                                 @click="
                                     () => {
                                         selectedTypedTask = typed_task;
@@ -203,18 +244,18 @@
                             </app-button>
                         </div>
 
-                        <div class="users" v-auto-animate>
+                        <div v-auto-animate class="users">
                             <div
-                                class="user-item"
                                 v-for="status in typed_task.task_states"
                                 :key="status.user.id"
+                                class="user-item"
                                 @click="() => openStateModal(status)"
                             >
                                 <div class="user-item-info">
                                     <div class="name">
                                         {{ useFullName(status.user) }}
                                     </div>
-                                    <div class="period" v-if="status.period">
+                                    <div v-if="status.period" class="period">
                                         {{
                                             status.period.period_start
                                                 .split(":")
@@ -231,20 +272,20 @@
                                     </div>
                                     <div :class="['state', status.state]">
                                         <Icon
-                                            name="material-symbols:check"
                                             v-if="
                                                 status.state === State.COMPLETED
                                             "
+                                            name="material-symbols:check"
                                         />
                                         <Icon
-                                            name="material-symbols:hourglass-top"
                                             v-else-if="
                                                 status.state === State.PENDING
                                             "
+                                            name="material-symbols:hourglass-top"
                                         />
                                         <Icon
-                                            name="material-symbols:close-rounded"
                                             v-else
+                                            name="material-symbols:close-rounded"
                                         />
                                     </div>
                                 </div>
@@ -252,7 +293,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="section" v-if="task.event">
+                <div v-if="task.event" class="section">
                     <div class="section-head">
                         Уровень мероприятия: {{ task.event.level }}
                     </div>
@@ -290,19 +331,19 @@
         v-model:active="selectUserModalActive"
         :filter-role="selectedTypedTask.task_type"
         :exclude-users="excludeUsers"
+        exclude-user-badge-text="Уже назначен"
         @select="
             (user) => {
                 selectedUser = user;
                 setMeToTaskModalActive = true;
             }
         "
-        exclude-user-badge-text="Уже назначен"
     />
 
     <UModal
+        v-if="selectedTypedTask"
         v-model:open="setMeToTaskModalActive"
         title="Назначение задачи"
-        v-if="selectedTypedTask"
     >
         <template #body>
             <div class="text-md mb-4">
@@ -321,7 +362,7 @@
             <template
                 v-if="
                     selectedTypedTask.task_type === UserRole.PHOTOGRAPHER &&
-                    task.event
+                    hasEventTimeRange
                 "
             >
                 <div class="mb-4">
@@ -344,6 +385,7 @@
 
             <div class="grid grid-cols-2 gap-2 mt-4">
                 <app-button
+                    :active="submitAssignmentButtonActive"
                     @click="
                         async () => {
                             await setUserToTypedTask(
@@ -352,13 +394,12 @@
                             );
                         }
                     "
-                    :active="submitAssignmentButtonActive"
                 >
                     Подтвердить
                 </app-button>
                 <app-button
-                    @click="setMeToTaskModalActive = false"
                     class="cursor-pointer"
+                    @click="setMeToTaskModalActive = false"
                 >
                     Отмена
                 </app-button>
@@ -397,8 +438,8 @@
                     Подтвердить
                 </app-button>
                 <app-button
-                    @click="removeMeFromTaskModalActive = false"
                     class="cursor-pointer"
+                    @click="removeMeFromTaskModalActive = false"
                 >
                     Отмена
                 </app-button>
@@ -406,7 +447,7 @@
         </template>
     </UModal>
     <UModal v-model:open="stateModalOpened" title="Статус подзадачи">
-        <template #body v-if="selectedState">
+        <template v-if="selectedState" #body>
             <div class="flex flex-col gap-2">
                 <div class="text-md">
                     <strong>Пользователь:</strong>
@@ -422,17 +463,13 @@
                     <div class="flex flex-col gap-1">
                         <strong>Период:</strong>
                         <UTabs
-                            :model-value="isFullEventTime ? 'full' : 'period'"
-                            @update:model-value="
-                                (value) => {
-                                    isFullEventTime = value === 'full';
-                                }
-                            "
-                            :content="false"
                             v-if="
                                 getStateType(selectedState) ===
-                                UserRole.PHOTOGRAPHER
+                                UserRole.PHOTOGRAPHER &&
+                                hasEventTimeRange
                             "
+                            :model-value="isFullEventTime ? 'full' : 'period'"
+                            :content="false"
                             :items="[
                                 {
                                     label: 'На всё время мероприятия',
@@ -441,11 +478,16 @@
                                 { label: 'Выбрать период', value: 'period' },
                             ]"
                             color="neutral"
+                            @update:model-value="
+                                (value) => {
+                                    isFullEventTime = value === 'full';
+                                }
+                            "
                         />
                     </div>
 
                     <TimeRangeSlider
-                        v-if="!isFullEventTime && task.event"
+                        v-if="!isFullEventTime && hasEventTimeRange"
                         v-model="selectedRange"
                         :min-time="task.event.start_time"
                         :max-time="task.event.end_time"
@@ -469,21 +511,21 @@
                     </div>
                 </template>
                 <app-button
-                    :active="updateStateButtonActive"
-                    @click="updateState"
                     v-if="
                         authStore.isAdmin ||
                         selectedState.user.id === userData.id
                         "
+                    :active="updateStateButtonActive"
+                    @click="updateState"
                 >
                     Обновить статус
                 </app-button>
                 <app-button
-                    active
                     v-if="
                         authStore.isAdmin ||
                         selectedState.user.id === userData.id
                     "
+                    active
                     @click="() => showDeleteStateModal(selectedState)"
                 >
                     {{
@@ -511,8 +553,8 @@
                     Подтвердить
                 </app-button>
                 <app-button
-                    @click="deleteModalOpened = false"
                     class="cursor-pointer"
+                    @click="deleteModalOpened = false"
                 >
                     Отмена
                 </app-button>
@@ -541,8 +583,13 @@ const isFullEventTime = ref(true);
 
 const { task_id } = useRoute().params;
 const task = ref(await TasksService.getTaskByIdTasksTaskIdGet(task_id));
+
+const hasEventTimeRange = computed(() => {
+    return task.value.event?.start_time && task.value.event?.end_time;
+});
+
 const selectedRange = ref(
-    task.value.event
+    hasEventTimeRange.value
         ? [
               timeToMinutes(task.value.event.start_time),
               timeToMinutes(task.value.event.end_time),
@@ -624,7 +671,7 @@ const updateState = async () => {
 watch(
     isFullEventTime,
     (newValue) => {
-        if (!task.value.event) return;
+        if (!hasEventTimeRange.value) return;
         if (newValue) {
             selectedRange.value = [
                 timeToMinutes(task.value.event.start_time),
@@ -637,7 +684,7 @@ watch(
     }
 );
 const resetIfFillPeriod = () => {
-    if (!task.value.event) return;
+    if (!hasEventTimeRange.value) return;
     if (
         selectedRange.value[0] === timeToMinutes(task.value.event.start_time) &&
         selectedRange.value[1] === timeToMinutes(task.value.event.end_time)
@@ -658,6 +705,7 @@ const updateStateButtonActive = computed(() => {
 
     if (
         hasPeriod &&
+        hasEventTimeRange.value &&
         selectedRange.value[0] === timeToMinutes(task.value.event.start_time) &&
         selectedRange.value[1] === timeToMinutes(task.value.event.end_time)
     ) {
@@ -780,7 +828,7 @@ const showDeleteStateModal = (selectedState) => {
 };
 
 const submitAssignmentButtonActive = computed(() => {
-    if (!isFullEventTime.value && task.value.event) {
+    if (!isFullEventTime.value && hasEventTimeRange.value) {
         if (
             selectedRange.value[0] ===
                 timeToMinutes(task.value.event.start_time) &&
@@ -958,6 +1006,16 @@ const getTime = (time) => {
     const [hours, minutes] = time.split(":");
     return `${hours}:${minutes}`;
 };
+
+const getTimeRange = (startTime, endTime) => {
+    const start = getTime(startTime);
+    const end = getTime(endTime);
+    if (start && end) return `${start} - ${end}`;
+    if (start) return `с ${start}`;
+    if (end) return `до ${end}`;
+    return "";
+};
+
 function timeToMinutes(timeStr) {
     const [hours, minutes] = timeStr.split(":").map(Number);
     return hours * 60 + minutes;

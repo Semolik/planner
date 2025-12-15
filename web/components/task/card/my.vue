@@ -11,7 +11,7 @@
             <div class="name">
                 {{ task.event ? task.event.name : task.name }}
             </div>
-            <div class="date" v-if="task.event">
+            <div v-if="task.event" class="date">
                 {{ getDateString(task.event.date) }}
             </div>
         </div>

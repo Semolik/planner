@@ -15,6 +15,7 @@ from api.models.user_models import *  # noqa
 from api.models.app_models import *  # noqa
 from api.models.audit_models import *  # noqa
 from api.models.events_models import *  # noqa
+from api.models.files_models import *  # noqa
 from api.models.home_models import *  # noqa
 from api.models.vk_models import *  # noqa
 

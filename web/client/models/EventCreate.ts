@@ -3,10 +3,14 @@
 /* tslint:disable */
 /* eslint-disable */
 export type EventCreate = {
+    copywriter_description: string;
+    designer_description: string;
+    copywriters_deadline?: (string | null);
+    designers_deadline?: (string | null);
     name: string;
     date: string;
-    start_time: string;
-    end_time: string;
+    start_time: (string | null);
+    end_time: (string | null);
     name_approved?: boolean;
     location: string;
     link: string;
@@ -15,11 +19,9 @@ export type EventCreate = {
     group_id?: (string | null);
     description: string;
     level_id: string;
-    photographer_description: string;
-    copywriter_description: string;
-    designer_description: string;
-    photographers_deadline?: (string | null);
-    copywriters_deadline?: (string | null);
-    designers_deadline?: (string | null);
+    use_in_pgas: boolean;
+    photographers_deadline: string;
+    photographer_description?: (string | null);
+    aggregate_task?: boolean;
 };
 

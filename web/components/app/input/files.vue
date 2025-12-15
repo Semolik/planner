@@ -9,21 +9,21 @@
             @click="triggerFileInput"
         >
             <input
-                type="file"
                 ref="fileInput"
-                @change="onFileChange"
+                type="file"
                 :multiple="multiple"
                 class="file-input"
                 :accept="accept"
-            />
+                @change="onFileChange"
+            >
 
             <!-- Single-file mode -->
             <template v-if="!multiple">
                 <div v-if="modelValue.length === 0" class="upload-placeholder">
                     <Icon
+                        v-if="!min"
                         size="24px"
                         name="material-symbols:upload"
-                        v-if="!min"
                     />
                     <p>Перетащите файл сюда или нажмите, чтобы выбрать</p>
                 </div>
@@ -34,8 +34,8 @@
                         }})
                     </span>
                     <button
-                        @click.stop="removeFile(0)"
                         class="remove-btn-hover"
+                        @click.stop="removeFile(0)"
                     >
                         <Icon size="16px" name="material-symbols:delete" />
                     </button>
@@ -46,9 +46,9 @@
             <template v-else>
                 <div v-if="modelValue.length === 0" class="upload-placeholder">
                     <Icon
+                        v-if="!min"
                         size="24px"
                         name="material-symbols:upload"
-                        v-if="!min"
                     />
                     <p>
                         {{

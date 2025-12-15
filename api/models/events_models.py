@@ -17,6 +17,7 @@ from sqlalchemy import (
     Time,
     select,
     case,
+    text,
 )
 from sqlalchemy.sql import func
 from api.models.files_models import File, Image
@@ -44,8 +45,8 @@ class Event(Base, AuditableMixin):
     name: Mapped[str] = mapped_column(String, nullable=False)
     name_approved: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     date: Mapped[date] = mapped_column(Date, nullable=False)
-    start_time: Mapped[datetime.time] = mapped_column(Time, nullable=False)
-    end_time: Mapped[datetime.time] = mapped_column(Time, nullable=False)
+    start_time: Mapped[time | None] = mapped_column(Time, nullable=True)
+    end_time: Mapped[time | None] = mapped_column(Time, nullable=True)
     location: Mapped[str] = mapped_column(String, nullable=False)
     organizer: Mapped[str] = mapped_column(String, nullable=False, default="")
     link: Mapped[str] = mapped_column(Text, nullable=False, default="")
@@ -66,7 +67,12 @@ class Event(Base, AuditableMixin):
     is_passed = column_property(
         case(
             (date < func.current_date(), True),
-            (date == func.current_date(), end_time < func.current_time()),
+            (
+                (date == func.current_date())
+                & end_time.isnot(None)
+                & (end_time < func.current_time()),
+                True,
+            ),
             else_=False,
         )
     )
@@ -126,6 +132,17 @@ class EventGroup(Base, AuditableMixin):
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     organizer: Mapped[str] = mapped_column(String, nullable=False, default="")
     link: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    aggregate_task_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tasks.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    aggregate_task = relationship(
+        "Task",
+        foreign_keys=[aggregate_task_id],
+        uselist=False,
+        single_parent=True,
+    )
     events = relationship(
         "Event",
         back_populates="group",
@@ -178,6 +195,16 @@ class Task(Base):
         back_populates="parent_task",
         cascade="all, delete-orphan",
         single_parent=True,
+    )
+    group = relationship(
+        "EventGroup",
+        foreign_keys=[EventGroup.aggregate_task_id],
+        primaryjoin="Task.id==EventGroup.aggregate_task_id",
+        uselist=False,
+        viewonly=True,
+    )
+    use_in_pgas: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=text("true")
     )
     files = relationship(
         File, secondary="task_files", overlaps="task_files", viewonly=True
@@ -254,11 +281,13 @@ class TypedTask(Base, AuditableMixin):
     task_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False
     )
+    name: Mapped[str | None] = mapped_column(String, nullable=True)
+
     task_type: Mapped[UserRole] = mapped_column(Enum(UserRole), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     for_single_user: Mapped[bool] = mapped_column(Boolean, nullable=False)
     link: Mapped[str] = mapped_column(Text, nullable=False, default="")
-    due_date: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False)
+    due_date: Mapped[date] = mapped_column(Date, nullable=False)
     due_date_passed = column_property(case((due_date < func.now(), True), else_=False))
     parent_task = relationship(
         "Task",

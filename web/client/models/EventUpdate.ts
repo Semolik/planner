@@ -5,8 +5,8 @@
 export type EventUpdate = {
     name: string;
     date: string;
-    start_time: string;
-    end_time: string;
+    start_time: (string | null);
+    end_time: (string | null);
     name_approved?: boolean;
     location: string;
     link: string;
@@ -15,5 +15,6 @@ export type EventUpdate = {
     group_id?: (string | null);
     description: string;
     level_id: string;
+    use_in_pgas: boolean;
 };
 

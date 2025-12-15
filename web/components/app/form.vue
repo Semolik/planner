@@ -8,25 +8,25 @@
         ]"
     >
         <div class="form-top">
-            <slot name="top"></slot>
+            <slot name="top"/>
         </div>
         <div class="form-wrapper">
             <form class="form" v-bind="$attrs" @submit.prevent="emit('submit')">
-                <div class="headline" v-if="headline">
+                <div v-if="headline" class="headline">
                     <div class="headline-text">
                         {{ headline }}
                     </div>
-                    <slot name="headline"></slot>
+                    <slot name="headline"/>
                     <div class="headline-md">
-                        <slot name="headline-md"></slot>
+                        <slot name="headline-md"/>
                     </div>
                 </div>
-                <div class="description" v-if="description">
+                <div v-if="description" class="description">
                     {{ description }}
                 </div>
-                <slot></slot>
+                <slot/>
             </form>
-            <div class="bottom-form"><slot name="bottom"></slot></div>
+            <div class="bottom-form"><slot name="bottom"/></div>
         </div>
     </div>
 </template>

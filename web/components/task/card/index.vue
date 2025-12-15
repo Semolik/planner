@@ -18,11 +18,11 @@
                     {{ getDateString(task.event.date) }} ({{ daysLeft }})
                 </div>
 
-                <div class="text-sm text-gray-500 flex items-center gap-1">
+                <div v-if="timeRange" class="text-sm text-gray-500 flex items-center gap-1">
                     <Icon
                         name="material-symbols:nest-clock-farsight-analog-outline-rounded"
                     />
-                    {{ startTime }} - {{ endTime }}
+                    {{ timeRange }}
                 </div>
             </div>
             <div class="inline-flex gap-1 text-sm text-gray-500">
@@ -39,8 +39,8 @@
         <template v-else>
             <div class="flex gap-2 flex-col">
                 <div
-                    class="text-sm text-gray-500 flex items-center gap-1"
                     v-for="typed_task in task.typed_tasks"
+                    class="text-sm text-gray-500 flex items-center gap-1"
                 >
                     <Icon
                         :name="icons[typed_task.task_type]"
@@ -54,10 +54,9 @@
             </div>
         </template>
 
-        <div class="flex gap-1 flex-wrap" v-if="showLabels">
+        <div v-if="showLabels" class="flex gap-1 flex-wrap">
             <template v-for="typed_task in task.typed_tasks">
                 <UBadge
-                    color="error"
                     v-if="
                         typed_task.task_states.length === 0 ||
                         (task.event
@@ -65,6 +64,7 @@
                               typed_task.task_states.length
                             : false)
                     "
+                    color="error"
                 >
                     Нуж{{ typed_task.for_single_user ? "ен" : "ны" }}
                     {{ typedTasksLabels[typed_task.task_type].toLowerCase() }}
@@ -121,13 +121,21 @@ const icons = {
     [UserRole.DESIGNER]: "material-symbols:design-services",
     [UserRole.COPYWRITER]: "material-symbols:edit",
 };
-const startTime = computed(() => {
-    if (!task.event) return;
-    return task.event.start_time.split(":").slice(0, 2).join(":");
-});
-const endTime = computed(() => {
-    if (!task.event) return;
-    return task.event.end_time.split(":").slice(0, 2).join(":");
+
+const formatTime = (time) => {
+    if (!time) return null;
+    return time.split(":").slice(0, 2).join(":");
+};
+
+const timeRange = computed(() => {
+    if (!task.event) return null;
+    const start = formatTime(task.event.start_time);
+    const end = formatTime(task.event.end_time);
+
+    if (start && end) return `${start} - ${end}`;
+    if (start) return `с ${start}`;
+    if (end) return `до ${end}`;
+    return null;
 });
 const getDaysLeft = (date) => {
     const eventDate = new Date(date);

@@ -7,8 +7,8 @@
     >
         <template #top>
             <UBreadcrumb
-                :items="sections"
                 v-if="$viewport.isGreaterThan('md')"
+                :items="sections"
             />
         </template>
         <div class="edit-form">

@@ -4,14 +4,15 @@ export default defineNuxtConfig({
     devtools: { enabled: true },
 
     modules: [
-        "@pinia/nuxt",
-        "@nuxt/fonts",
-        "@nuxt/icon",
-        "@formkit/auto-animate/nuxt",
-        "@vueuse/nuxt",
-        "@nuxt/ui",
-        "nuxt-typed-router",
-        "nuxt-viewport",
+      "@pinia/nuxt",
+      "@nuxt/fonts",
+      "@nuxt/icon",
+      "@formkit/auto-animate/nuxt",
+      "@vueuse/nuxt",
+      "@nuxt/ui",
+      "nuxt-typed-router",
+      "nuxt-viewport",
+      "@nuxt/eslint"
     ],
     ui: {
         colorMode: false,

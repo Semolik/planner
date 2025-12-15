@@ -11,12 +11,12 @@ from api.db.session import get_async_session
 
 from api.cruds.periods_crud import PeriodsCRUD
 
-api_router = APIRouter(
-    prefix="/statistics", tags=["statistics"]
+api_router = APIRouter(prefix="/statistics", tags=["statistics"])
+
+
+@api_router.get(
+    "", response_model=list[StatsUser], dependencies=[Depends(current_superuser)]
 )
-
-
-@api_router.get("", response_model=list[StatsUser], dependencies=[Depends(current_superuser)])
 async def get_statistics(
     period_id: uuid.UUID,
     db=Depends(get_async_session),

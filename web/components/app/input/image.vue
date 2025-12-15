@@ -5,10 +5,10 @@
             type="file"
             class="hidden-input"
             @change="handleFileChange"
-        />
-        <img v-if="imageUrl" :src="imageUrl" class="avatar" />
-        <Icon :name="icon" class="avatar-uploader-icon" v-else />
-        <div class="overlay" v-if="imageUrl">
+        >
+        <img v-if="imageUrl" :src="imageUrl" class="avatar" >
+        <Icon v-else :name="icon" class="avatar-uploader-icon" />
+        <div v-if="imageUrl" class="overlay">
             <span>Изменить</span>
         </div>
     </div>

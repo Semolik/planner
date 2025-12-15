@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { EventFullInfo } from './EventFullInfo';
+import type { TaskReadShortWithoutEvent } from './TaskReadShortWithoutEvent';
 export type EventGroupRead = {
     name: string;
     description: string;
@@ -12,6 +13,7 @@ export type EventGroupRead = {
     events_count: number;
     period_start?: (string | null);
     period_end?: (string | null);
+    aggregate_task?: (TaskReadShortWithoutEvent | null);
     events: Array<EventFullInfo>;
 };
 

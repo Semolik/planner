@@ -8,14 +8,22 @@
                 white
             />
         </div>
-
-        <template v-if="task.event">
+        <div class="flex gap-1">
             <UCheckbox
                 v-model="nameApproved"
                 color="neutral"
                 label="Название утверждено"
                 class="ml-1"
+                v-if="task.event"
+            /> <UCheckbox
+                v-model="useInPGAS"
+                color="neutral"
+                label="Учитывать в ПГАС"
+                class="ml-1"
             />
+        </div>
+        <template v-if="task.event">
+
             <div class="flex gap-2">
                 <app-input
                     v-model="location"
@@ -142,8 +150,8 @@
                     Подтвердить
                 </app-button>
                 <app-button
-                    @click="deleteTaskModalOpen = false"
                     class="cursor-pointer"
+                    @click="deleteTaskModalOpen = false"
                 >
                     Отмена
                 </app-button>
@@ -163,7 +171,7 @@ const { task_id } = useRoute().params;
 const task = ref(await TasksService.getTaskByIdTasksTaskIdGet(task_id));
 const selectGroupOpen = ref(false);
 const selectedGroup = ref(task.value.event ? task.value.event.group : null);
-
+const useInPGAS = ref(task.value.use_in_pgas);
 const currentDate = ref(new Date().toISOString().slice(0, 10));
 
 const name = ref(task.value.event ? task.value.event.name : task.value.name);
@@ -195,6 +203,9 @@ const linkIsValid = computed(() => {
     return validateUrl(link.value);
 });
 const saveButtonActive = computed(() => {
+    if (useInPGAS.value !== task.value.use_in_pgas) {
+        return true;
+    }
     if (task.value.event) {
         if (
             required_photographers.value < 1 ||
@@ -294,6 +305,7 @@ const updateTask = async () => {
                 link: link.value,
                 level_id: event_level.value?.id || null,
                 group_id: selectedGroup.value?.id || null,
+                use_in_pgas: useInPGAS.value,
             };
             task.value.event = await EventsService.updateEventEventsEventIdPut(
                 task.value.event.id,

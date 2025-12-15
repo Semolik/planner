@@ -7,8 +7,8 @@ import type { TaskWithoutEventRead } from './TaskWithoutEventRead';
 export type EventFullInfo = {
     name: string;
     date: string;
-    start_time: string;
-    end_time: string;
+    start_time: (string | null);
+    end_time: (string | null);
     name_approved?: boolean;
     location: string;
     link: string;

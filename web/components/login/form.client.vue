@@ -16,7 +16,7 @@
     />
 
     <app-button :active="formValid" type="submit"> Войти</app-button>
-    <div ref="social"></div>
+    <div ref="social"/>
   </form>
 </template>
 <script setup>
@@ -41,7 +41,7 @@ const handleSubmit = async () => {
   if (!formValid.value) {
     return;
   }
-  var error = await authStore.login(login.value, password.value);
+  const error = await authStore.login(login.value, password.value);
   if (error) {
     console.log(error);
     $toast.error(HandleOpenApiError(error).message);

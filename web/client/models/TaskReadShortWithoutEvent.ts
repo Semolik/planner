@@ -2,13 +2,11 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { EventRead } from './EventRead';
-export type TaskReadShort = {
+export type TaskReadShortWithoutEvent = {
     event_id?: (string | null);
     name: string;
     use_in_pgas: boolean;
     id: string;
     all_typed_tasks_completed: boolean;
-    event?: (EventRead | null);
 };
 
