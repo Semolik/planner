@@ -83,6 +83,15 @@
                         >
                             Пост
                         </UBadge>
+                        <UBadge
+                            v-if="!task.use_in_pgas"
+                            color="neutral"
+                            variant="outline"
+                            size="lg"
+                            icon="material-symbols:warning"
+                        >
+                            Не учитывается в ПГАС
+                        </UBadge>
                     </div>
                     <div v-if="task.event.group?.description" class="section">
                         <div class="section-head">

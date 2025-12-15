@@ -2,7 +2,16 @@
     <div class="typed-tasks">
         <div class="task-roles">
             <div v-for="(label, role) in labels" :key="role" class="task-role">
-                <div class="header">
+                <UAlert
+                    v-if="isRoleDisabledByAggregation(role)"
+                    color="amber"
+                    variant="outline"
+                    icon="material-symbols:warning"
+                    :title="label[0]"
+                    :description="getDisabledMessage(role)"
+                    class="!p-3"
+                />
+                <div v-else class="header">
                     <div class="label">{{ label[0] }}</div>
                     <div v-if="typedTasks[role]" class="badges">
                         <div class="badge">
@@ -144,6 +153,19 @@ const labels = {
     [UserRole.DESIGNER]: task.value.event
         ? ["Дизайнер", "дизайнера"]
         : ["Дизайнеры", "дизайнеров"],
+};
+
+const isRoleDisabledByAggregation = (role) => {
+    const hasAggregateTask = task.value.event?.group?.aggregate_task;
+    return hasAggregateTask && (role === UserRole.COPYWRITER || role === UserRole.DESIGNER);
+};
+
+const getDisabledMessage = (role) => {
+    if (role === UserRole.COPYWRITER || role === UserRole.DESIGNER) {
+
+        return 'Задача управляется через агрегированную публикацию для всей группы мероприятий';
+    }
+    return '';
 };
 
 const typedTasks = computed(() => {

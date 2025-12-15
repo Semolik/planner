@@ -292,12 +292,11 @@ const updateTask = async () => {
                     });
             }
             const updatedEvent = {
-                id: task.value.event.id,
                 name: name.value,
                 date: date.value,
                 description: description.value,
-                start_time: timeStart.value,
-                end_time: timeEnd.value,
+                start_time: timeStart.value || null,
+                end_time: timeEnd.value || null,
                 required_photographers: required_photographers.value,
                 location: location.value,
                 organizer: organizer.value,
@@ -311,10 +310,15 @@ const updateTask = async () => {
                 task.value.event.id,
                 updatedEvent
             );
+            task.value.use_in_pgas = useInPGAS.value;
             timeStart.value = task.value.event.start_time;
             timeEnd.value = task.value.event.end_time;
-            emit("update:task", task.value);
+        } else {
+            // Для задачи без события обновляем только имя
+            task.value.name = name.value;
+            task.value.use_in_pgas = useInPGAS.value;
         }
+        emit("update:task", task.value);
     } catch (error) {
         $toast.error(HandleOpenApiError(error).message);
     }
