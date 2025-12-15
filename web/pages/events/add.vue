@@ -3,72 +3,72 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
             <div class="flex flex-col gap-2 w-full">
                 <app-input
-                      v-model="name"
-                      label="Название мероприятия"
-                      required
-                      white
+                    v-model="name"
+                    label="Название мероприятия"
+                    required
+                    white
                 />
                 <app-input
-                      v-model="date"
-                      type="date"
-                      label="Дата мероприятия"
-                      required
-                      white
+                    v-model="date"
+                    type="date"
+                    label="Дата мероприятия"
+                    required
+                    white
                 />
                 <div class="flex gap-1">
                     <app-input
-                          v-model="timeStart"
-                          type="time"
-                          label="Время начала"
-                          white
+                        v-model="timeStart"
+                        type="time"
+                        label="Время начала"
+                        white
                     />
                     <app-input
-                          v-model="timeEnd"
-                          type="time"
-                          label="Время окончания"
-                          white
+                        v-model="timeEnd"
+                        type="time"
+                        label="Время окончания"
+                        white
                     />
                 </div>
                 <app-input
-                      v-model="location"
-                      label="Место проведения"
-                      required
-                      white
+                    v-model="location"
+                    label="Место проведения"
+                    required
+                    white
                 />
             </div>
             <div class="flex flex-col">
                 <app-input
-                      v-model="description"
-                      label="Описание мероприятия"
-                      type="textarea"
-                      white
-                      rows="3"
-                      class="max-h-[150px]"
+                    v-model="description"
+                    label="Описание мероприятия"
+                    type="textarea"
+                    white
+                    rows="3"
+                    class="max-h-[150px]"
                 />
                 <div class="flex flex-col gap-1 w-full">
                     <div class="event-form-label">Уровень мероприятия</div>
                     <client-only>
                         <USelectMenu
-                              v-model="event_level"
-                              :items="eventLevels"
-                              class="select-menu"
-                              color="neutral"
-                              size="lg"
-                              :content="{
+                            v-model="event_level"
+                            :items="eventLevels"
+                            class="select-menu"
+                            color="neutral"
+                            size="lg"
+                            :content="{
                                 align: 'start',
                                 side: 'bottom',
                                 sideOffset: 8,
                             }"
-                              :search-input="{
+                            :search-input="{
                                 placeholder: 'Поиск',
                             }"
                         />
                     </client-only>
                     <app-input
-                          v-model="organizer"
-                          label="Контакт организатора"
-                          required
-                          white
+                        v-model="organizer"
+                        label="Контакт организатора"
+                        required
+                        white
                     />
                 </div>
             </div>
@@ -77,78 +77,78 @@
         <div class="flex flex-wrap gap-2">
             <!-- Чекбокс агрегированной публикации -->
             <UCheckbox
-                  v-model="useAggregatePublication"
-                  color="neutral"
-                  variant="card"
-                  label="Одна публикация на несколько мероприятий"
-                  class="flex-1"
+                v-model="useAggregatePublication"
+                color="neutral"
+                variant="card"
+                label="Одна публикация на несколько мероприятий"
+                class="flex-1"
             />
 
             <!-- Чекбокс учитывать в ПГАС -->
             <UCheckbox
-                  v-model="useInPgas"
-                  color="neutral"
-                  variant="card"
-                  label="Учитывать в ПГАС"
-                  class="flex-1"
+                v-model="useInPgas"
+                color="neutral"
+                variant="card"
+                label="Учитывать в ПГАС"
+                class="flex-1"
             />
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
             <event-group-selector
-                  v-model="selectedGroup"
-                  v-model:open="selectGroupOpen"
-                  :aggregate-mode="useAggregatePublication"
-                  :required="useAggregatePublication"
-                  :event-date="date"
+                v-model="selectedGroup"
+                v-model:open="selectGroupOpen"
+                :aggregate-mode="useAggregatePublication"
+                :required="useAggregatePublication"
+                :event-date="date"
             />
 
             <div
-                  :class="['button', { active: tasksSettingsOpen }, {'pointer-events-none opacity-50': useAggregatePublication}]"
-                  @click="tasksSettingsOpen = !tasksSettingsOpen"
+                :class="['button', { active: tasksSettingsOpen }, {'pointer-events-none opacity-50': useAggregatePublication}]"
+                @click="tasksSettingsOpen = !tasksSettingsOpen"
 
             >
                 <span class="text"> Настройки подзадач </span>
-                <Icon name="i-lucide-chevron-down"/>
+                <Icon name="i-lucide-chevron-down" />
             </div>
         </div>
 
         <UCollapsible
-              v-model:open="tasksSettingsOpen"
-              class="flex flex-col gap-[10px] hide-if-child-empty"
+            v-model:open="tasksSettingsOpen"
+            class="flex flex-col gap-[10px] hide-if-child-empty"
         >
             <template #content>
                 <div
-                      class="flex flex-col gap-[10px] p-2 border border-solid rounded-[10px]"
-                      :class="{ 'opacity-50 pointer-events-none': useAggregatePublication }"
+                    class="flex flex-col gap-[10px] p-2 border border-solid rounded-[10px]"
+                    :class="{ 'opacity-50 pointer-events-none': useAggregatePublication }"
                 >
                     <USwitch
-                          v-model="createCopywritersSubTask"
-                          label="Создать подзадачу для копирайтеров"
-                          color="neutral"
-                          :disabled="useAggregatePublication"
+                        v-model="createCopywritersSubTask"
+                        label="Создать подзадачу для копирайтеров"
+                        color="neutral"
+                        :disabled="useAggregatePublication"
                     />
                     <app-input
-                          v-if="createCopywritersSubTask"
-                          v-model="copywriterDescription"
-                          label="Описание для копирайтеров"
-                          type="textarea"
-                          white
-                          rows="2"
+                        v-if="createCopywritersSubTask"
+                        v-model="copywriterDescription"
+                        label="Описание для копирайтеров"
+                        type="textarea"
+                        white
+                        rows="2"
                     />
                     <USwitch
-                          v-model="createDesignersSubTask"
-                          label="Создать подзадачу для дизайнеров"
-                          color="neutral"
-                          :disabled="useAggregatePublication"
+                        v-model="createDesignersSubTask"
+                        label="Создать подзадачу для дизайнеров"
+                        color="neutral"
+                        :disabled="useAggregatePublication"
                     />
                     <app-input
-                          v-if="createDesignersSubTask"
-                          v-model="designerDescription"
-                          label="Описание для дизайнеров"
-                          type="textarea"
-                          white
-                          rows="2"
+                        v-if="createDesignersSubTask"
+                        v-model="designerDescription"
+                        label="Описание для дизайнеров"
+                        type="textarea"
+                        white
+                        rows="2"
                     />
                 </div>
             </template>
@@ -156,20 +156,20 @@
 
         <div class="flex gap-2">
             <UDropdownMenu
-                  :items="items"
-                  :content="{
+                :items="items"
+                :content="{
                     align: 'start',
                     side: 'top',
                     sideOffset: 8,
                 }"
             >
                 <app-button active>
-                    <Icon name="material-symbols:attach-file"/>
+                    <Icon name="material-symbols:attach-file" />
                 </app-button>
                 <template #item="{ item }">
                     <app-button active class="!rounded-sm">
                         <div class="flex items-center gap-1">
-                            <Icon :name="item.icon"/>
+                            <Icon :name="item.icon" />
                             {{ item.label }}
                         </div>
                     </app-button>
@@ -177,9 +177,9 @@
             </UDropdownMenu>
 
             <app-button
-                  :active="buttonActive"
-                  class="w-full"
-                  @click="createEvent"
+                :active="buttonActive"
+                class="w-full"
+                @click="createEvent"
             >
                 Создать мероприятие
             </app-button>
@@ -188,9 +188,9 @@
 </template>
 
 <script setup>
-import {useAppSettingsStore} from "~/stores/app-settings";
-import {EventsService, EventsGroupsService} from "~/client";
-import {routesNames} from "@typed-router";
+import { useAppSettingsStore } from "~/stores/app-settings";
+import { EventsService, EventsGroupsService } from "~/client";
+import { routesNames } from "@typed-router";
 
 const appSettingsStore = useAppSettingsStore();
 definePageMeta({
@@ -202,7 +202,7 @@ const selectGroupOpen = ref(false);
 const useAggregatePublication = ref(false);
 const useInPgas = ref(true);
 
-const {$toast} = useNuxtApp();
+const { $toast } = useNuxtApp();
 const name = ref("");
 const date = ref("");
 const description = ref("");
@@ -232,24 +232,24 @@ const eventLevels = appSettingsStore.eventsLevels.map((level) => ({
     label: level.name,
 }));
 const event_level = ref(
-      eventLevels.find(
-            (level) => level.id === appSettingsStore.settings.default_event_level_id
-      )
+    eventLevels.find(
+        (level) => level.id === appSettingsStore.settings.default_event_level_id
+    )
 );
 
 const selectedGroup = ref(null);
 
 const buttonActive = computed(() => {
     const baseValidation =
-          name.value.length > 0 &&
-          date.value.length > 0 &&
-          location.value.length > 0 &&
-          event_level.value !== null;
+        name.value.length > 0 &&
+        date.value.length > 0 &&
+        location.value.length > 0 &&
+        event_level.value !== null;
     console.log("Base validation:", baseValidation);
 
     // Группа обязательна только при aggregate_task
     if (useAggregatePublication.value) {
-        console.log("Aggregate mode active, checking group selection:", selectedGroup.value);
+      console.log("Aggregate mode active, checking group selection:", selectedGroup.value);
         return baseValidation && selectedGroup.value !== null;
     }
 
@@ -268,8 +268,8 @@ watch(useAggregatePublication, (value) => {
 
 watch(timeStart, (value) => {
     if (
-          new Date(`${currentDate.value}T${value}`) >=
-          new Date(`${currentDate.value}T${timeEnd.value}`)
+        new Date(`${currentDate.value}T${value}`) >=
+        new Date(`${currentDate.value}T${timeEnd.value}`)
     ) {
         const endTime = new Date(`${currentDate.value}T${value}`);
         if (endTime.getHours() < 23) {
@@ -288,8 +288,8 @@ watch(timeStart, (value) => {
 
 watch(timeEnd, (value) => {
     if (
-          new Date(`${currentDate.value}T${value}`) <=
-          new Date(`${currentDate.value}T${timeStart.value}`)
+        new Date(`${currentDate.value}T${value}`) <=
+        new Date(`${currentDate.value}T${timeStart.value}`)
     ) {
         const startTime = new Date(`${currentDate.value}T${value}`);
         if (startTime.getHours() > 0) {
@@ -343,26 +343,37 @@ const createEvent = async () => {
             copywriter_description: createCopywritersSubTask.value ? copywriterDescription.value : "",
             designer_description: createDesignersSubTask.value ? designerDescription.value : "",
             photographers_deadline: addDaysToDate(
-                  date.value,
-                  appSettingsStore.settings.photographers_deadline
+                date.value,
+                appSettingsStore.settings.photographers_deadline
             ),
             copywriters_deadline: useAggregatePublication.value ? null :
-                  createCopywritersSubTask.value ?
-                        addDaysToDate(date.value, appSettingsStore.settings.copywriters_deadline) : null,
-            designers_deadline: createDesignersSubTask.value
-                  ? (useAggregatePublication.value && selectedGroup.value?.aggregate_task_params?.designers_deadline
-                       ? null
-                       : addDaysToDate(date.value, appSettingsStore.settings.designers_deadline))
-                  : null,
+                createCopywritersSubTask.value ?
+                addDaysToDate(date.value, appSettingsStore.settings.copywriters_deadline) : null,
+            designers_deadline: useAggregatePublication.value ?
+                // Если в группе создается задача для дизайнеров - не отправляем дедлайн
+                (selectedGroup.value?.aggregate_task_params?.designers_deadline ? null :
+                // Если в группе НЕ создается задача для дизайнеров - отправляем дедлайн
+                (createDesignersSubTask.value ?
+                addDaysToDate(date.value,
+                    appSettingsStore.settings.photographers_deadline +
+                    appSettingsStore.settings.designers_deadline
+                ) : null))
+                :
+                // Для обычных мероприятий
+                (createDesignersSubTask.value ?
+                addDaysToDate(date.value,
+                    appSettingsStore.settings.photographers_deadline +
+                    appSettingsStore.settings.designers_deadline
+                ) : null),
             aggregate_task: useAggregatePublication.value,
-            use_in_pgas: useInPgas.value
+            use_in_pgas: useInPgas.value,
         });
 
         const router = useRouter();
         $toast.success("Мероприятие успешно создано");
         router.push({
             name: routesNames.tasksTaskId,
-            params: {task_id: event.task.id},
+            params: { task_id: event.task.id },
         });
     } catch (error) {
         $toast.error(HandleOpenApiError(error).message);
@@ -398,16 +409,13 @@ const createEvent = async () => {
     &.active .iconify {
         transform: rotate(-180deg);
     }
-
     &.group-select {
         justify-content: center;
         text-align: center;
         flex-grow: 1;
     }
-
     &:not(.group-select) {
         height: 40px;
-
         .text {
             position: absolute;
             left: 50%;

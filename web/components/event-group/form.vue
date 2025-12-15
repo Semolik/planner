@@ -46,6 +46,7 @@
             <app-button
                 v-if="group && group.aggregate_task"
                 active
+                red
                 @click="removeAggregationModalOpen = true"
             >
                 Отменить агрегацию
@@ -180,7 +181,6 @@
                         <div class="font-medium mb-2">Что произойдет:</div>
                         <ul class="list-disc list-inside space-y-1">
                             <li>Общая задача публикации будет удалена</li>
-                            <li v-if="hasDesignerTaskInAggregate">Общая задача для дизайнера будет удалена</li>
                             <li v-if="aggregateTaskUsers.length > 0">С задачи будут сняты следующие пользователи:</li>
                         </ul>
                         <div v-if="aggregateTaskUsers.length > 0" class="mt-2 ml-6 space-y-1">
@@ -406,12 +406,6 @@ const aggregateTaskUsers = computed(() => {
     return Array.from(usersMap.values());
 });
 
-const hasDesignerTaskInAggregate = computed(() => {
-    if (!aggregateTaskFull.value || !aggregateTaskFull.value.typed_tasks) return false;
-    return aggregateTaskFull.value.typed_tasks.some(
-        typedTask => typedTask.task_type === 'designer'
-    );
-});
 
 const saveButtonActive = computed(() => {
     return (

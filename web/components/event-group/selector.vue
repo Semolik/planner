@@ -17,13 +17,13 @@
             }}
         </div>
         <app-button
-            v-if="modelValue && modelValue.id"
             active
             :to="{
                 name: routesNames.eventsGroupsGroupIdEdit,
                 params: { group_id: modelValue.id },
             }"
             target="_blank"
+            v-if="modelValue && modelValue.id"
             class="aspect-square"
         >
             <div class="flex items-center justify-center">
@@ -31,11 +31,11 @@
             </div>
         </app-button>
         <app-button
-            v-if="modelValue"
             red
             active
             class="aspect-square"
             @click="clearSelection"
+            v-if="modelValue"
         >
             <div class="flex items-center justify-center">
                 <Icon name="material-symbols:delete" />
@@ -59,19 +59,19 @@
                     placeholder="Введите название группы"
                     border-radius="10px"
                 />
-                <div v-auto-animate class="groups-list overflow-y-auto">
+                <div class="groups-list overflow-y-auto" v-auto-animate>
                     <div
-                        v-for="group in searchGroupsResult"
-                        :key="group.id"
                         :class="[
                             'group',
                             { selected: modelValue?.id === group.id },
                         ]"
+                        v-for="group in searchGroupsResult"
+                        :key="group.id"
                         @click="selectGroup(group)"
                     >
                         {{ group.name }}
                     </div>
-                    <div v-if="searchGroupsResult.length === 0" class="empty">
+                    <div class="empty" v-if="searchGroupsResult.length === 0">
                         {{ aggregateMode ? 'Группы с агрегированной задачей не найдены' : 'Группы не найдены' }}
                     </div>
                 </div>
@@ -141,8 +141,8 @@
                     </div>
 
                     <USwitch
-                        v-model="createAggregateDesignerTask"
                         label="Создать задачу для дизайнера"
+                        v-model="createAggregateDesignerTask"
                         color="neutral"
                     />
 
@@ -157,8 +157,8 @@
                             {{ getDesignerDeadlineHint() }}
                         </div>
                     </div>  <app-input
-                        v-if="createAggregateDesignerTask"
                         v-model="aggregateDesignerDescription"
+                        v-if="createAggregateDesignerTask"
                         label="Описание задачи для дизайнера"
                         type="textarea"
                         rows="2"

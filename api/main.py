@@ -21,6 +21,7 @@ from api.endpoints.vk_endpoints import api_router as vk_router
 
 from api.endpoints.home_endpoints import api_router as home_router
 from api.endpoints.statistics_endpoints import api_router as statistics_router
+from api.endpoints.search_endpoints import router as search_router
 from api.db.session import async_session_maker
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -73,6 +74,7 @@ app.include_router(vk_router)
 app.include_router(institutes_router)
 app.include_router(settings_router)
 app.include_router(statistics_router)
+app.include_router(search_router)
 
 
 main_app_lifespan = app.router.lifespan_context

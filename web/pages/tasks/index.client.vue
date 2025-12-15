@@ -1,152 +1,173 @@
 <template>
-    <div :class="['intro play-container', {'user-mode': !authStore.isAdmin}]">
-        <div class="controls">
-            <UTooltip :delay-duration="0" :disabled="isSmallScreen" text="Прошлый месяц">
-                <app-button active @click="prev">
-                    <Icon name="mdi:arrow-left"/>
-                </app-button>
-            </UTooltip>
-            <UTooltip :delay-duration="0" :disabled="isSmallScreen" text="Следующий месяц">
-                <app-button active @click="next">
-                    <Icon name="mdi:arrow-right"/>
-                </app-button>
-            </UTooltip>
-            <div class="period-label">
-                {{ periodLabel }}
-            </div>
-            <UTooltip
-:delay-duration="0" :disabled="isSmallScreen"
-                      :text="(showTypedTasks ? 'Скрыть' : 'Показать') + ' дедлайны'">
-                <app-button
-:outline="isSmallScreen? showTypedTasks:!showTypedTasks" active class="toggle-button"
-                            @click="toggleTypedTasks">
-                    <Icon v-if="!isSmallScreen" class="active" name="material-symbols:calendar-clock-outline"/>
-                    <span v-else class="text-sm">
-                    {{ showTypedTasks ? 'Скрыть' : 'Показать' }} дедлайны
-                </span>
-                </app-button>
-            </UTooltip>
-            <UTooltip :delay-duration="0" :disabled="isSmallScreen" text="Только мои задачи">
-                <app-button
-:outline="!showCurrentUserTasks" active
-                            class="toggle-button" @click="showCurrentUserTasks = !showCurrentUserTasks">
-                    <Icon v-if="!isSmallScreen" class="active" name="mdi:account"/>
-                    <span v-else class="text-sm">
-                    Только мои задачи
-                </span>
-                </app-button>
-            </UTooltip>
-        </div>
-        <TuiCalendar
-            v-if="!isSmallScreen"
-            ref="calendarRef"
-            :calendars="calendars"
-            :events="filteredEvents"
-            :month="options.month"
-            :options="options"
-            :template="popupTemplates"
-            :use-detail-popup="authStore.isAdmin"
-            :week="options.week"
-            class="my-calendar"
-            is-read-only
-            view="month"
-            @before-update-event="handleCalendarUpdate"
-            @before-delete-event="handleDeleteEvent"
-            @click-event="handleClickEvent"
-        />
-        <div v-else :class="['weekly-view', {empty: sortedDates.length === 0}]">
-            <div v-if="sortedDates.length === 0" class="h-full flex items-center justify-center text-gray-500">
-                {{
-                    (!showTypedTasks || showCurrentUserTasks) ? 'Нет событий по выбранным фильтрам' : 'Нет событий на этой неделе'
-                }}
-            </div>
-            <div v-for="(dateKey, index) in sortedDates" :key="index">
-                <h3>{{ formatDateHeader(dateKey) }}</h3>
-                <div
-                    v-for="ev in filteredGroupedByDate[dateKey]"
-                    :key="ev.id"
-                    :style="{
-                        backgroundColor: ev.backgroundColor,
-                        border: `1px solid ${ev.borderColor}`,
-                        color: ev.color
-                    }"
-                    class="event-card"
-                    @click="goToEvent(ev)"
-                >
-                  <div class="flex justify-between">
-                      <div class="card-title">{{ ev.title }}</div>
-                      <div v-if="ev.type === 'typed_task'" class="deadline-icon">
-                          <Icon name="material-symbols:calendar-clock-outline"/>
-                      </div>
-                  </div>
+  <div :class="['intro play-container', {'user-mode': !authStore.isAdmin}]">
+    <div class="controls">
+      <!-- Кнопка поиска -->
+      <UTooltip :delay-duration="0" :disabled="isSmallScreen" text="Поиск">
+        <app-button active @click="searchModalOpen = true">
+          <Icon name="material-symbols:search"/>
+        </app-button>
+      </UTooltip>
 
-                    <div v-if="ev.category === 'time'" class="card-time">
-                        {{ ev.start.split('T')[1].slice(0, 5) }} - {{ ev.end.split('T')[1].slice(0, 5) }}
-                    </div>
-                    <div v-if="ev.attendees" class="card-attendees">
-                        {{
-                            ev.type == 'event' ? 'Фотографы' :
-                                (ev.attendees.length > 1 ? 'Исполнители' : 'Исполнитель')
-                        }}: <span v-html="ev.attendees.join(', ')"/>
-                    </div>
-                    <div v-if="ev.body" class="card-body" v-html="ev.body" />
+      <UTooltip :delay-duration="0" :disabled="isSmallScreen" text="Прошлый месяц">
+        <app-button active @click="prev">
+          <Icon name="mdi:arrow-left"/>
+        </app-button>
+      </UTooltip>
 
-                </div>
-            </div>
-        </div>
+      <UTooltip :delay-duration="0" :disabled="isSmallScreen" text="Следующий месяц">
+        <app-button active @click="next">
+          <Icon name="mdi:arrow-right"/>
+        </app-button>
+      </UTooltip>
+
+      <div class="period-label">
+        {{ periodLabel }}
+      </div>
+
+      <UTooltip :delay-duration="0" :disabled="isSmallScreen"
+                :text="(showTypedTasks ? 'Скрыть' : 'Показать') + ' дедлайны'">
+        <app-button :outline="isSmallScreen? showTypedTasks:!showTypedTasks" active class="toggle-button"
+                    @click="toggleTypedTasks">
+          <Icon v-if="!isSmallScreen" class="active" name="material-symbols:calendar-clock-outline"/>
+          <span v-else class="text-sm">
+            {{ showTypedTasks ? 'Скрыть' : 'Показать' }} дедлайны
+          </span>
+        </app-button>
+      </UTooltip>
+
+      <UTooltip :delay-duration="0" :disabled="isSmallScreen" text="Только мои задачи">
+        <app-button :outline="!showCurrentUserTasks" active
+                    class="toggle-button" @click="showCurrentUserTasks = !showCurrentUserTasks">
+          <Icon v-if="!isSmallScreen" class="active" name="mdi:account"/>
+          <span v-else class="text-sm">
+            Только мои задачи
+          </span>
+        </app-button>
+      </UTooltip>
     </div>
+
+    <TuiCalendar
+        v-if="!isSmallScreen"
+        ref="calendarRef"
+        :calendars="calendars"
+        :events="filteredEvents"
+        :month="options.month"
+        :options="options"
+        :template="popupTemplates"
+        :use-detail-popup="authStore.isAdmin"
+        :week="options.week"
+        class="my-calendar"
+        isReadOnly
+        view="month"
+        @beforeUpdateEvent="handleCalendarUpdate"
+        @beforeDeleteEvent="handleDeleteEvent"
+        @clickEvent="handleClickEvent"
+    />
+
+    <div v-else :class="['weekly-view', {empty: sortedDates.length === 0}]">
+      <div v-if="sortedDates.length === 0" class="h-full flex items-center justify-center text-gray-500">
+        {{
+            (!showTypedTasks || showCurrentUserTasks) ? 'Нет событий по выбранным фильтрам' : 'Нет событий на этой неделе'
+        }}
+      </div>
+      <div v-for="(dateKey, index) in sortedDates" :key="index">
+        <h3>{{ formatDateHeader(dateKey) }}</h3>
+        <div
+            v-for="ev in filteredGroupedByDate[dateKey]"
+            :key="ev.id"
+            :style="{
+                backgroundColor: ev.backgroundColor,
+                border: `1px solid ${ev.borderColor}`,
+                color: ev.color
+            }"
+            class="event-card"
+            @click="goToEvent(ev)"
+        >
+          <div class="flex justify-between">
+            <div class="card-title">{{ ev.title }}</div>
+            <div v-if="ev.type === 'typed_task'" class="deadline-icon">
+              <Icon name="material-symbols:calendar-clock-outline"/>
+            </div>
+          </div>
+
+          <div v-if="ev.category === 'time'" class="card-time">
+            {{ ev.start.split('T')[1].slice(0, 5) }} - {{ ev.end.split('T')[1].slice(0, 5) }}
+          </div>
+          <div v-if="ev.attendees" class="card-attendees">
+            {{
+                ev.type == 'event' ? 'Фотографы' :
+                    (ev.attendees.length > 1 ? 'Исполнители' : 'Исполнитель')
+            }}: <span v-html="ev.attendees.join(', ')"></span>
+          </div>
+          <div v-if="ev.body" class="card-body" v-html="ev.body" />...
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ CommandPalette ВНУТРИ Modal -->
+    <UModal v-model:open="searchModalOpen" title="Поиск" :ui="{ content: 'max-w-xl' }">
+      <template #content>
+        <UCommandPalette
+            v-model:search-term="searchQuery"
+            :groups="searchCommandGroups"
+            :loading="isSearching"
+            placeholder="Поиск по задачам, мероприятиям, группам и пользователям..."
+            class="h-96"
+        />
+      </template>
+    </UModal>
 
     <!-- Модальное окно редактирования -->
     <UModal
         v-model:open="editModalOpen"
         title="Быстрое редактирование мероприятия"
-        :ui="{ width: 'sm:max-w-2xl' }"
+        :ui="{ content: 'max-w-2xl' }"
     >
-        <template #body>
-            <div v-if="editingTask" class="flex flex-col gap-3">
-                <app-input
-                    v-model="editForm.name"
-                    label="Название мероприятия"
-                    required
-                    white
-                />
-                <app-input
-                    v-model="editForm.date"
-                    type="date"
-                    label="Дата мероприятия"
-                    required
-                    white
-                />
-                <div class="flex gap-2">
-                    <app-input
-                        v-model="editForm.timeStart"
-                        type="time"
-                        label="Время начала"
-                        white
-                    />
-                    <app-input
-                        v-model="editForm.timeEnd"
-                        type="time"
-                        label="Время окончания"
-                        white
-                    />
-                </div>
-                <app-input
-                    v-model="editForm.location"
-                    label="Место проведения"
-                    required
-                    white
-                />
-                <div class="flex flex-col gap-2 mt-2">
-                    <app-button :active="editFormValid && editFormChanged" @click="saveEdit">
-                        Сохранить
-                    </app-button>
-                    <app-button active @click="openFullEditPage">
-                        Открыть полную форму
-                    </app-button>
-                </div>
-            </div>
-        </template>
+      <template #body>
+        <div class="flex flex-col gap-3" v-if="editingTask">
+          <app-input
+              v-model="editForm.name"
+              label="Название мероприятия"
+              required
+              white
+          />
+          <app-input
+              v-model="editForm.date"
+              type="date"
+              label="Дата мероприятия"
+              required
+              white
+          />
+          <div class="flex gap-2">
+            <app-input
+                v-model="editForm.timeStart"
+                type="time"
+                label="Время начала"
+                white
+            />
+            <app-input
+                v-model="editForm.timeEnd"
+                type="time"
+                label="Время окончания"
+                white
+            />
+          </div>
+          <app-input
+              v-model="editForm.location"
+              label="Место проведения"
+              required
+              white
+          />
+          <div class="flex flex-col gap-2 mt-2">
+            <app-button @click="saveEdit" :active="editFormValid && editFormChanged">
+              Сохранить
+            </app-button>
+            <app-button @click="openFullEditPage" active>
+              Открыть полную форму
+            </app-button>
+          </div>
+        </div>
+      </template>
     </UModal>
 
     <!-- Модальное окно удаления -->
@@ -154,34 +175,42 @@
         v-model:open="deleteModalOpen"
         title="Удаление мероприятия"
     >
-        <template #body>
-            <div v-if="editingTask" class="text-md">
-                Вы действительно хотите удалить мероприятие "{{ editingTask.event?.name || editingTask.name }}"?
-            </div>
-            <div class="grid grid-cols-2 gap-2 mt-4">
-                <app-button active red @click="confirmDelete">
-                    Удалить
-                </app-button>
-                <app-button @click="deleteModalOpen = false">
-                    Отмена
-                </app-button>
-            </div>
-        </template>
+      <template #body>
+        <div class="text-md" v-if="editingTask">
+          Вы действительно хотите удалить мероприятие "{{ editingTask.event?.name || editingTask.name }}"?
+        </div>
+        <div class="grid grid-cols-2 gap-2 mt-4">
+          <app-button active red @click="confirmDelete">
+            Удалить
+          </app-button>
+          <app-button @click="deleteModalOpen = false">
+            Отмена
+          </app-button>
+        </div>
+      </template>
     </UModal>
+  </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+definePageMeta({
+  layout: 'no-padding'
+});
+
 import {useRouter, useRoute} from 'vue-router';
 import {watch, onMounted, onBeforeUnmount, ref, computed, nextTick} from 'vue';
 import TuiCalendar from 'toast-ui-calendar-vue3';
 import 'toast-ui-calendar-vue3/styles.css';
 import {CalendarService, TasksService, EventsService} from '@/client';
 import { useAppSettingsStore } from '~/stores/app-settings';
+import { useAuthStore } from '~/stores/auth';
+import { useLocalStorage } from '@vueuse/core';
 import { routesNames } from '@typed-router';
 
 const router = useRouter();
 const route = useRoute();
 const appSettingsStore = useAppSettingsStore();
+const authStore = useAuthStore();
 
 const isSmallScreen = ref(false);
 const calendarRef = ref();
@@ -199,6 +228,7 @@ const userTypesMap = {
     copywriter: 'Копирайтеров',
     designer: 'Дизайнеров',
 };
+
 const userTypesMap2 = {
     photographer: 'Фотографы',
     copywriter: 'Копирайтеры',
@@ -268,18 +298,31 @@ const colors = {
     },
 };
 
+// Опции календаря
+const options = ref({
+    month: { startDayOfWeek: 1 },
+    week: { startDayOfWeek: 1 },
+});
+
+// Шаблоны для popup'а календаря
+const popupTemplates = ref({
+    popupDetailLocation: () => '',
+    popupDetailUser: () => '',
+    popupDetailAttendees: () => '',
+});
+
 // Формат даты YYYY-MM-DD
-const formatDate = (d) => {
+const formatDate = (d: Date) => {
   return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
 }
 
 // Формат месяца YYYY-MM
-const formatMonth = (d) => {
+const formatMonth = (d: Date) => {
   return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2,'0')}`;
 }
 
 // Получение начала и конца недели по дате (понедельник - воскресенье)
-const getWeekStartEnd = (date) => {
+const getWeekStartEnd = (date: Date) => {
   const day = date.getDay();
   const diff = (day === 0 ? 6 : day - 1);
   const start = new Date(date);
@@ -321,7 +364,7 @@ function setDateFromUrl() {
   if (periodParam && typeof periodParam === 'string') {
     if (isSmallScreen.value) {
       const d = new Date(periodParam);
-      if (!isNaN(d)) {
+      if (!isNaN(d.getTime())) {
         currentDate.value = d;
       }
     } else {
@@ -387,7 +430,7 @@ const filteredEvents = computed(() => {
 
 // Группировка событий по дате
 const filteredGroupedByDate = computed(() => {
-    const groups = {};
+    const groups: any = {};
     filteredEvents.value.forEach((ev) => {
         const dateKey = ev.start.split('T')[0];
         if (!groups[dateKey]) groups[dateKey] = [];
@@ -398,7 +441,7 @@ const filteredGroupedByDate = computed(() => {
 
 const sortedDates = computed(() => Object.keys(filteredGroupedByDate.value).sort());
 
-const formatDateHeader = (dateStr) => {
+const formatDateHeader = (dateStr: string) => {
     const d = new Date(dateStr);
     return d.toLocaleString('ru-RU', {weekday: 'long', day: 'numeric', month: 'long'});
 };
@@ -427,9 +470,9 @@ const fetchEvents = async () => {
     try {
         const response = await CalendarService.getCalendarCalendarGet(dateFrom, dateTo);
 
-        const allItems = [];
+        const allItems: any[] = [];
         for (const date in response) {
-            response[date].forEach((calendarItem) => {
+            response[date].forEach((calendarItem: any) => {
                 allItems.push({date, item: calendarItem.item, type: calendarItem.item_type});
             });
         }
@@ -440,7 +483,7 @@ const fetchEvents = async () => {
         const typedTasks = allItems.filter(i => i.type === 'typed_task');
         const events = allItems.filter(i => i.type === 'event');
 
-        tasksWithEvents.sort((a, b) => {
+        tasksWithEvents.sort((a: any, b: any) => {
             const timeA = a.item.event.start_time;
             const timeB = b.item.event.start_time;
             return timeA.localeCompare(timeB);
@@ -448,9 +491,9 @@ const fetchEvents = async () => {
 
         const sortedItems = [...users, ...events, ...tasksWithEvents, ...simpleTasks, ...typedTasks];
 
-        const newEvents = sortedItems.map((entry) => {
+        const newEvents = sortedItems.map((entry: any) => {
             const {date, item, type} = entry;
-            const event = {
+            let event: any = {
                 id: `${type}-${item.id}`,
                 title: '',
                 start: '',
@@ -463,6 +506,7 @@ const fetchEvents = async () => {
                 users: [],
                 type: type,
             };
+
             if (type === 'user') {
                 event.title = `День рождения: ${item.first_name} ${item.last_name}`;
                 event.start = `${date}T00:00:00`;
@@ -473,19 +517,19 @@ const fetchEvents = async () => {
                 event.start = `${date}T00:00:00`;
                 event.end = `${date}T23:59:59`;
                 event.category = 'allday';
-                const users = [];
+                let users = [];
                 for (const typedTask of item.typed_tasks) {
                     if (typedTask.task_states.length > 0) {
-                        typedTask.task_states.forEach((state) => {
+                        typedTask.task_states.forEach((state: any) => {
                             users.push(state.user);
                         });
                     }
                 }
-                event.attendees = users.length > 0 ? users.map((user) => user.first_name + " " + user.last_name) : null;
+                event.attendees = users.length > 0 ? users.map((user: any) => user.first_name + " " + user.last_name) : null;
                 event.users = users;
             } else if (type === 'typed_task') {
-                event.attendees = item.task_states.length > 0 ? item.task_states.map((state) => state.user.first_name + " " + state.user.last_name) : null;
-                event.users = item.task_states.length > 0 ? item.task_states.map((state) => state.user) : [];
+                event.attendees = item.task_states.length > 0 ? item.task_states.map((state: any) => state.user.first_name + " " + state.user.last_name) : null;
+                event.users = item.task_states.length > 0 ? item.task_states.map((state: any) => state.user) : [];
                 event.id = `task-${item.parent_task.id}`;
                 event.category = 'allday';
                 event.start = `${item.due_date}T00:00:00`;
@@ -505,7 +549,7 @@ const fetchEvents = async () => {
                     event.title = eventName;
                 }
 
-                const inProgress = item.task_states.some(state => state.state === 'pending');
+                const inProgress = item.task_states.some((state: any) => state.state === 'pending');
                 if (item.parent_task.event) {
                     const isPassed = item.parent_task.event.is_passed;
                     const hasAssignedPhotographers = item.parent_task.event.has_assigned_photographers;
@@ -555,7 +599,6 @@ const fetchEvents = async () => {
                 event.body = item.description;
             } else if (type === 'event') {
                 event.id = `task-${item.task.id}`;
-
                 event.title = item.name;
                 event.start = `${item.date}T${item.start_time}`;
                 event.end = `${item.date}T${item.end_time}`;
@@ -564,21 +607,21 @@ const fetchEvents = async () => {
                 let info_message = '';
                 const isPassed = item.is_passed ?? false;
 
-                const photographers = [];
+                const photographers: any[] = [];
                 let assignedPhotographersCount = 0;
                 if (item.task && item.task.typed_tasks) {
-                    const statusMap = {photographer: 'green', copywriter: 'green', designer: 'green'};
-                    const users = [];
-                    item.task.typed_tasks.forEach((typedTask) => {
+                    const statusMap: any = {photographer: 'green', copywriter: 'green', designer: 'green'};
+                    let users: any[] = [];
+                    item.task.typed_tasks.forEach((typedTask: any) => {
                         if (typedTask.task_states.length > 0) {
-                            typedTask.task_states.forEach((state) => {
+                            typedTask.task_states.forEach((state: any) => {
                                 users.push(state.user);
                             });
                         }
-                        const has_pendingState = typedTask.task_states.some(state => state.state === 'pending');
-                        const all_completed = typedTask.task_states.filter(state => state.state === 'completed').length > 0 &&
-                            typedTask.task_states.every(typed_task => typed_task.state === 'completed' || typed_task.state === 'canceled');
-                        const spanColor = isSmallScreen.value ? 'black' : 'red';
+                        const has_pendingState = typedTask.task_states.some((state: any) => state.state === 'pending');
+                        const all_completed = typedTask.task_states.filter((state: any) => state.state === 'completed').length > 0 &&
+                            typedTask.task_states.every((typed_task: any) => typed_task.state === 'completed' || typed_task.state === 'canceled');
+                        let spanColor = isSmallScreen.value ? 'black' : 'red';
                         if (typedTask.due_date_passed && has_pendingState) {
                             statusMap[typedTask.task_type] = 'red';
                             info_message += `<span style="color: ${spanColor}"> Просрочен срок сдачи ${userTypesMap[typedTask.task_type]}. </span>`+(isSmallScreen.value?'':'<br>');
@@ -591,11 +634,10 @@ const fetchEvents = async () => {
                             info_message += `<span style="color: ${spanColor}"> Не выполнена задача ${userTypesMap[typedTask.task_type]}. </span>`+(isSmallScreen.value?'':'<br>');
                         }
                         if (typedTask.task_type === 'photographer' && typedTask.task_states) {
-                            const activeStates = typedTask.task_states.filter((state) => state.state !== 'canceled');
+                            const activeStates = typedTask.task_states.filter((state: any) => state.state !== 'canceled');
                             assignedPhotographersCount += activeStates.length;
-                            typedTask.task_states.forEach((state) => {
-                                const name = state.user.first_name + " " + state.user.last_name;
-
+                            typedTask.task_states.forEach((state: any) => {
+                                let name = state.user.first_name + " " + state.user.last_name;
                                 photographers.push(state.state === 'canceled' ? `<span style="color: ${spanColor}">${name}</span>` : name);
                             });
                         }
@@ -608,23 +650,21 @@ const fetchEvents = async () => {
                         ['photographer', 'copywriter', 'designer'].forEach((type) => {
                             const color = colorMap[statusMap[type]];
                             const label = userTypesMap2[type] || type;
-                            circles += `<span style="display:inline-flex; padding: 1px 8px;border-radius: 10px;border: 1px solid black;align-items:center;gap:6px;${isSmallScreen.value?'background-color: black;color: white;':''}"><span style="width:12px;height:12px;border-radius:50%;background:${color};display:inline-block"></span>${label}</span>`;
+                            circles += `<span style="display:inline-flex; padding: 1px 8px;border-radius: 10px;border: 1px solid black;align-items:center;gap:6px;${isSmallScreen.value?'background-color: black;color: white;':''}">${label}<span style="width:12px;height:12px;border-radius:50%;background:${color};display:inline-block"></span></span>`;
                         });
                         circles += '</div>';
                         info_message += circles;
                     }
-
                 }
                 if (info_message.length > 0) {
                     event.body = info_message;
                 }
                 event.attendees = photographers.length > 0 ? photographers : null;
 
-
                 if (isPassed) {
                     const typedTasks = item.task?.typed_tasks || [];
-                    const inProgress = typedTasks.some(tt => tt.task_states.some(s => s.state === 'pending'));
-                    const isPastAnyDeadline = typedTasks.some(tt => tt.due_date_passed && (tt.task_states.some(s => s.state === 'pending') || tt.task_states.length == 0));
+                    const inProgress = typedTasks.some((tt: any) => tt.task_states.some((s: any) => s.state === 'pending'));
+                    const isPastAnyDeadline = typedTasks.some((tt: any) => tt.due_date_passed && (tt.task_states.some((s: any) => s.state === 'pending') || tt.task_states.length == 0));
 
                     if (!item.has_assigned_photographers) {
                         event.backgroundColor = '#d3d3d3';
@@ -691,7 +731,7 @@ const toggleTypedTasks = () => {
 
 // Инициализация кнопки "Открыть" в popup'е
 const setupPopupOpenButton = () => {
-    let mutationObserver;
+    let mutationObserver: MutationObserver | null = null;
 
     const setupButton = () => {
         const popup = document.querySelector('.toastui-calendar-popup-container');
@@ -710,7 +750,13 @@ const setupPopupOpenButton = () => {
         openBtn.style.justifyContent = 'center';
         openBtn.style.padding = '12px';
         openBtn.style.borderTop = '1px solid #e5e5e5';
-
+        openBtn.style.borderRadius = '0 0 8px 8px';
+        openBtn.style.backgroundColor = '#f5f5f5';
+        openBtn.style.cursor = 'pointer';
+        openBtn.style.fontSize = '14px';
+        openBtn.style.fontWeight = '500';
+        openBtn.style.transition = 'background-color 0.2s';
+        openBtn.style.border = 'none';
 
         openBtn.addEventListener('click', (e) => {
             if (currentPopupEvent.value) {
@@ -727,8 +773,6 @@ const setupPopupOpenButton = () => {
     return () => mutationObserver?.disconnect();
 };
 
-const authStore = useAuthStore();
-
 // Модальные окна
 const editModalOpen = ref(false);
 const deleteModalOpen = ref(false);
@@ -739,6 +783,90 @@ const editForm = ref({
     timeStart: '',
     timeEnd: '',
     location: '',
+});
+
+// ✅ Переменные для поиска
+const searchModalOpen = ref(false);
+const searchQuery = ref("");
+const searchResults = ref([]);
+const isSearching = ref(false);
+
+// ✅ Вычисляемое свойство для групп
+const searchCommandGroups = computed(() => {
+    if (!searchResults.value.length) {
+        return [];
+    }
+
+    const groups = [];
+    const taskResults = searchResults.value.filter((r) => r.type === 'task');
+    const eventResults = searchResults.value.filter((r) => r.type === 'event');
+    const groupResults = searchResults.value.filter((r) => r.type === 'group');
+    const userResults = searchResults.value.filter((r) => r.type === 'user');
+
+    if (taskResults.length > 0) {
+        groups.push({
+            id: 'tasks',
+            key: 'tasks',
+            label: 'Задачи',
+            items: taskResults.map((r) => ({
+                id: `task-${r.data.id}`,
+                label: r.data.name,
+                icon: 'i-heroicons-document-text',
+                click: () => goToSearchResult(r)
+            })),
+            ignoreFilter: true
+        });
+    }
+
+    if (eventResults.length > 0) {
+        groups.push({
+            id: 'events',
+            key: 'events',
+            label: 'Мероприятия',
+            items: eventResults.map((r) => ({
+                id: `event-${r.data.id}`,
+                label: `${r.data.name} (${r.data.date})`,
+                suffix: r.data.location,
+                icon: 'i-heroicons-calendar',
+                click: () => goToSearchResult(r)
+            })),
+            ignoreFilter: true
+        });
+    }
+
+    if (groupResults.length > 0) {
+        groups.push({
+            id: 'groups',
+            key: 'groups',
+            label: 'Группы мероприятий',
+            items: groupResults.map((r) => ({
+                id: `group-${r.data.id}`,
+                label: r.data.name,
+                suffix: `${r.data.events_count} мероприятий`,
+                icon: 'i-heroicons-folder',
+                click: () => goToSearchResult(r)
+            })),
+            ignoreFilter: true
+        });
+    }
+
+    if (userResults.length > 0) {
+        groups.push({
+            id: 'users',
+            key: 'users',
+            label: 'Пользователи',
+            items: userResults.map((r) => ({
+                id: `user-${r.data.id}`,
+                label: `${r.data.first_name} ${r.data.last_name}`,
+                suffix: r.data.group,
+                icon: 'i-heroicons-user',
+                click: () => goToSearchResult(r)
+            })),
+            ignoreFilter: true
+        });
+    }
+
+    return groups;
 });
 
 const editFormValid = computed(() => {
@@ -767,7 +895,7 @@ const editFormChanged = computed(() => {
     );
 });
 
-const openEditModal = async (taskId) => {
+const openEditModal = async (taskId: string | number) => {
     try {
         const task = await TasksService.getTaskByIdTasksTaskIdGet(taskId);
         editingTask.value = task;
@@ -786,7 +914,7 @@ const openEditModal = async (taskId) => {
     }
 };
 
-const openDeleteModal = async (taskId) => {
+const openDeleteModal = async (taskId: string | number) => {
     try {
         const task = await TasksService.getTaskByIdTasksTaskIdGet(taskId);
         editingTask.value = task;
@@ -802,7 +930,7 @@ const saveEdit = async () => {
     try {
         if (editingTask.value.event) {
             await EventsService.updateEventEventsEventIdPut(editingTask.value.event.id, {
-                ...editingTask.value.event  ,
+                ...editingTask.value.event,
                 name: editForm.value.name,
                 date: editForm.value.date,
                 start_time: editForm.value.timeStart ? `${editForm.value.timeStart}:00` : null,
@@ -833,13 +961,13 @@ const openFullEditPage = () => {
     if (editingTask.value) {
         editModalOpen.value = false;
         router.push({
-            name: routesNames.tasksTaskIdEdit.index,
+            name: routesNames.tasksTaskIdEdit,
             params: { task_id: editingTask.value.id }
         });
     }
 };
 
-// ✅ ПРАВИЛЬНЫЕ обработчики - возвращают false для отмены дефолтного поведения
+// ✅ Обработчики событий календаря
 function handleCalendarUpdate(payload) {
     if (!payload?.event) return false;
 
@@ -849,7 +977,6 @@ function handleCalendarUpdate(payload) {
         openEditModal(taskId);
     }
 
-    // ✅ ВАЖНО: Возвращаем false чтобы отменить дефолтное поведение
     return false;
 }
 
@@ -862,25 +989,100 @@ const handleDeleteEvent = (payload) => {
         openDeleteModal(taskId);
     }
 
-    // ✅ ВАЖНО: Возвращаем false чтобы отменить дефолтное поведение
     return false;
+};
+
+// ✅ Функции для поиска
+const performSearch = async () => {
+    if (!searchQuery.value || searchQuery.value.length < 2) {
+        searchResults.value = [];
+        return;
+    }
+
+    isSearching.value = true;
+    try {
+        const { SearchService } = await import('~/client');
+        const response = await SearchService.searchSearchGet(searchQuery.value, 50);
+        searchResults.value = response.results;
+    } catch (error) {
+        console.error('Ошибка поиска:', error);
+        searchResults.value = [];
+    } finally {
+        isSearching.value = false;
+    }
+};
+
+// ✅ Следим за изменением поискового запроса
+// Используем watchDebounced для автопоиска с задержкой
+let searchTimeout: NodeJS.Timeout | null = null;
+watch(searchQuery, async (newQuery) => {
+    if (searchTimeout) {
+        clearTimeout(searchTimeout);
+    }
+
+    if (newQuery && newQuery.length >= 2) {
+        searchTimeout = setTimeout(async () => {
+            await performSearch();
+        }, 300);
+    } else {
+        searchResults.value = [];
+    }
+});
+
+// ✅ Следим за закрытием модалки
+watch(searchModalOpen, (isOpen) => {
+    if (!isOpen) {
+        searchQuery.value = '';
+        searchResults.value = [];
+    }
+});
+
+const goToSearchResult = (result) => {
+    searchModalOpen.value = false;
+    searchQuery.value = '';
+    searchResults.value = [];
+
+    switch (result.type) {
+        case 'task':
+            router.push({
+                name: routesNames.tasksTaskId,
+                params: { task_id: result.data.id }
+            });
+            break;
+        case 'event':
+            router.push({
+                name: routesNames.tasksTaskId,
+                params: { task_id: result.data.task_id }
+            });
+            break;
+        case 'group':
+            router.push({
+                name: routesNames.eventsGroupsGroupId,
+                params: { group_id: result.data.id }
+            });
+            break;
+        case 'user':
+            router.push({
+                name: routesNames.usersUserId,
+                params: { user_id: result.data.id }
+            });
+            break;
+    }
 };
 
 function goToEvent(ev) {
     if (ev.id.startsWith('task-')) {
         const parts = ev.id.split('-');
         const typedTaskId = parts.slice(1).join('-');
-        router.push({name: 'tasks-task_id', params: {task_id: typedTaskId}});
-    } else if (ev.calendarId === 'photographer' || ev.title.startsWith('сдача репортажа')) {
+        router.push({name: routesNames.tasksTaskId, params: {task_id: typedTaskId}});
+    } else if (ev.calendarId === 'photographer' || ev.title.startsWith('Сдача репортажа')) {
         const typedTaskId = ev.id.split('-').slice(1).join('-');
-        router.push({name: 'tasks-task_id', params: {task_id: typedTaskId}});
+        router.push({name: routesNames.tasksTaskId, params: {task_id: typedTaskId}});
     }
 }
 
 const handleClickEvent = (ev) => {
-
     currentPopupEvent.value = ev.event;
-
 
     if (!authStore.isAdmin) {
         goToEvent(ev.event);
@@ -897,195 +1099,147 @@ onMounted(async () => {
         calendarRef.value.getInstance().setDate(currentDate.value);
     }
 
-    // Инициализируем кнопку "Открыть"
-    const cleanupPopupButton = setupPopupOpenButton();
+    // Инициализация popup'а
+    const cleanupPopup = setupPopupOpenButton();
 
-    fetchEvents();
+    // Загрузка событий
+    await fetchEvents();
 
-    // Cleanup при размонтировании
+    // Обновление URL при изменении даты
+    watch(() => currentDate.value, updateUrl);
+
+    // Переподгрузка событий при изменении фильтров
+    watch([showTypedTasks, showCurrentUserTasks], fetchEvents);
+
     onBeforeUnmount(() => {
-        cleanupPopupButton?.();
+        cleanupPopup();
     });
 });
 
-watch([currentDate, isSmallScreen], () => {
-    updateUrl();
+onBeforeUnmount(() => {
+    // cleanup if needed
 });
-
-window.addEventListener('resize', () => {
-    const newIsSmall = window.innerWidth < 768;
-    if (newIsSmall !== isSmallScreen.value) {
-        isSmallScreen.value = newIsSmall;
-        setDateFromUrl();
-        if (!isSmallScreen.value && calendarRef.value) {
-            calendarRef.value.getInstance().setDate(currentDate.value);
-        }
-        fetchEvents();
-    }
-});
-
-const popupTemplates = ref({
-    popupEdit: () => 'Редактировать',
-    popupDelete: () => 'Удалить',
-});
-
-const options = computed(() => ({
-    isReadOnly: true,
-    usageStatistics: false,
-    week: {
-        startDayOfWeek: 1,
-        dayNames: ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
-        showNowIndicator: true,
-        showTimezoneCollapseButton: false,
-        timezonesCollapsed: false,
-        hourStart: 0,
-        hourEnd: 24,
-        eventView: ['time'],
-        taskView: false,
-        collapseDuplicateEvents: true,
-    },
-    month: {
-        startDayOfWeek: 1,
-        dayNames: ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'],
-        isAlways6Weeks: false,
-    },
-}));
 </script>
 
-<style lang="scss" scoped>
-.user-mode {
-    .toastui-calendar-section-button {
-        display: none !important;
-    }
-}
-
+<style scoped>
 .intro {
     display: flex;
     flex-direction: column;
+    gap: 20px;
+    width: 100%;
     height: 100%;
 }
 
 .controls {
     display: flex;
-    margin-bottom: 10px;
-    gap: 5px;
-    @include md(true) {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 10px;
+}
 
-        .period-label {
-             font-size: var(--text-sm) !important;
-            grid-column: 1 / -1;
+.period-label {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text);
+    flex: 1;
+    margin-left: 20px;
+}
 
-        }
-    }
-
-    .period-label {
-        border-radius: 10px;
-        border: 1px solid black;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 3px 20px;
-        font-size: 16px;
-        color: #555;
-        min-width: 200px;
-    }
+.toggle-button {
+    white-space: nowrap;
 }
 
 .my-calendar {
+    flex: 1;
+    overflow: auto;
     width: 100%;
-    height: 100%;
 }
 
 .weekly-view {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 0px;
+    gap: 20px;
+    padding: 20px;
+    overflow-y: auto;
+    width: 100%;
+}
 
-    &.empty {
-        height: calc(100% - 50px);
-    }
+.weekly-view.empty {
+    justify-content: center;
+    align-items: center;
 }
 
 .weekly-view h3 {
-    font-size: 18px;
+    font-size: 16px;
+    font-weight: 600;
     margin: 0;
-    color: #222;
-    margin-bottom: 5px;
-    margin-left: 5px;
+    padding: 10px 0;
+    border-bottom: 2px solid var(--color-border);
+    text-transform: capitalize;
 }
 
 .event-card {
-    padding: 10px;
-    border-radius: 10px;
-    margin-bottom: 5px;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
     cursor: pointer;
-    border: 1px solid #999999;
-    background-color: white;
-    color: #000000;
+    transition: all 0.2s ease;
+}
 
-    .deadline-icon {
-        margin-left: 5px;
-        vertical-align: middle;
-        color: $text-color;
-        width: 18px;
-        height: 18px;
-        margin-top: 3px;
-    }
+.event-card:hover {
+    transform: translateX(2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .card-title {
-    font-weight: bold;
+    font-weight: 500;
+    font-size: 14px;
+    margin-bottom: 4px;
 }
 
 .card-time {
-    font-size: 14px;
-    color: inherit;
+    font-size: 12px;
+    margin: 4px 0;
+    opacity: 0.8;
 }
 
 .card-attendees {
-    font-size: 14px;
-    color: inherit;
+    font-size: 12px;
+    margin: 4px 0;
+    opacity: 0.8;
 }
 
 .card-body {
-    margin-top: 5px;
-    font-size: 14px;
+    font-size: 12px;
+    margin-top: 8px;
+    opacity: 0.7;
+}
+
+.deadline-icon {
     display: flex;
-    flex-direction: column;
-    gap: 5px;
+    align-items: center;
+    justify-content: center;
 }
 
-:deep(.select-menu) {
-    --ui-border-accented: transparent !important;
-}
+@media (max-width: 768px) {
+    .controls {
+        padding: 0 12px;
+    }
 
-// Стилизуем кнопку "Открыть" в попапе под стиль Toast UI
-:deep(.toastui-calendar-popup-section .popup-open-btn) {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px; // как у стандартных кнопок
-  font-size: 12px; // ближе к их размеру
-  line-height: 1;
-  font-weight: 500;
-  color: var(--toastui-font-color, #333);
-  background: transparent; // убрать синюю заливку
-  border: none; // убрать кастомную рамку
-  border-radius: 0; // убрать скругление
-  cursor: pointer;
-  transition: opacity .2s ease;
-  margin-right: 0; // убрать отступ, чтобы не выбивалась из ряда
-}
+    .period-label {
+        margin-left: 0;
+        flex: none;
+    }
 
-:deep(.toastui-calendar-popup-section .popup-open-btn:hover) {
-  opacity: .8; // как у остальных кнопок на hover
-}
+    .weekly-view {
+        padding: 12px;
+    }
 
-// Чтобы не ломать вертикальный разделитель, добавим небольшой отступ как у соседних
-:deep(.toastui-calendar-popup-section .popup-open-btn + .toastui-calendar-vertical-line) {
-  margin-left: 4px;
+    .event-card {
+        padding: 10px;
+        font-size: 13px;
+    }
 }
 </style>
