@@ -2,7 +2,13 @@
     <app-form full-height headline="Создание задачи">
         <div v-auto-animate class="flex flex-col gap-2">
             <app-input v-model="name" label="Название задачи" required white />
-
+            <UCheckbox
+                v-model="useInPgas"
+                color="neutral"
+                variant="card"
+                label="Учитывать в ПГАС"
+                class="flex-1"
+            />
             <div v-for="(label, role) in labels" :key="role" class="flex gap-2">
                 <app-button
                     :outline="!tasks[role].use"
@@ -36,6 +42,12 @@
     >
         <template #body>
             <div class="flex flex-col gap-2">
+                <app-input
+                    v-model="form.name"
+                    label="Название подзадачи"
+                    required
+                    white
+                />
                 <UCheckbox
                     v-model="form.forSingleUser"
                     label="Для одного исполнителя"
@@ -84,6 +96,7 @@ const tasks = ref({
     [UserRole.COPYWRITER]: createEmptyTask(),
     [UserRole.DESIGNER]: createEmptyTask(),
 });
+const useInPgas = ref(true);
 
 function createEmptyTask() {
     return {
@@ -95,6 +108,7 @@ function createEmptyTask() {
 }
 
 const form = ref({
+    name: '',
     description: "",
     dueDate: "",
     forSingleUser: false,
@@ -110,6 +124,7 @@ const openModal = (role) => {
     const task = tasks.value[role];
 
     form.value = {
+        name: task.name || '',
         description: task.description,
         dueDate: task.deadline,
         forSingleUser: task.for_single_user,
@@ -123,6 +138,7 @@ const submitModal = () => {
     const task = tasks.value[currentRole.value];
 
     task.use = true;
+    task.name = form.value.name;
     task.description = form.value.description;
     task.deadline = form.value.dueDate;
     task.for_single_user = form.value.forSingleUser;
@@ -147,9 +163,11 @@ const { $toast } = useNuxtApp();
 const submitTask = async () => {
     const payload = {
         name: name.value,
+        use_in_pgas: useInPgas.value,
         typed_tasks: Object.entries(tasks.value).reduce((acc, [role, task]) => {
             acc[role] = task.use
                 ? {
+                      name: task.name,
                       description: task.description,
                       due_date: task.deadline,
                       for_single_user: task.for_single_user,
