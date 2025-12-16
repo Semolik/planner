@@ -121,6 +121,8 @@
                 <event-group-selector
                     v-model="selectedGroup"
                     v-model:open="selectGroupOpen"
+                    :current-task="task"
+              
                     class="h-min mt-auto"
                 />
             </div>

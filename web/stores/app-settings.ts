@@ -12,6 +12,9 @@ export const useAppSettingsStore = defineStore("app-settings", {
     }),
     actions: {
         async getSettings() {
+            if (this.settings && this.eventsLevels.length > 0) {
+                return;
+            }
             this.settings = await SettingsService.getSettingsSettingsGet();
             this.eventsLevels =
                 await EventsLevelsService.getEventLevelsEventsLevelsGet();

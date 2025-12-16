@@ -82,6 +82,57 @@
         </template>
     </UModal>
 
+    <!-- Модалка предупреждения об удалении подзадач -->
+    <UModal
+        v-model:open="warningModalOpen"
+        title="Внимание: будут удалены подзадачи"
+    >
+        <template #body>
+            <div class="flex flex-col gap-3">
+                <UAlert
+                    color="orange"
+                    variant="soft"
+                    title="Предупреждение"
+                    description="При переносе мероприятия в агрегированную группу будут удалены следующие подзадачи:"
+                />
+
+                <div class="flex flex-col gap-2">
+                    <div v-if="tasksToDelete.copywriter" class="text-sm">
+                        • Задача для копирайтера (дедлайн: {{ formatDate(tasksToDelete.copywriter.due_date) }})
+                    </div>
+                    <div v-if="tasksToDelete.designer" class="text-sm">
+                        • Задача для дизайнера (дедлайн: {{ formatDate(tasksToDelete.designer.due_date) }})
+                    </div>
+                </div>
+
+                <div class="text-sm text-gray-600">
+                    Вместо них будут использоваться агрегированные задачи группы.
+                </div>
+
+                <div class="flex items-center gap-2 mt-2">
+                    <input
+                        type="checkbox"
+                        id="reassign-users"
+                        v-model="reassignUsers"
+                        class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label for="reassign-users" class="text-sm text-gray-700">
+                        Переназначить пользователей на агрегированные задачи
+                    </label>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 mt-4">
+                    <app-button active @click="confirmGroupSelection">
+                        Подтвердить
+                    </app-button>
+                    <app-button @click="warningModalOpen = false">
+                        Отмена
+                    </app-button>
+                </div>
+            </div>
+        </template>
+    </UModal>
+
     <!-- Модалка для создания новой группы -->
     <UModal
         v-model:open="createGroupOpen"
@@ -201,6 +252,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    onlyAggregated: {
+        type: Boolean,
+        default: false,
+    },
     required: {
         type: Boolean,
         default: false,
@@ -209,9 +264,13 @@ const props = defineProps({
         type: String,
         default: null,
     },
+    currentTask: {
+        type: Object,
+        default: null,
+    },
 });
 
-const emit = defineEmits(["update:open", "update:modelValue"]);
+const emit = defineEmits(["update:open", "update:modelValue", "group-selected"]);
 
 const modalOpen = computed({
     get: () => props.open,
@@ -219,6 +278,10 @@ const modalOpen = computed({
 });
 
 const createGroupOpen = ref(false);
+const warningModalOpen = ref(false);
+const pendingGroup = ref(null);
+const tasksToDelete = ref({ copywriter: null, designer: null });
+const reassignUsers = ref(true); // По умолчанию включено
 
 // Поиск группы
 const searchGroup = ref("");
@@ -298,17 +361,18 @@ const resetCreation = () => {
     createAggregateDesignerTask.value = false;
 };
 
-// Загрузка результатов поиска с учетом режима агрегации
+// Загрузка результатов поиска (фильтруем по onlyAggregated если нужно)
 watch(
-    [searchGroup, () => props.aggregateMode],
-    async ([value, aggregateMode]) => {
+    [searchGroup, () => props.onlyAggregated],
+    async ([value, onlyAggregated]) => {
         try {
+            const withAggregateTask = onlyAggregated ? true : undefined;
             searchGroupsResult.value =
                 await EventsGroupsService.searchEventGroupsEventsGroupsSearchGet(
                     value || undefined,
                     1,
                     'all',
-                    aggregateMode
+                    withAggregateTask
                 );
         } catch (error) {
             console.error("Failed to fetch event groups:", error);
@@ -338,9 +402,64 @@ watch(createAggregateDesignerTask, (isEnabled) => {
 });
 
 // Выбор существующей группы
-const selectGroup = (group) => {
+const selectGroup = async (group) => {
+    // Если группа агрегированная, проверяем наличие подзадач
+    if (group.aggregate_task && props.currentTask) {
+        // Проверяем подзадачи текущей задачи
+        if (props.currentTask.typed_tasks && props.currentTask.typed_tasks.length > 0) {
+            const copywriterTask = props.currentTask.typed_tasks.find(t => t.task_type === 'copywriter');
+            const designerTask = props.currentTask.typed_tasks.find(t => t.task_type === 'designer');
+
+            // Проверяем, есть ли у агрегированной задачи группы подзадача дизайнера
+            // Если есть - значит группа с общим альбомом
+            const aggregateHasDesigner = group.aggregate_task.typed_tasks?.some(t => t.task_type === 'designer') || false;
+
+            // Проверяем, есть ли задачи для копирайтера
+            const hasCopywriterTask = !!copywriterTask;
+            // Проверяем, есть ли задачи для дизайнера (удаляем только если группа с общим альбомом)
+            const hasDesignerTask = aggregateHasDesigner && !!designerTask;
+
+            if (hasCopywriterTask || hasDesignerTask) {
+                // Сохраняем информацию о задачах, которые будут удалены
+                tasksToDelete.value = {
+                    copywriter: hasCopywriterTask ? copywriterTask : null,
+                    designer: hasDesignerTask ? designerTask : null
+                };
+
+                pendingGroup.value = group;
+                modalOpen.value = false;
+                warningModalOpen.value = true;
+                return;
+            }
+        }
+    }
+
+    // Если проверки прошли или группа не агрегированная, выбираем её
     emit("update:modelValue", group);
     modalOpen.value = false;
+};
+
+// Подтверждение выбора группы после предупреждения
+const confirmGroupSelection = () => {
+    if (pendingGroup.value) {
+        emit("group-selected", {
+            group: pendingGroup.value,
+            reassignUsers: reassignUsers.value,
+            tasksToDelete: tasksToDelete.value
+        });
+        emit("update:modelValue", pendingGroup.value);
+        warningModalOpen.value = false;
+        pendingGroup.value = null;
+        tasksToDelete.value = { copywriter: null, designer: null };
+        reassignUsers.value = true; // Сбрасываем на дефолт
+    }
+};
+
+// Форматирование даты для отображения
+const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
 // Очистка выбора

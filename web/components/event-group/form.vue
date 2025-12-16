@@ -431,6 +431,7 @@ const handleSave = async () => {
                     description: description.value,
                     link: link.value,
                     organizer: organizer.value,
+                    aggregate_task_params: null,
                 });
             const router = useRouter();
             router.push({

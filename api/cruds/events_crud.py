@@ -121,7 +121,7 @@ class EventsCRUD(BaseCRUD):
             .where(EventGroup.id == group_id)
             .options(
                 selectinload(EventGroup.events).options(self._get_event_options()),
-                selectinload(EventGroup.aggregate_task),
+                selectinload(EventGroup.aggregate_task).selectinload(Task.typed_tasks),
             )
         )
 
@@ -182,6 +182,7 @@ class EventsCRUD(BaseCRUD):
         end = page * per_page
         start = end - per_page
         search_query = select(EventGroup)
+
         if query:
             search_query = search_query.where(EventGroup.name.ilike(f"%{query}%"))
         if with_aggregate_task is not None:
@@ -215,7 +216,7 @@ class EventsCRUD(BaseCRUD):
                 .selectinload(Task.typed_tasks)
                 .selectinload(TypedTask.task_states)
                 .selectinload(TaskState.user),
-                selectinload(EventGroup.aggregate_task),
+                selectinload(EventGroup.aggregate_task).selectinload(Task.typed_tasks),
             )
         )
 

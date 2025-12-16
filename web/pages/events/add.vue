@@ -54,6 +54,7 @@
                             class="select-menu"
                             color="neutral"
                             size="lg"
+                            required
                             :content="{
                                 align: 'start',
                                 side: 'bottom',
@@ -98,7 +99,7 @@
             <event-group-selector
                 v-model="selectedGroup"
                 v-model:open="selectGroupOpen"
-                :aggregate-mode="useAggregatePublication"
+                      :only-aggregated="useAggregatePublication"
                 :required="useAggregatePublication"
                 :event-date="date"
             />
@@ -193,6 +194,7 @@ import { EventsService, EventsGroupsService } from "~/client";
 import { routesNames } from "@typed-router";
 
 const appSettingsStore = useAppSettingsStore();
+await appSettingsStore.getSettings();
 definePageMeta({
     middleware: ["admin"],
 });
@@ -231,11 +233,13 @@ const eventLevels = appSettingsStore.eventsLevels.map((level) => ({
     id: level.id,
     label: level.name,
 }));
+console.log("Event levels:", eventLevels);
 const event_level = ref(
     eventLevels.find(
         (level) => level.id === appSettingsStore.settings.default_event_level_id
     )
 );
+console.log("Default event level:", event_level.value);
 
 const selectedGroup = ref(null);
 
@@ -249,7 +253,6 @@ const buttonActive = computed(() => {
 
     // Группа обязательна только при aggregate_task
     if (useAggregatePublication.value) {
-      console.log("Aggregate mode active, checking group selection:", selectedGroup.value);
         return baseValidation && selectedGroup.value !== null;
     }
 
@@ -310,14 +313,14 @@ const createEvent = async () => {
     if (!buttonActive.value) return;
 
     // Создаем группу если она новая (только для агрегированного режима)
-    if (selectedGroup.value && !selectedGroup.value.id && useAggregatePublication.value) {
+    if (selectedGroup.value && !selectedGroup.value.id) {
         try {
             selectedGroup.value = await EventsGroupsService.createEventGroupEventsGroupsPost({
                 name: selectedGroup.value.name,
                 description: selectedGroup.value.description,
                 organizer: selectedGroup.value.organizer,
                 link: "",
-                aggregate_task_params: selectedGroup.value.aggregate_task_params,
+                aggregate_task_params: selectedGroup.value.aggregate_task_params || null,
             });
         } catch (error) {
             $toast.error("Ошибка создания группы: " + HandleOpenApiError(error).message);

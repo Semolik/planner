@@ -158,14 +158,52 @@ async def update_event(
         raise HTTPException(
             status_code=400, detail="Количество фотографов должно быть больше 0"
         )
-    if event.start_time > event.end_time:
+    if (
+        event.start_time is not None
+        and event.end_time is not None
+        and event.start_time > event.end_time
+    ):
         raise HTTPException(
             status_code=400, detail="Время начала не может быть позже времени окончания"
         )
+    # Проверяем, переносится ли мероприятие в агрегированную группу
+    old_group_id = db_event.group_id
+    new_group_is_aggregated = False
+
     if event.group_id is not None:
         group = await EventsCRUD(db).get_event_group(event.group_id)
         if group is None:
             raise HTTPException(status_code=404, detail="Группа мероприятий не найдена")
+
+        # Проверяем, агрегированная ли новая группа
+        if group.aggregate_task_id is not None:
+            new_group_is_aggregated = True
+
+            # Если группа изменилась и новая группа агрегированная, удаляем подзадачи копирайтера
+            if old_group_id != event.group_id:
+                # Получаем подзадачи текущего мероприятия
+                task = db_event.task
+                if task and task.typed_tasks:
+                    tasks_crud = TasksCRUD(db)
+
+                    # Проверяем, есть ли у агрегированной задачи группы подзадача дизайнера
+                    # Если есть - значит группа с общим альбомом
+                    aggregate_task = group.aggregate_task
+                    has_aggregate_designer = any(
+                        t.task_type == UserRole.DESIGNER
+                        for t in aggregate_task.typed_tasks
+                    ) if aggregate_task and aggregate_task.typed_tasks else False
+
+                    # Удаляем задачи копирайтера
+                    for typed_task in list(task.typed_tasks):
+                        if typed_task.task_type == UserRole.COPYWRITER:
+                            await tasks_crud.delete(typed_task)
+
+                    # Удаляем задачи дизайнера, если группа с общим альбомом
+                    if has_aggregate_designer:
+                        for typed_task in list(task.typed_tasks):
+                            if typed_task.task_type == UserRole.DESIGNER:
+                                await tasks_crud.delete(typed_task)
 
     db_event = await EventsCRUD(db).update_event(
         event=db_event,

@@ -149,6 +149,41 @@
                     >
                         {{ task.group.name }}
                     </UBadge>
+                    <!-- Если у группы есть ссылка на пост — показываем бейдж-ссылку -->
+                    <UBadge
+                        v-if="task.group.link"
+                        color="neutral"
+                        icon="material-symbols:link"
+                        size="lg"
+                        as="a"
+                        :href="task.group.link"
+                        rel="noopener noreferrer"
+                        target="_blank"
+                    >
+                        Пост группы
+                    </UBadge>
+                    <!-- Если ссылки нет — подсказка и переход в редактор группы -->
+                    <UBadge
+                        v-else
+                        color="neutral"
+                        variant="outline"
+                        size="lg"
+                        icon="material-symbols:edit"
+                        class="cursor-pointer"
+                        @click="() => $router.push({ name: routesNames.eventsGroupsGroupId, params: { group_id: task.group.id }, query: { edit: '1' } })"
+                    >
+                        Указать ссылку в редакторе группы
+                    </UBadge>
+                    <!-- Кнопка-редактирование: всегда доступна рядом -->
+                    <UBadge
+                        color="neutral"
+                        size="lg"
+                        icon="material-symbols:open_in_new"
+                        class="cursor-pointer"
+                        @click="() => $router.push({ name: routesNames.eventsGroupsGroupId, params: { group_id: task.group.id } })"
+                    >
+                        Открыть группу
+                    </UBadge>
                 </div>
                 <div v-if="task.event?.group?.aggregate_task" class="section">
                     <UAlert
