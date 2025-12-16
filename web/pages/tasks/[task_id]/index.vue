@@ -85,7 +85,7 @@
                         </UBadge>
                         <UBadge
                             v-if="!task.use_in_pgas"
-                            color="amber"
+                            color="neutral"
                             variant="outline"
                             size="lg"
                             icon="material-symbols:warning"

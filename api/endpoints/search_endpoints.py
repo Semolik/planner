@@ -9,14 +9,14 @@ router = APIRouter(prefix="/search", tags=["search"])
 
 @router.get("", response_model=SearchResponse)
 async def search(
-    q: str = Query(..., min_length=2, max_length=100, description="Поисковый запрос"),
+    q: str = Query(..., min_length=1, max_length=100, description="Поисковый запрос"),
     limit: int = Query(50, ge=1, le=100, description="Максимум результатов"),
     session: AsyncSession = Depends(get_async_session),
 ):
     """
     Поиск по задачам, мероприятиям, группам и пользователям
 
-    - **q**: Поисковый запрос (минимум 2 символа)
+    - **q**: Поисковый запрос (минимум 1 символ)
     - **limit**: Максимум результатов для каждого типа (по умолчанию 50, максимум 100)
     """
     search_crud = SearchCRUD(session)

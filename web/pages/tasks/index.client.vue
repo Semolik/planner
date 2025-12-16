@@ -1,24 +1,19 @@
 <template>
   <div :class="['intro play-container', {'user-mode': !authStore.isAdmin}]">
     <div class="controls">
-      <!-- Кнопка поиска -->
-      <UTooltip :delay-duration="0" :disabled="isSmallScreen" text="Поиск">
-        <app-button active @click="searchModalOpen = true">
-          <Icon name="material-symbols:search"/>
-        </app-button>
-      </UTooltip>
+      <div class="nav-arrows">
+        <UTooltip :delay-duration="0" :disabled="isSmallScreen" text="Прошлый месяц">
+          <app-button active @click="prev">
+            <Icon name="mdi:arrow-left"/>
+          </app-button>
+        </UTooltip>
 
-      <UTooltip :delay-duration="0" :disabled="isSmallScreen" text="Прошлый месяц">
-        <app-button active @click="prev">
-          <Icon name="mdi:arrow-left"/>
-        </app-button>
-      </UTooltip>
-
-      <UTooltip :delay-duration="0" :disabled="isSmallScreen" text="Следующий месяц">
-        <app-button active @click="next">
-          <Icon name="mdi:arrow-right"/>
-        </app-button>
-      </UTooltip>
+        <UTooltip :delay-duration="0" :disabled="isSmallScreen" text="Следующий месяц">
+          <app-button active @click="next">
+            <Icon name="mdi:arrow-right"/>
+          </app-button>
+        </UTooltip>
+      </div>
 
       <div class="period-label">
         {{ periodLabel }}
@@ -42,6 +37,13 @@
           <span v-else class="text-sm">
             Только мои задачи
           </span>
+        </app-button>
+      </UTooltip>
+
+      <!-- Кнопка поиска -->
+      <UTooltip :delay-duration="0" :disabled="isSmallScreen" text="Поиск">
+        <app-button active @click="searchModalOpen = true">
+          <Icon name="material-symbols:search"/>
         </app-button>
       </UTooltip>
     </div>
@@ -105,16 +107,34 @@
     </div>
 
     <!-- ✅ CommandPalette ВНУТРИ Modal -->
-    <UModal v-model:open="searchModalOpen" title="Поиск" :ui="{ content: 'max-w-xl' }">
+    <UModal
+        v-model:open="searchModalOpen"
+        title="Поиск"
+        :ui="{
+            content: 'max-w-2xl h-[500px]'
+        }"
+    >
       <template #content>
         <UCommandPalette
             v-model:search-term="searchQuery"
             :groups="searchCommandGroups"
             :loading="isSearching"
             placeholder="Поиск по задачам, мероприятиям, группам и пользователям..."
-            class="h-96"
+            class="h-full"
+            :ui="{
+                root: 'h-full flex flex-col',
+                container: 'flex-1 min-h-0 overflow-y-auto'
+            }"
+
             :highlight-on-hover="true"
-        />
+            :lazy="false"
+        >
+         <template #empty>
+           <div class="w-full h-full flex items-center justify-center text-center px-6">
+             <p class="text-sm text-gray-600">Ничего не найдено</p>
+           </div>
+         </template>
+        </UCommandPalette>
       </template>
     </UModal>
 
@@ -202,15 +222,13 @@ import {useRouter, useRoute} from 'vue-router';
 import {watch, onMounted, onBeforeUnmount, ref, computed, nextTick} from 'vue';
 import TuiCalendar from 'toast-ui-calendar-vue3';
 import 'toast-ui-calendar-vue3/styles.css';
-import {CalendarService, TasksService, EventsService} from '@/client';
-import { useAppSettingsStore } from '~/stores/app-settings';
+import {CalendarService, TasksService, EventsService, SearchService} from '@/client';
 import { useAuthStore } from '~/stores/auth';
 import { useLocalStorage } from '@vueuse/core';
 import { routesNames } from '@typed-router';
 
 const router = useRouter();
 const route = useRoute();
-const appSettingsStore = useAppSettingsStore();
 const authStore = useAuthStore();
 
 const isSmallScreen = ref(false);
@@ -310,6 +328,8 @@ const popupTemplates = ref({
     popupDetailLocation: () => '',
     popupDetailUser: () => '',
     popupDetailAttendees: () => '',
+    popupEdit: () => 'Редактировать',
+    popupDelete: () => 'Удалить',
 });
 
 // Формат даты YYYY-MM-DD
@@ -752,9 +772,9 @@ const setupPopupOpenButton = () => {
         openBtn.style.padding = '12px';
         openBtn.style.borderTop = '1px solid #e5e5e5';
         openBtn.style.borderRadius = '0 0 8px 8px';
-        openBtn.style.backgroundColor = '#f5f5f5';
+
         openBtn.style.cursor = 'pointer';
-        openBtn.style.fontSize = '14px';
+        openBtn.style.fontSize = '12px';
         openBtn.style.fontWeight = '500';
         openBtn.style.transition = 'background-color 0.2s';
         openBtn.style.border = 'none';
@@ -804,21 +824,7 @@ const searchCommandGroups = computed(() => {
     const groupResults = searchResults.value.filter((r) => r.type === 'group');
     const userResults = searchResults.value.filter((r) => r.type === 'user');
 
-    if (taskResults.length > 0) {
-        groups.push({
-            id: 'tasks',
-            key: 'tasks',
-            label: 'Задачи',
-            items: taskResults.map((r) => ({
-                id: `task-${r.data.id}`,
-                label: r.data.name,
-                icon: 'i-heroicons-document-text',
-                to: { name: routesNames.tasksTaskId, params: { task_id: r.data.id } }
-            })),
-            ignoreFilter: true
-        });
-    }
-
+    // Сначала показываем мероприятия
     if (eventResults.length > 0) {
         groups.push({
             id: 'events',
@@ -830,6 +836,22 @@ const searchCommandGroups = computed(() => {
                 suffix: r.data.location,
                 icon: 'i-heroicons-calendar',
                 to: { name: routesNames.tasksTaskId, params: { task_id: r.data.task_id } }
+            })),
+            ignoreFilter: true
+        });
+    }
+
+    // Потом задачи
+    if (taskResults.length > 0) {
+        groups.push({
+            id: 'tasks',
+            key: 'tasks',
+            label: 'Задачи',
+            items: taskResults.map((r) => ({
+                id: `task-${r.data.id}`,
+                label: r.data.name,
+                icon: 'i-heroicons-document-text',
+                to: { name: routesNames.tasksTaskId, params: { task_id: r.data.id } }
             })),
             ignoreFilter: true
         });
@@ -994,18 +1016,97 @@ const handleDeleteEvent = (payload) => {
 };
 
 const performSearch = async () => {
-    if (!searchQuery.value || searchQuery.value.length < 2) {
+    if (!searchQuery.value) {
         searchResults.value = [];
         return;
     }
 
     isSearching.value = true;
     try {
-        const { SearchService } = await import('~/client');
         const response = await SearchService.searchSearchGet(searchQuery.value, 50);
         searchResults.value = response.results;
     } catch (error) {
         console.error('Ошибка поиска:', error);
+        searchResults.value = [];
+    } finally {
+        isSearching.value = false;
+    }
+};
+
+// Функция загрузки ближайших мероприятий
+const loadUpcomingEvents = async () => {
+    isSearching.value = true;
+    try {
+        // Берем период: неделя вперёд от текущей даты
+        const now = new Date();
+        const weekLater = new Date(now);
+        weekLater.setDate(now.getDate() + 7);
+
+        const formatDateLocal = (d: Date) => {
+            return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+        };
+
+        const dateFrom = formatDateLocal(now);
+        const dateTo = formatDateLocal(weekLater);
+
+        const response = await CalendarService.getCalendarCalendarGet(dateFrom, dateTo);
+
+        // Преобразуем события календаря в формат для поиска
+        const results: any[] = [];
+        const addedTaskIds = new Set<string>();
+        const addedEventIds = new Set<string>();
+
+        if (response && typeof response === 'object') {
+            Object.entries(response).forEach(([dateKey, dayItems]: [string, any]) => {
+                if (Array.isArray(dayItems)) {
+                    dayItems.forEach((dayItem: any) => {
+                        const itemType = dayItem.item_type;
+                        const item = dayItem.item;
+
+                        if (!item) return;
+
+                        // Обрабатываем события
+                        if (itemType === 'event' && !addedEventIds.has(item.id)) {
+                            results.push({
+                                type: 'event',
+                                data: {
+                                    id: item.id,
+                                    name: item.name,
+                                    date: item.date,
+                                    location: item.location,
+                                    task_id: item.task?.id
+                                }
+                            });
+                            addedEventIds.add(item.id);
+                        }
+
+                        // Обрабатываем typed_task (подзадачи)
+                        if (itemType === 'typed_task' && item.parent_task) {
+                            const parentTask = item.parent_task;
+
+                            // Если есть событие у родительской задачи, добавляем его
+                            if (parentTask.event && !addedEventIds.has(parentTask.event.id)) {
+                                results.push({
+                                    type: 'event',
+                                    data: {
+                                        id: parentTask.event.id,
+                                        name: parentTask.event.name,
+                                        date: parentTask.event.date,
+                                        location: parentTask.event.location,
+                                        task_id: parentTask.id
+                                    }
+                                });
+                                addedEventIds.add(parentTask.event.id);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        searchResults.value = results;
+    } catch (error) {
+        console.error('Ошибка загрузки ближайших мероприятий:', error);
         searchResults.value = [];
     } finally {
         isSearching.value = false;
@@ -1018,18 +1119,25 @@ watch(searchQuery, async (newQuery) => {
         clearTimeout(searchTimeout);
     }
 
-    if (newQuery && newQuery.length >= 2) {
+    if (newQuery) {
         searchTimeout = setTimeout(async () => {
             await performSearch();
         }, 300);
     } else {
-        searchResults.value = [];
+        // При очистке поля поиска загружаем ближайшие мероприятия
+        await loadUpcomingEvents();
     }
 });
 
-// ✅ Следим за закрытием модалки
-watch(searchModalOpen, (isOpen) => {
-    if (!isOpen) {
+// ✅ Следим за открытием/закрытием модалки
+watch(searchModalOpen, async (isOpen) => {
+    if (isOpen) {
+        // При открытии загружаем ближайшие мероприятия
+        if (!searchQuery.value) {
+            await loadUpcomingEvents();
+        }
+    } else {
+        // При закрытии очищаем
         searchQuery.value = '';
         searchResults.value = [];
     }
@@ -1090,6 +1198,8 @@ const handleClickEvent = (ev) => {
 onMounted(async () => {
     isSmallScreen.value = window.innerWidth < 768;
 
+    // Устанавливаем текущую дату по умолчанию (ближайшие мероприятия)
+    currentDate.value = new Date();
     setDateFromUrl();
 
     await nextTick();
@@ -1134,6 +1244,12 @@ onBeforeUnmount(() => {
     align-items: center;
     flex-wrap: wrap;
     padding: 10px;
+}
+
+.nav-arrows {
+    display: flex;
+    gap: 8px;
+    align-items: center;
 }
 
 .period-label {
@@ -1222,22 +1338,64 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 768px) {
+    .intro {
+        gap: 8px;
+    }
+
     .controls {
-        padding: 0 12px;
+        padding: 8px;
+        gap: 6px;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .nav-arrows {
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .nav-arrows > * {
+        flex: 1;
     }
 
     .period-label {
-        margin-left: 0;
-        flex: none;
+        width: 100%;
+        text-align: center;
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .toggle-button {
+        width: 100%;
     }
 
     .weekly-view {
-        padding: 12px;
+        padding: 8px;
+        gap: 12px;
+    }
+
+    .weekly-view h3 {
+        font-size: 14px;
+        padding: 8px 0;
     }
 
     .event-card {
-        padding: 10px;
+        padding: 8px 10px;
         font-size: 13px;
+        margin-bottom: 6px;
+    }
+
+    .card-title {
+        font-size: 13px;
+    }
+
+    .card-time,
+    .card-attendees,
+    .card-body {
+        font-size: 11px;
     }
 }
 </style>
