@@ -1,4 +1,6 @@
+
 # Planner — запуск и настройка
+<img width="1920" height="1080" alt="Снимок экрана 2025-12-17 в 01 10 41" src="https://github.com/user-attachments/assets/65e967eb-dc9d-46c9-8af1-a1479b614af4" />
 
 Этот проект состоит из backend (FastAPI + Postgres) и frontend (Nuxt, статическая сборка на nginx). Ниже — пошаговая настройка окружения, запуск и описание ключевых особенностей.
 
@@ -94,6 +96,10 @@ npm run generate-client-dev
 По умолчанию фронт в браузере обращается к backend по относительному пути `/api` (nginx проксирует на `api:8000`).
 
 ## 7. Скриншоты
-
-
-
+<img width="1920" height="1080" alt="Снимок экрана 2025-12-17 в 01 10 41" src="https://github.com/user-attachments/assets/efb58f49-0194-469d-8785-1665e826b2ea" />
+<img width="1920" height="1080" alt="Снимок экрана 2025-12-17 в 01 10 50" src="https://github.com/user-attachments/assets/5dfe8cef-fa4e-4cd9-a2c9-f07ad757ec15" />
+<img width="1920" height="1080" alt="Снимок экрана 2025-12-17 в 01 11 48" src="https://github.com/user-attachments/assets/9a1e39d5-763d-4473-890f-ba10e0caf716" />
+<img width="1920" height="1080" alt="Снимок экрана 2025-12-17 в 01 11 55" src="https://github.com/user-attachments/assets/876fdd18-7ff1-42e4-b4bb-173b4a3efc90" />
+<img width="1920" height="1080" alt="Снимок экрана 2025-12-17 в 01 11 12" src="https://github.com/user-attachments/assets/e2e28f9b-61f2-41dd-b643-cc1176f2f3e9" />
+<img width="1920" height="1080" alt="Снимок экрана 2025-12-17 в 01 11 19" src="https://github.com/user-attachments/assets/a55ff160-548c-49bb-b3a2-145581a571a8" />
+<img width="1920" height="1080" alt="Снимок экрана 2025-12-17 в 01 11 32" src="https://github.com/user-attachments/assets/a58e5201-a301-43f2-bbd1-d3ee67944d79" />
