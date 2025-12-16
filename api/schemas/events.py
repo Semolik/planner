@@ -66,8 +66,9 @@ class EventGroupBase(BaseModel):
 class GroupPublicationTypedTasksParams(PublicationTypedTasksParams):
     copywriters_deadline: date
 
-
-class EventGroupCreate(EventGroupBase):
+class EventGroupUpdate(EventGroupBase):
+    pass
+class EventGroupCreate(EventGroupUpdate):
     aggregate_task_params: GroupPublicationTypedTasksParams | None
 
 
