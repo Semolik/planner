@@ -113,6 +113,7 @@
             :loading="isSearching"
             placeholder="Поиск по задачам, мероприятиям, группам и пользователям..."
             class="h-96"
+            :highlight-on-hover="true"
         />
       </template>
     </UModal>
@@ -812,7 +813,7 @@ const searchCommandGroups = computed(() => {
                 id: `task-${r.data.id}`,
                 label: r.data.name,
                 icon: 'i-heroicons-document-text',
-                click: () => goToSearchResult(r)
+                to: { name: routesNames.tasksTaskId, params: { task_id: r.data.id } }
             })),
             ignoreFilter: true
         });
@@ -828,7 +829,7 @@ const searchCommandGroups = computed(() => {
                 label: `${r.data.name} (${r.data.date})`,
                 suffix: r.data.location,
                 icon: 'i-heroicons-calendar',
-                click: () => goToSearchResult(r)
+                to: { name: routesNames.tasksTaskId, params: { task_id: r.data.task_id } }
             })),
             ignoreFilter: true
         });
@@ -844,7 +845,7 @@ const searchCommandGroups = computed(() => {
                 label: r.data.name,
                 suffix: `${r.data.events_count} мероприятий`,
                 icon: 'i-heroicons-folder',
-                click: () => goToSearchResult(r)
+                to: { name: routesNames.eventsGroupsGroupId, params: { group_id: r.data.id } }
             })),
             ignoreFilter: true
         });
@@ -860,7 +861,7 @@ const searchCommandGroups = computed(() => {
                 label: `${r.data.first_name} ${r.data.last_name}`,
                 suffix: r.data.group,
                 icon: 'i-heroicons-user',
-                click: () => goToSearchResult(r)
+                to: { name: routesNames.usersUserId, params: { user_id: r.data.id } }
             })),
             ignoreFilter: true
         });
@@ -961,7 +962,7 @@ const openFullEditPage = () => {
     if (editingTask.value) {
         editModalOpen.value = false;
         router.push({
-            name: routesNames.tasksTaskIdEdit,
+            name: routesNames.tasksTaskIdEdit.index,
             params: { task_id: editingTask.value.id }
         });
     }
@@ -992,7 +993,6 @@ const handleDeleteEvent = (payload) => {
     return false;
 };
 
-// ✅ Функции для поиска
 const performSearch = async () => {
     if (!searchQuery.value || searchQuery.value.length < 2) {
         searchResults.value = [];
@@ -1012,8 +1012,6 @@ const performSearch = async () => {
     }
 };
 
-// ✅ Следим за изменением поискового запроса
-// Используем watchDebounced для автопоиска с задержкой
 let searchTimeout: NodeJS.Timeout | null = null;
 watch(searchQuery, async (newQuery) => {
     if (searchTimeout) {
