@@ -1,22 +1,7 @@
 import { OpenAPI } from "@/client";
-export default defineNuxtPlugin((nuxtApp) => {
-    const runtimeConfig = useRuntimeConfig();
-    if (import.meta.server) {
-        const cookie = useCookie("fastapiusersauth");
-        OpenAPI.HEADERS = {
-            Cookie: `fastapiusersauth=${cookie.value}`,
-        };
-    }
-
-    if (process.env.NODE_ENV === "development") {
-        OpenAPI.BASE = "http://localhost:8000";
-    } else {
-        if (import.meta.server) {
-            OpenAPI.BASE = "http://api:8000";
-        } else {
-            OpenAPI.BASE = `https://${runtimeConfig.public.apiBaseUrl}`;
-        }
-    }
-
+export default defineNuxtPlugin(() => {
+    // Always run in client-only mode; configure API base for SPA served by nginx
+    const isDev = import.meta.env.DEV;
+    OpenAPI.BASE = isDev ? "http://localhost:8000" : "/api";
     OpenAPI.WITH_CREDENTIALS = true;
 });

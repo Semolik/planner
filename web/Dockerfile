@@ -1,27 +1,25 @@
-# Build Stage 1
-
+# Build Stage
 FROM node:22-alpine AS build
 WORKDIR /app
 
+# Enable corepack and install deps
 RUN corepack enable
-
-# Copy package.json and your lockfile, here we add pnpm-lock.yaml for illustration
 COPY package.json ./
-
-# Install dependencies
 RUN npm i
 
-# Copy the entire project
-COPY . ./
+# Copy sources and build static
+COPY . .
+RUN npm run generate
 
-# Build the project
-RUN npm run build
+# Runtime Stage: Nginx
+FROM nginx:1.27-alpine
 
-# Build Stage 2
+# Copy built static site
+COPY --from=build /app/.output/public/ /usr/share/nginx/html/
 
-FROM node:22-alpine
-WORKDIR /app
+# Copy nginx config
+COPY nginx.conf /etc/nginx/nginx.conf
 
-# Only `.output` folder is needed from the build stage
-COPY --from=build /app/.output/ ./
-
+# Expose and run
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

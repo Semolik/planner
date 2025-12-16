@@ -3,6 +3,9 @@ export default defineNuxtConfig({
     compatibilityDate: "2024-11-01",
     devtools: { enabled: true },
 
+    // Run as SPA for full static hosting
+    ssr: false,
+
     modules: [
       "@pinia/nuxt",
       "@nuxt/fonts",
@@ -38,11 +41,8 @@ export default defineNuxtConfig({
         },
     },
     icon: {
-        provider: "server",
-        localApiEndpoint: "/icons-api",
-        serverBundle: {
-            collections: ["material-symbols", "mdi"],
-        },
+        provider: "iconify",
+        // No local server bundle when using static hosting
     },
    fonts: {
     provider: 'google',  // Only use Google provider
