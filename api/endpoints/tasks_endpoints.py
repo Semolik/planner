@@ -14,8 +14,6 @@ from api.core.users_controller import (
 from api.db.session import get_async_session
 from api.models.user_models import User, UserRole
 from api.schemas.files import File, ImageInfo
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 
 api_router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -151,8 +149,6 @@ async def create_task(data: TaskCreate, db=Depends(get_async_session)):
                 for_single_user=typed_task_data.for_single_user,
             )
     return await TasksCRUD(db).get_task_by_id(task_id=task.id)
-
-
 @api_router.post(
     "/birthday/{user_id}",
     dependencies=[Depends(current_superuser)],
@@ -182,7 +178,6 @@ async def create_birthday_task(user_id: uuid.UUID, due_date: date = Query(...), 
         for_single_user=True,
     )
     return await TasksCRUD(db).get_task_by_id(task_id=task.id)
-
 
 @api_router.post(
     "/{task_id}/files",
@@ -255,16 +250,3 @@ async def delete_file_from_task(
     await TasksCRUD(db).delete(task_file)
 
 
-@api_router.get("/birthday/nearest/{user_id}", response_model=TaskRead | None)
-async def get_nearest_birthday_task(user_id: str, session: AsyncSession = Depends(get_async_session)):
-    today = date.today()
-    q = (
-        select(Task)
-        .where(Task.birthday_user_id == user_id)
-        .where(Task.due_date >= today)
-        .order_by(Task.due_date.asc())
-        .limit(1)
-    )
-    result = await session.execute(q)
-    task = result.scalars().first()
-    return task if task else None

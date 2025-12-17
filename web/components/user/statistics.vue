@@ -441,7 +441,7 @@ const getTasksForRole = (role: string) => {
 
             return {
                 id: task.id,
-                name: task.parent_task?.event?.name || task.description || 'Без названия',
+                name: task.displayed_name || task.description || 'Без названия',
                 dueDate: displayDate,
                 link: task.link,
                 lastState: task.task_states?.[task.task_states.length - 1] || null,

@@ -169,6 +169,7 @@ class TypedTaskRead(CreateTypedTask):
     task_states: List[TypedTaskState]
     due_date_passed: bool = False
     due_date: datetime
+    displayed_name: str | None = None
 
     class Config:
         from_attributes = True
