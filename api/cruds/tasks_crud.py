@@ -52,9 +52,7 @@ class TasksCRUD(BaseCRUD):
             selectinload(TypedTask.task_states)
             .selectinload(TaskState.user)
             .options(selectinload(User.institute)),
-            selectinload(TypedTask.parent_task)
-            .selectinload(Task.event)
-            .options(
+            selectinload(TypedTask.parent_task).options(
                 *self.get_task_options()
             ),
             selectinload(TypedTask.task_states).selectinload(TaskState.period),
