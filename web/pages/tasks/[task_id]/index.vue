@@ -589,7 +589,7 @@
             <div class="text-md">
                 Вы действительно хотите удалить
                 {{ task.event ? "мероприятие" : "задачу" }} "{{
-                    task.event ? task.event.name : task.name
+                    task.event ? task.event.name : task.displayed_name
                 }}"?
             </div>
             <div class="grid grid-cols-2 gap-2 mt-4">

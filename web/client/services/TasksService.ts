@@ -186,17 +186,22 @@ export class TasksService {
     /**
      * Create Birthday Task
      * @param userId
+     * @param dueDate
      * @returns TaskRead Successful Response
      * @throws ApiError
      */
     public static createBirthdayTaskTasksBirthdayUserIdPost(
         userId: string,
+        dueDate: string,
     ): CancelablePromise<TaskRead> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/tasks/birthday/{user_id}',
             path: {
                 'user_id': userId,
+            },
+            query: {
+                'due_date': dueDate,
             },
             errors: {
                 422: `Validation Error`,

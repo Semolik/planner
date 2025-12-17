@@ -1,8 +1,9 @@
+from datetime import date
 from typing import Annotated, Literal, Union
 from api.utilities.files import save_file, save_image
 from api.schemas.events import CreateTypedTask, TaskCreate, TaskRead, TypedTaskReadFull
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, Header, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Header, UploadFile, Query
 from api.cruds.tasks_crud import TasksCRUD
 from api.cruds.users_crud import UsersCRUD
 from api.core.users_controller import (
@@ -13,6 +14,8 @@ from api.core.users_controller import (
 from api.db.session import get_async_session
 from api.models.user_models import User, UserRole
 from api.schemas.files import File, ImageInfo
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 api_router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -148,13 +151,15 @@ async def create_task(data: TaskCreate, db=Depends(get_async_session)):
                 for_single_user=typed_task_data.for_single_user,
             )
     return await TasksCRUD(db).get_task_by_id(task_id=task.id)
+
+
 @api_router.post(
     "/birthday/{user_id}",
     dependencies=[Depends(current_superuser)],
     status_code=201,
     response_model=TaskRead,
 )
-async def create_birthday_task(user_id: uuid.UUID, db=Depends(get_async_session)):
+async def create_birthday_task(user_id: uuid.UUID, due_date: date = Query(...), db=Depends(get_async_session)):
     user = await UsersCRUD(db).get_user_by_id(user_id=user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
@@ -167,16 +172,17 @@ async def create_birthday_task(user_id: uuid.UUID, db=Depends(get_async_session)
     await TasksCRUD(db).create_typed_task(
         task_id=task.id,
         task_type=UserRole.COPYWRITER,
-        due_date=user.birth_date.replace(year=user.birth_date.year + 1),
+        due_date=due_date,
         for_single_user=True,
     )
     await TasksCRUD(db).create_typed_task(
         task_id=task.id,
         task_type=UserRole.DESIGNER,
-        due_date=user.birth_date.replace(year=user.birth_date.year + 1),
+        due_date=due_date,
         for_single_user=True,
     )
     return await TasksCRUD(db).get_task_by_id(task_id=task.id)
+
 
 @api_router.post(
     "/{task_id}/files",
@@ -247,3 +253,18 @@ async def delete_file_from_task(
     if task_file is None:
         raise HTTPException(status_code=404, detail="File not found in task")
     await TasksCRUD(db).delete(task_file)
+
+
+@api_router.get("/birthday/nearest/{user_id}", response_model=TaskRead | None)
+async def get_nearest_birthday_task(user_id: str, session: AsyncSession = Depends(get_async_session)):
+    today = date.today()
+    q = (
+        select(Task)
+        .where(Task.birthday_user_id == user_id)
+        .where(Task.due_date >= today)
+        .order_by(Task.due_date.asc())
+        .limit(1)
+    )
+    result = await session.execute(q)
+    task = result.scalars().first()
+    return task if task else None

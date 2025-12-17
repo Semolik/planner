@@ -49,6 +49,9 @@
             </template>
             <template #birthday>
                 <div class="flex flex-col gap-2 min-h-[310px]">
+                     <app-button active @click="openUserSelectModal" class="w-full" v-if="selectedUser">
+                        Изменить пользователя
+                    </app-button>
                     <div v-if="!selectedUser" class="flex flex-col gap-2 items-center justify-center flex-1">
                         <Icon name="material-symbols:cake" class="text-6xl text-gray-400" />
                         <p class="text-center text-gray-500">
@@ -64,14 +67,20 @@
                                         День рождения: {{ formatDate(selectedUser.birth_date) }}
                                     </div>
                                 </div>
-
                             </div>
-
                         </div>
+                        <app-input
+                            v-model="birthdayTaskDueDate"
+                            label="Дедлайн задачи"
+                            type="date"
+                            required
+                            white
+                        />
                     </div>
-                    <app-button active @click="openUserSelectModal" class="w-full mt-auto">
-                        {{ selectedUser ? 'Изменить пользователя' : 'Выбрать пользователя' }}
+                    <app-button active @click="openUserSelectModal" class="w-full mt-auto" v-if="!selectedUser">
+                        Выбрать пользователя
                     </app-button>
+
                 </div>
             </template>
         </UTabs>
@@ -168,9 +177,33 @@ const activeTab = ref("task");
 // Состояние для задачи на день рождения
 const selectedUser = ref(null);
 const userSelectModalOpen = ref(false);
+const birthdayTaskDueDate = ref("");
 
 // Вычисляемое свойство для определения типа задачи
 const isBirthdayTask = computed(() => activeTab.value === "birthday");
+
+// Функция для расчёта ближайшего дня рождения
+const getNextBirthday = (birthDate) => {
+    if (!birthDate) return "";
+
+    const today = new Date();
+    const birth = new Date(birthDate);
+
+    // Устанавливаем день рождения на текущий год
+    let nextBirthday = new Date(
+        today.getFullYear(),
+        birth.getMonth(),
+        birth.getDate()
+    );
+
+    // Если день рождения в этом году уже прошёл, берём следующий год
+    if (nextBirthday < today) {
+        nextBirthday.setFullYear(today.getFullYear() + 1);
+    }
+
+    // Форматируем в YYYY-MM-DD для input type="date"
+    return nextBirthday.toISOString().split('T')[0];
+};
 
 // Создание пустой задачи
 function createEmptyTask(role) {
@@ -252,12 +285,17 @@ const openUserSelectModal = () => {
 // Обработка выбора пользователя
 const handleUserSelect = (user) => {
     selectedUser.value = user;
+    // Автоматически устанавливаем ближайшую дату дня рождения
+    if (user.birth_date) {
+        birthdayTaskDueDate.value = getNextBirthday(user.birth_date);
+    }
     userSelectModalOpen.value = false;
 };
 
 // Очистка выбранного пользователя
 const clearSelectedUser = () => {
     selectedUser.value = null;
+    birthdayTaskDueDate.value = "";
 };
 
 // Форматирование даты
@@ -274,7 +312,7 @@ const formatDate = (dateString) => {
 // Валидация всей формы для сохранения
 const isFormValidForSave = computed(() => {
     if (isBirthdayTask.value) {
-        return selectedUser.value !== null;
+        return selectedUser.value !== null && birthdayTaskDueDate.value.trim().length > 0;
     }
 
     const hasName = name.value.trim().length > 0;
@@ -302,8 +340,14 @@ const submitTask = async () => {
                 return;
             }
 
+            if (!birthdayTaskDueDate.value) {
+                $toast.warning("Укажите дедлайн задачи");
+                return;
+            }
+
             task = await TasksService.createBirthdayTaskTasksBirthdayUserIdPost(
-                selectedUser.value.id
+                selectedUser.value.id,
+                birthdayTaskDueDate.value
             );
             $toast.success(`Задача на день рождения для ${useFullName(selectedUser.value)} создана`);
         } else {
