@@ -574,6 +574,19 @@ TypedTask.displayed_name = column_property(
                 .correlate(TypedTask)
                 .scalar_subquery()
         ),
+        (
+            select(Task.name)
+            .where(Task.id == TypedTask.task_id)
+            .limit(1)
+            .correlate(TypedTask)
+            .scalar_subquery()
+            .isnot(None),
+            select(Task.name)
+            .where(Task.id == TypedTask.task_id)
+            .limit(1)
+            .correlate(TypedTask)
+            .scalar_subquery()
+        ),
         else_=''
     )
 )
