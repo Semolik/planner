@@ -475,7 +475,7 @@ Task.displayed_name = column_property(
                 .limit(1)
                 .as_scalar()
                 .isnot(None),
-            select(func.concat("Публикация по группе мероприятий '", EventGroup.name, "'"))
+            select(func.concat("Публикация по мероприятию '", EventGroup.name, "'"))
                 .where(EventGroup.aggregate_task_id == Task.id)
                 .limit(1)
                 .scalar_subquery()
@@ -540,14 +540,14 @@ TypedTask.displayed_name = column_property(
             .isnot(None),
             case(
                 (TypedTask.task_type == UserRole.COPYWRITER,
-                    select(func.concat('Публикация по группе мероприятий «', EventGroup.name, '»'))
+                    select(func.concat('Публикация по мероприятию «', EventGroup.name, '»'))
                         .where(EventGroup.aggregate_task_id == TypedTask.task_id)
                         .limit(1)
                         .correlate(TypedTask)
                         .scalar_subquery()
                 ),
                 (TypedTask.task_type == UserRole.DESIGNER,
-                    select(func.concat('Дизайн обложки для альбома группы «', EventGroup.name, '»'))
+                    select(func.concat('Дизайн обложки для альбома «', EventGroup.name, '»'))
                         .where(EventGroup.aggregate_task_id == TypedTask.task_id)
                         .limit(1)
                         .correlate(TypedTask)

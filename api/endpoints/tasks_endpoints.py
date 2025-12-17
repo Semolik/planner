@@ -142,6 +142,7 @@ async def create_task(data: TaskCreate, db=Depends(get_async_session)):
         if typed_task_data is not None:
             await TasksCRUD(db).create_typed_task(
                 task_id=task.id,
+                name=typed_task_data.name,
                 task_type=role,
                 description=typed_task_data.description,
                 link=typed_task_data.link,
