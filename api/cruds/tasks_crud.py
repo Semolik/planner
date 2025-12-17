@@ -2,7 +2,7 @@ from datetime import datetime, time, date
 from typing import Literal, Optional
 import uuid
 
-from sqlalchemy.orm import selectinload, contains_eager
+from sqlalchemy.orm import selectinload, contains_eager, aliased
 
 from api.cruds.base_crud import BaseCRUD
 from api.models.user_models import User, UserRole
@@ -477,25 +477,56 @@ class TasksCRUD(BaseCRUD):
         return result.scalars().all()
 
     async def get_user_completed_typed_tasks(
-        self, user_id: uuid.UUID, period_start: date, period_end: date
+            self, user_id: uuid.UUID, period_start: date, period_end: date
     ) -> list[TypedTask]:
+
+        # Алиасы для подзапросов
+        task_alias = aliased(Task)
+        event_alias = aliased(Event)
+        event_group_alias = aliased(EventGroup)
+
+        # Подзапрос: является ли task агрегационной задачей группы
+        is_aggregate_task = (
+            select(1)
+            .select_from(EventGroup)
+            .where(EventGroup.aggregate_task_id == task_alias.id)
+            .exists()
+        )
+
+        # Подзапрос: находится ли event в группе с aggregate_task
+        event_in_agg_group = (
+            select(1)
+            .select_from(EventGroup)
+            .where(
+                EventGroup.id == event_alias.group_id,
+                EventGroup.aggregate_task_id.isnot(None)
+            )
+            .exists()
+        )
+
+        # Определяем эффективную дату для фильтрации
+        effective_date = case(
+            # Если это агрегационная задача группы → используем due_date
+            (is_aggregate_task, TypedTask.due_date),
+            # Если task привязан к event → используем event.date (независимо от группы)
+            (task_alias.event_id.isnot(None), event_alias.date),
+            # Во всех остальных случаях (например, дни рождения) → due_date
+            else_=TypedTask.due_date
+        )
+
         query = (
             select(TypedTask)
             .join(TaskState, TypedTask.id == TaskState.type_task_id)
+            .join(task_alias, TypedTask.task_id == task_alias.id)
+            .outerjoin(event_alias, task_alias.event_id == event_alias.id)
             .where(
                 TaskState.user_id == user_id,
                 TaskState.state == State.COMPLETED,
-                case(
-                    (
-                        TypedTask.due_date.isnot(None),
-                        func.cast(TypedTask.due_date, Date).between(
-                            period_start, period_end
-                        ),
-                    ),
-                    else_=False,
-                ),
+                effective_date.between(period_start, period_end),
             )
             .options(*self.get_typed_task_options())
         )
+
         result = await self.db.execute(query)
         return result.scalars().all()
+
