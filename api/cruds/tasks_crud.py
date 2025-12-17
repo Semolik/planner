@@ -53,7 +53,14 @@ class TasksCRUD(BaseCRUD):
             .selectinload(TaskState.user)
             .options(selectinload(User.institute)),
             selectinload(TypedTask.parent_task).options(
-                *self.get_task_options()
+                selectinload(Task.event).options(selectinload(Event.group)),
+                selectinload(Task.files),
+                selectinload(Task.images),
+                selectinload(Task.birthday_user).options(
+                    selectinload(User.institute),
+                    selectinload(User.roles_objects),
+                ),
+                selectinload(Task.group),
             ),
             selectinload(TypedTask.task_states).selectinload(TaskState.period),
         ]
