@@ -88,7 +88,6 @@ async def create_event(event: EventCreate, db=Depends(get_async_session)):
             await TasksCRUD(db).create_typed_task(
                 task_id=task.id,
                 task_type=UserRole.COPYWRITER,
-                name=f"Публикация по группе мероприятий '{db_event.name}'",
                 description=event.copywriter_description,
                 for_single_user=True,
                 due_date=event.copywriters_deadline,
@@ -97,7 +96,6 @@ async def create_event(event: EventCreate, db=Depends(get_async_session)):
             await TasksCRUD(db).create_typed_task(
                 task_id=task.id,
                 task_type=UserRole.DESIGNER,
-                name=f"Обложка на общий альбом по мероприятию '{db_event.name}'",
                 description=event.designer_description,
                 for_single_user=True,
                 due_date=event.designers_deadline,

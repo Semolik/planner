@@ -500,46 +500,78 @@ Task.displayed_name = column_property(
 TypedTask.displayed_name = column_property(
     case(
         (TypedTask.name.isnot(None), TypedTask.name),
+        # Есть мероприятие
         (
             select(Task.event_id)
             .where(Task.id == TypedTask.task_id)
             .limit(1)
-            .correlate(Task)
+            .correlate(TypedTask)
             .scalar_subquery()
             .isnot(None),
             case(
                 (TypedTask.task_type == UserRole.COPYWRITER,
                     select(func.concat('Публикация по мероприятию «', Event.name, '»'))
-                        .where(Event.id == select(Task.event_id).where(Task.id == TypedTask.task_id).limit(1).correlate(Task).scalar_subquery())
+                        .where(Event.id == select(Task.event_id).where(Task.id == TypedTask.task_id).limit(1).correlate(TypedTask).scalar_subquery())
                         .limit(1)
-                        .correlate(Task)
+                        .correlate(TypedTask)
                         .scalar_subquery()
                 ),
                 (TypedTask.task_type == UserRole.DESIGNER,
                     select(func.concat('Дизайн обложки для альбома «', Event.name, '»'))
-                        .where(Event.id == select(Task.event_id).where(Task.id == TypedTask.task_id).limit(1).correlate(Task).scalar_subquery())
+                        .where(Event.id == select(Task.event_id).where(Task.id == TypedTask.task_id).limit(1).correlate(TypedTask).scalar_subquery())
                         .limit(1)
-                        .correlate(Task)
+                        .correlate(TypedTask)
                         .scalar_subquery()
                 ),
                 else_=select(Event.name)
-                    .where(Event.id == select(Task.event_id).where(Task.id == TypedTask.task_id).limit(1).correlate(Task).scalar_subquery())
+                    .where(Event.id == select(Task.event_id).where(Task.id == TypedTask.task_id).limit(1).correlate(TypedTask).scalar_subquery())
                     .limit(1)
-                    .correlate(Task)
+                    .correlate(TypedTask)
                     .scalar_subquery()
             )
         ),
+        # Нет мероприятия, но есть группа с aggregate_task_id
+        (
+            select(EventGroup.name)
+            .where(EventGroup.aggregate_task_id == TypedTask.task_id)
+            .limit(1)
+            .correlate(TypedTask)
+            .scalar_subquery()
+            .isnot(None),
+            case(
+                (TypedTask.task_type == UserRole.COPYWRITER,
+                    select(func.concat('Публикация по группе мероприятий «', EventGroup.name, '»'))
+                        .where(EventGroup.aggregate_task_id == TypedTask.task_id)
+                        .limit(1)
+                        .correlate(TypedTask)
+                        .scalar_subquery()
+                ),
+                (TypedTask.task_type == UserRole.DESIGNER,
+                    select(func.concat('Дизайн обложки для альбома группы «', EventGroup.name, '»'))
+                        .where(EventGroup.aggregate_task_id == TypedTask.task_id)
+                        .limit(1)
+                        .correlate(TypedTask)
+                        .scalar_subquery()
+                ),
+                else_=select(EventGroup.name)
+                    .where(EventGroup.aggregate_task_id == TypedTask.task_id)
+                    .limit(1)
+                    .correlate(TypedTask)
+                    .scalar_subquery()
+            )
+        ),
+        # День рождения
         (
             select(Task.birthday_user_id)
             .where(Task.id == TypedTask.task_id)
             .limit(1)
-            .correlate(Task)
+            .correlate(TypedTask)
             .scalar_subquery()
             .isnot(None),
             select(func.concat('Дизайн открытки ко Дню Рождения ', User.last_name, ' ', User.first_name))
-                .where(User.id == select(Task.birthday_user_id).where(Task.id == TypedTask.task_id).limit(1).correlate(Task).scalar_subquery())
+                .where(User.id == select(Task.birthday_user_id).where(Task.id == TypedTask.task_id).limit(1).correlate(TypedTask).scalar_subquery())
                 .limit(1)
-                .correlate(Task)
+                .correlate(TypedTask)
                 .scalar_subquery()
         ),
         else_=''

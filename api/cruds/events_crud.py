@@ -57,9 +57,7 @@ class EventsCRUD(BaseCRUD):
             select(Event)
             .where(Event.id == event_id)
             .options(
-             selectinload(Event.task).options(
-                 *self._get_event_options(),
-             )
+             self._get_event_options(),
             )
         )
 
