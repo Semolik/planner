@@ -156,11 +156,13 @@ class TasksCRUD(BaseCRUD):
         self,
         typed_task: TypedTask,
         for_single_user: bool,
+        name: str | None = None,
         due_date: datetime | None = None,
         description: str | None = None,
         link: str = "",
     ) -> TypedTask:
         typed_task.description = description
+        typed_task.name = name
         typed_task.link = link
         typed_task.due_date = due_date
         typed_task.for_single_user = for_single_user

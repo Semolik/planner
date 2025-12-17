@@ -111,6 +111,7 @@ async def update_typed_task(
     if typed_task is None:
         raise HTTPException(status_code=404, detail="Типизированная задача не найдена")
     updated_typed_task = await task_crud.update_typed_task(
+        name=data.name,
         typed_task=typed_task,
         description=data.description,
         link=data.link,
