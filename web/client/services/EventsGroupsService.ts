@@ -5,6 +5,7 @@
 import type { EventGroupCreate } from '../models/EventGroupCreate';
 import type { EventGroupRead } from '../models/EventGroupRead';
 import type { EventGroupReadShort } from '../models/EventGroupReadShort';
+import type { EventGroupUpdate } from '../models/EventGroupUpdate';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -156,7 +157,7 @@ export class EventsGroupsService {
      */
     public static updateEventGroupEventsGroupsGroupIdPut(
         groupId: string,
-        requestBody: EventGroupCreate,
+        requestBody: EventGroupUpdate,
     ): CancelablePromise<EventGroupRead> {
         return __request(OpenAPI, {
             method: 'PUT',

@@ -1,7 +1,14 @@
 from fastapi import APIRouter, Depends, Query
 from api.db.session import get_async_session
 from api.cruds.search_crud import SearchCRUD
-from api.schemas.search import SearchResponse, SearchResultItem, SearchTaskData, SearchEventData, SearchGroupData, SearchUserData
+from api.schemas.search import (
+    SearchResponse,
+    SearchResultItem,
+    SearchTaskData,
+    SearchEventData,
+    SearchGroupData,
+    SearchUserData,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/search", tags=["search"])
@@ -36,7 +43,7 @@ async def search(
                     use_in_pgas=task.use_in_pgas,
                     event_id=task.event_id,
                     group_id=None,  # Task не имеет прямой связи с группой, только через Event
-                )
+                ),
             )
         )
 
@@ -51,7 +58,7 @@ async def search(
                     date=event.date,
                     location=event.location,
                     task_id=event.task.id,
-                )
+                ),
             )
         )
 
@@ -65,7 +72,7 @@ async def search(
                     name=group.name,
                     description=group.description,
                     events_count=len(group.events) if group.events else 0,
-                )
+                ),
             )
         )
 
@@ -79,8 +86,8 @@ async def search(
                     first_name=user.first_name,
                     last_name=user.last_name,
                     group=user.group,
-                    institute=user.institute if hasattr(user, 'institute') else None,
-                )
+                    institute=user.institute if hasattr(user, "institute") else None,
+                ),
             )
         )
 
@@ -89,4 +96,3 @@ async def search(
         results=search_results,
         total=len(search_results),
     )
-

@@ -85,4 +85,3 @@ class SearchCRUD:
         results["users"] = list(users.scalars().all())
 
         return results
-

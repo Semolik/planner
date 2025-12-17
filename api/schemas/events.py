@@ -66,8 +66,11 @@ class EventGroupBase(BaseModel):
 class GroupPublicationTypedTasksParams(PublicationTypedTasksParams):
     copywriters_deadline: date
 
+
 class EventGroupUpdate(EventGroupBase):
     pass
+
+
 class EventGroupCreate(EventGroupUpdate):
     aggregate_task_params: GroupPublicationTypedTasksParams | None
 
@@ -75,6 +78,9 @@ class EventGroupCreate(EventGroupUpdate):
 class TaskReadShortWithoutEvent(TaskBase):
     id: uuid.UUID
     all_typed_tasks_completed: bool
+    name: str | None = None
+    displayed_name: str | None = None
+    birthday_user: UserReadShort | None = None
 
     class Config:
         from_attributes = True

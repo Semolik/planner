@@ -189,10 +189,14 @@ async def update_event(
                     # Проверяем, есть ли у агрегированной задачи группы подзадача дизайнера
                     # Если есть - значит группа с общим альбомом
                     aggregate_task = group.aggregate_task
-                    has_aggregate_designer = any(
-                        t.task_type == UserRole.DESIGNER
-                        for t in aggregate_task.typed_tasks
-                    ) if aggregate_task and aggregate_task.typed_tasks else False
+                    has_aggregate_designer = (
+                        any(
+                            t.task_type == UserRole.DESIGNER
+                            for t in aggregate_task.typed_tasks
+                        )
+                        if aggregate_task and aggregate_task.typed_tasks
+                        else False
+                    )
 
                     # Удаляем задачи копирайтера
                     for typed_task in list(task.typed_tasks):

@@ -3,7 +3,7 @@
         <div class="task-card-container">
             <div class="task-card shadow-lg">
                 <div class="head">
-                    {{ task.event ? task.event.name : task.name }}
+                    {{ task.event ? task.event.name : task.displayed_name }}
                 </div>
 
                 <template v-if="task.event">
@@ -645,7 +645,7 @@ const { $toast } = useNuxtApp();
 useSeoMeta({
     title: task.value.event
         ? `Мероприятие: ${task.value.event.name}`
-        : `Задача: ${task.value.name}`,
+        : `Задача: ${task.value.displayed_name}`,
 });
 
 const isAssigningSelf = computed(() => {
@@ -1031,7 +1031,7 @@ const sections = [
     },
     {
         label:
-            task.value.name +
+            task.value.displayed_name +
             (task.value.event ? ` (${task.value.event.name})` : ""),
         to: {
             name: routesNames.tasksTaskId,

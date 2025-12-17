@@ -13,7 +13,7 @@
         </template>
         <div class="edit-form">
             <div class="form-header">
-                {{ task.event ? task.event.name : task.name }}
+                {{ task.event ? task.event.name : task.displayed_name }}
             </div>
             <aside>
                 <nuxt-link
@@ -69,7 +69,7 @@ definePageMeta({
 
 useHead({
     title:
-        (task.value.event ? task.value.event.name : task.value.name) +
+        (task.value.event ? task.value.event.name : task.value.displayed_name) +
         " - Редактирование",
 });
 
@@ -82,7 +82,7 @@ const sections = computed(() => [
     },
     {
         label:
-            task.value.name +
+            task.value.displayed_name +
             (task.value.event ? ` (${task.value.event.name})` : ""),
         to: {
             name: routesNames.tasksTaskId,

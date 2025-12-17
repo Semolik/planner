@@ -27,6 +27,7 @@ export type { EventFullInfo } from './models/EventFullInfo';
 export type { EventGroupCreate } from './models/EventGroupCreate';
 export type { EventGroupRead } from './models/EventGroupRead';
 export type { EventGroupReadShort } from './models/EventGroupReadShort';
+export type { EventGroupUpdate } from './models/EventGroupUpdate';
 export type { EventLevelCreateOrUpdate } from './models/EventLevelCreateOrUpdate';
 export type { EventLevelRead } from './models/EventLevelRead';
 export type { EventRead } from './models/EventRead';

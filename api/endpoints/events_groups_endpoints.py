@@ -4,7 +4,12 @@ from typing import Literal
 from api.cruds.settings_crud import SettingsCRUD
 from api.cruds.tasks_crud import TasksCRUD
 from api.models.user_models import UserRole
-from api.schemas.events import EventGroupCreate, EventGroupRead, EventGroupReadShort, EventGroupUpdate
+from api.schemas.events import (
+    EventGroupCreate,
+    EventGroupRead,
+    EventGroupReadShort,
+    EventGroupUpdate,
+)
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from api.cruds.events_crud import EventsCRUD

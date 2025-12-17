@@ -21,7 +21,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.sql import func
 from api.models.files_models import File, Image
-from api.models.user_models import UserRole
+from api.models.user_models import User, UserRole
 from api.models.audit_models import AuditableMixin, register_audit_events
 from api.db.session import Base
 
@@ -175,7 +175,7 @@ class Task(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True
     )
-    name: Mapped[str] = mapped_column(String, nullable=False)
+    name: Mapped[str | None] = mapped_column(String, nullable=True)
     event_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("events.id", ondelete="CASCADE"), nullable=True
     )
@@ -187,6 +187,15 @@ class Task(Base):
         uselist=False,
         back_populates="task",
         cascade="all, delete-orphan",
+        single_parent=True,
+    )
+    birthday_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    birthday_user = relationship(
+        "User",
+        foreign_keys=[birthday_user_id],
+        uselist=False,
         single_parent=True,
     )
 
@@ -456,3 +465,36 @@ register_audit_events(
     TypedTask,
     tracked_fields=["task_id", "task_type", "description", "for_single_user", "link"],
 )
+
+Task.displayed_name = column_property(
+    case(
+        (Task.name.isnot(None), Task.name),
+        (
+            select(EventGroup.name)
+                .where(EventGroup.aggregate_task_id == Task.id)
+                .limit(1)
+                .as_scalar()
+                .isnot(None),
+            select(func.concat("Публикация по группе мероприятий '", EventGroup.name, "'"))
+                .where(EventGroup.aggregate_task_id == Task.id)
+                .limit(1)
+                .scalar_subquery()
+        ),
+        (
+            Task.event_id.isnot(None),
+            select(func.concat('Освещение мероприятия "', Event.name, '"'))
+                .where(Event.id == Task.event_id)
+                .limit(1)
+                .scalar_subquery()
+        ),
+        (
+            Task.birthday_user_id.isnot(None),
+            select(func.concat('День рождения ', User.first_name, ' ', User.last_name))
+                .where(User.id == Task.birthday_user_id)
+                .limit(1)
+                .scalar_subquery()
+        ),
+        else_=''
+    )
+)
+

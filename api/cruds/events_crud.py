@@ -57,9 +57,9 @@ class EventsCRUD(BaseCRUD):
             select(Event)
             .where(Event.id == event_id)
             .options(
-                selectinload(Event.task)
-                .selectinload(Task.typed_tasks)
-                .options(*TasksCRUD(self.db).get_typed_task_options())
+             selectinload(Event.task).options(
+                 *self._get_event_options(),
+             )
             )
         )
 
@@ -132,13 +132,7 @@ class EventsCRUD(BaseCRUD):
 
     def _get_event_options(self):
         return (
-            selectinload(Event.task)
-            .selectinload(Task.typed_tasks)
-            .selectinload(TypedTask.task_states)
-            .options(
-                selectinload(TaskState.period),
-                selectinload(TaskState.user).options(selectinload(User.institute)),
-            )
+            selectinload(Event.task).options(*TasksCRUD(self.db).get_task_options())
         )
 
     async def get_event_levels(self):

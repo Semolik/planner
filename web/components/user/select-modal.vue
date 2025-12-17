@@ -10,7 +10,6 @@
                 />
 
                 <!-- Прокручиваемый контейнер -->
-
                 <div
                     ref="scrollContainer"
                     v-auto-animate
@@ -29,9 +28,7 @@
                                 {{ useFullName(user) }}
                             </div>
                             <div
-                                v-if="
-                                    user.excluded && props.excludeUserBadgeText
-                                "
+                                v-if="user.excluded && props.excludeUserBadgeText"
                                 class="badge"
                             >
                                 {{ props.excludeUserBadgeText }}
@@ -59,6 +56,7 @@
         </template>
     </UModal>
 </template>
+
 <script setup>
 import { UsersService, UserRole } from "~/client";
 import { useInfiniteScroll } from "@vueuse/core";
@@ -121,6 +119,8 @@ const scrollContainer = ref(null);
 const loadUsers = async () => {
     if (loading.value || !hasMore.value) return;
 
+    loading.value = true;
+
     try {
         const response = await UsersService.getUsersUsersGet(
             searchUsersQuery.value,
@@ -146,25 +146,41 @@ const loadUsers = async () => {
     }
 };
 
-watch([searchUsersQuery, () => props.filterRole], () => {
+// Сброс состояния и загрузка данных
+const resetAndLoad = () => {
     allUsers.value = [];
     page.value = 1;
     hasMore.value = true;
     loadUsers();
+};
+
+// Отслеживание изменений поискового запроса и фильтра роли
+watch([searchUsersQuery, () => props.filterRole], () => {
+    resetAndLoad();
 });
 
+// Загрузка данных при открытии модального окна
 watch(
-    () => active,
-    () => {
-        if (!active.value) return;
-        nextTick(() => {
-            useInfiniteScroll(scrollContainer.value, () => loadUsers(), {
-                canLoadMore: () => hasMore.value,
-                distance: 10,
+    () => props.active,
+    (isActive) => {
+        if (isActive) {
+            // Загружаем данные только если модальное окно открыто и данных еще нет
+            if (allUsers.value.length === 0) {
+                resetAndLoad();
+            }
+
+            // Настраиваем бесконечную прокрутку
+            nextTick(() => {
+                if (scrollContainer.value) {
+                    useInfiniteScroll(scrollContainer.value, () => loadUsers(), {
+                        canLoadMore: () => hasMore.value,
+                        distance: 10,
+                    });
+                }
             });
-        });
+        }
     },
-    { immediate: true }
+    { immediate: false }
 );
 
 const searchUsersResults = computed(() =>
@@ -174,6 +190,7 @@ const searchUsersResults = computed(() =>
     }))
 );
 </script>
+
 <style scoped lang="scss">
 .user-list-container {
     border-top: 1px solid #eee;

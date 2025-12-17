@@ -25,15 +25,27 @@ from sqlalchemy.sql import case
 
 class TasksCRUD(BaseCRUD):
     async def create_task(
-        self, name: str, use_in_pgas: bool, event_id: uuid.UUID | None = None
+        self, name: str | None, use_in_pgas: bool, event_id: uuid.UUID | None = None, birthday_user_id: uuid.UUID | None = None
     ) -> Task:
         task = Task(
             name=name,
+            birthday_user_id=birthday_user_id,
             event_id=event_id,
             use_in_pgas=use_in_pgas,
         )
         return await self.create(task)
-
+    def get_task_options(self):
+        return [
+            selectinload(Task.typed_tasks).options(*self.get_typed_task_options()),
+            selectinload(Task.event).options(selectinload(Event.group)),
+            selectinload(Task.files),
+            selectinload(Task.images),
+            selectinload(Task.birthday_user).options(
+                selectinload(User.institute),
+                selectinload(User.roles_objects),
+            ),
+            selectinload(Task.group),
+        ]
     def get_typed_task_options(self):
         return [
             selectinload(TypedTask.users),
@@ -357,10 +369,11 @@ class TasksCRUD(BaseCRUD):
             .where(Task.id == task_id)
             .options(
                 selectinload(Task.event).options(selectinload(Event.group)),
-                selectinload(Task.typed_tasks).options(*self.get_typed_task_options()),
-                selectinload(Task.files),
-                selectinload(Task.images),
-                selectinload(Task.group),
+                *self.get_task_options()
+                # selectinload(Task.typed_tasks).options(*self.get_typed_task_options()),
+                # selectinload(Task.files),
+                # selectinload(Task.images),
+                # selectinload(Task.group),
             )
         )
         result = await self.db.execute(query)

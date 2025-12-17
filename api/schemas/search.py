@@ -7,6 +7,7 @@ from api.schemas.users import Institute
 
 class SearchTaskData(BaseModel):
     """Данные задачи в результатах поиска"""
+
     id: uuid.UUID
     name: str
     use_in_pgas: bool
@@ -19,6 +20,7 @@ class SearchTaskData(BaseModel):
 
 class SearchEventData(BaseModel):
     """Данные мероприятия в результатах поиска"""
+
     id: uuid.UUID
     name: str
     date: date
@@ -31,6 +33,7 @@ class SearchEventData(BaseModel):
 
 class SearchGroupData(BaseModel):
     """Данные группы мероприятий в результатах поиска"""
+
     id: uuid.UUID
     name: str
     description: Optional[str] = None
@@ -42,6 +45,7 @@ class SearchGroupData(BaseModel):
 
 class SearchUserData(BaseModel):
     """Данные пользователя в результатах поиска"""
+
     id: uuid.UUID
     first_name: str
     last_name: str
@@ -54,13 +58,14 @@ class SearchUserData(BaseModel):
 
 class SearchResultItem(BaseModel):
     """Единый результат поиска с типом и данными"""
+
     type: Literal["task", "event", "group", "user"]
     data: Union[SearchTaskData, SearchEventData, SearchGroupData, SearchUserData]
 
 
 class SearchResponse(BaseModel):
     """Ответ от поиска"""
+
     query: str
     results: list[SearchResultItem]
     total: int
-

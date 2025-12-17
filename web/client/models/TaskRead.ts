@@ -7,12 +7,15 @@ import type { EventRead } from './EventRead';
 import type { File } from './File';
 import type { ImageInfo } from './ImageInfo';
 import type { TypedTaskRead } from './TypedTaskRead';
+import type { UserReadShort } from './UserReadShort';
 export type TaskRead = {
     event_id?: (string | null);
-    name: string;
+    name?: (string | null);
     use_in_pgas: boolean;
     id: string;
     all_typed_tasks_completed: boolean;
+    displayed_name?: (string | null);
+    birthday_user?: (UserReadShort | null);
     event?: (EventRead | null);
     typed_tasks: Array<TypedTaskRead>;
     images: Array<ImageInfo>;

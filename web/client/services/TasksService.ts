@@ -184,6 +184,26 @@ export class TasksService {
         });
     }
     /**
+     * Create Birthday Task
+     * @param userId
+     * @returns TaskRead Successful Response
+     * @throws ApiError
+     */
+    public static createBirthdayTaskTasksBirthdayUserIdPost(
+        userId: string,
+    ): CancelablePromise<TaskRead> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/tasks/birthday/{user_id}',
+            path: {
+                'user_id': userId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * Upload File To Task
      * @param taskId
      * @param formData

@@ -534,7 +534,7 @@ const fetchEvents = async () => {
                 event.end = `${date}T23:59:59`;
                 event.category = 'allday';
             } else if (type === 'task') {
-                event.title = item.name;
+                event.title = item.displayed_name;
                 event.start = `${date}T00:00:00`;
                 event.end = `${date}T23:59:59`;
                 event.category = 'allday';
@@ -556,7 +556,7 @@ const fetchEvents = async () => {
                 event.start = `${item.due_date}T00:00:00`;
                 event.end = `${item.due_date}T23:59:59`;
                 event.calendarId = item.task_type;
-                let eventName = item.parent_task.name;
+                let eventName = item.parent_task.displayed_name;
                 if (item.parent_task.event) {
                     eventName = item.parent_task.event.name;
                     if (item.task_type === 'photographer') {
