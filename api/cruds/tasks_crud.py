@@ -55,9 +55,7 @@ class TasksCRUD(BaseCRUD):
             selectinload(TypedTask.parent_task)
             .selectinload(Task.event)
             .options(
-                selectinload(Event.group).options(
-                    selectinload(EventGroup.aggregate_task)
-                )
+                *self.get_task_options()
             ),
             selectinload(TypedTask.task_states).selectinload(TaskState.period),
         ]
