@@ -65,7 +65,12 @@ class SearchCRUD:
         # Поиск по группам мероприятий (загружаем события)
         group_query = (
             select(EventGroup)
-            .where(func.lower(EventGroup.name).ilike(search_term))
+            .where(
+                or_(
+                    func.lower(EventGroup.name).ilike(search_term),
+                    func.lower(EventGroup.link).ilike(search_term),
+                )
+            )
             .options(selectinload(EventGroup.events))
             .limit(limit)
         )
