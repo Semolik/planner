@@ -640,5 +640,6 @@ Event.task_id = column_property(
     select(Task.id)
     .where(Task.event_id == Event.id)
     .limit(1)
+    .correlate_except(Task)
     .scalar_subquery()
 )
