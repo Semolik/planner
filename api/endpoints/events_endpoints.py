@@ -31,6 +31,10 @@ async def export_events(year: int, db=Depends(get_async_session)):
     events = await EventsCRUD(db).get_events_by_year(year)
     return events
 
+@api_router.get('/export/excluded', dependencies=[Depends(current_superuser)], response_model=list[EventFullInfo])
+async def export_excluded_events(year: int, db=Depends(get_async_session)):
+    events = await EventsCRUD(db).get_events_excluded_by_year(year)
+    return events
 @api_router.get('/export/docx', dependencies=[Depends(current_superuser)])
 async def export_events_docx(year: int, db=Depends(get_async_session)):
     # Получаем события за год
@@ -64,7 +68,39 @@ async def export_events_docx(year: int, db=Depends(get_async_session)):
         media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         headers=headers
     )
+@api_router.get("/export/excluded/docx", dependencies=[Depends(current_superuser)])
+async def export_excluded_events_docx(year: int, db=Depends(get_async_session)):
+    # Получаем исключенные события за год
+    events = await EventsCRUD(db).get_events_excluded_by_year(year)
 
+    # Создаем документ
+    doc = Document()
+
+    # Добавляем события в нумерованный список
+    for event in events:
+        # Форматируем дату в формате dd.mm.yyyy
+        date_str = event.date.strftime('%d.%m.%Y')
+        # Создаем текст в формате: "Название мероприятия (дата)"
+        text = f'{event.name} ({date_str})'
+        # Добавляем параграф с нумерацией
+        doc.add_paragraph(text, style='List Number')
+
+    # Сохраняем документ в BytesIO
+    file_stream = BytesIO()
+    doc.save(file_stream)
+    file_stream.seek(0)
+
+    # Возвращаем файл
+    filename = f'excluded_events_{year}.docx'
+    headers = {
+        'Content-Disposition': f'attachment; filename="{filename}"'
+    }
+
+    return StreamingResponse(
+        file_stream,
+        media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        headers=headers
+    )
 
 @api_router.post(
     "", response_model=EventFullInfo, dependencies=[Depends(current_superuser)]

@@ -301,3 +301,39 @@ class EventsCRUD(BaseCRUD):
         )
         result = await self.db.execute(query)
         return result.scalars().all()
+
+    async def get_events_excluded_by_year(self, year: int) -> list[Event]:
+        """
+        Получить события за год, которые НЕ прошли фильтр
+        (события без завершённых задач или без задач вообще)
+        """
+        # Подзапрос: ID событий с завершёнными задачами
+        completed_events_subquery = (
+            select(Event.id)
+            .join(Task, Task.event_id == Event.id)
+            .join(TypedTask, TypedTask.task_id == Task.id)
+            .join(TaskState, TaskState.type_task_id == TypedTask.id)
+            .where(TaskState.state == State.COMPLETED)
+            .distinct()
+            .scalar_subquery()
+        )
+
+        # Основной запрос: события за год, которые НЕ в списке завершённых
+        query = (
+            select(Event)
+            .where(
+                and_(
+                    func.extract('year', Event.date) == year,
+                    Event.id.not_in(completed_events_subquery)
+                )
+            )
+            .distinct()
+            .order_by(Event.date)
+            .options(
+                self._get_event_options(),
+                selectinload(Event.group).options(*self.get_event_group_options())
+            )
+        )
+
+        result = await self.db.execute(query)
+        return result.scalars().all()
