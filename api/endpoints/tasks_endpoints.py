@@ -150,21 +150,22 @@ async def create_task(data: TaskCreate, db=Depends(get_async_session)):
                 for_single_user=typed_task_data.for_single_user,
             )
     return await TasksCRUD(db).get_task_by_id(task_id=task.id)
+
+
 @api_router.post(
     "/birthday/{user_id}",
     dependencies=[Depends(current_superuser)],
     status_code=201,
     response_model=TaskRead,
 )
-async def create_birthday_task(user_id: uuid.UUID, due_date: date = Query(...), db=Depends(get_async_session)):
+async def create_birthday_task(
+    user_id: uuid.UUID, due_date: date = Query(...), db=Depends(get_async_session)
+):
     user = await UsersCRUD(db).get_user_by_id(user_id=user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     task = await TasksCRUD(db).create_task(
-        name=None,
-        event_id=None,
-        use_in_pgas=True,
-        birthday_user_id=user_id
+        name=None, event_id=None, use_in_pgas=True, birthday_user_id=user_id
     )
     await TasksCRUD(db).create_typed_task(
         task_id=task.id,
@@ -179,6 +180,7 @@ async def create_birthday_task(user_id: uuid.UUID, due_date: date = Query(...), 
         for_single_user=True,
     )
     return await TasksCRUD(db).get_task_by_id(task_id=task.id)
+
 
 @api_router.post(
     "/{task_id}/files",
@@ -249,5 +251,3 @@ async def delete_file_from_task(
     if task_file is None:
         raise HTTPException(status_code=404, detail="File not found in task")
     await TasksCRUD(db).delete(task_file)
-
-

@@ -3,8 +3,27 @@ import uuid
 from api.schemas.stats import StatsUser, StatsMonth
 from api.cruds.base_crud import BaseCRUD
 from api.models.user_models import User, UserRole
-from api.models.events_models import TaskState, TypedTask, State, Task, Event, EventGroup
-from sqlalchemy import Integer, select, func, extract, case, Date, cast, between, String, and_, or_
+from api.models.events_models import (
+    TaskState,
+    TypedTask,
+    State,
+    Task,
+    Event,
+    EventGroup,
+)
+from sqlalchemy import (
+    Integer,
+    select,
+    func,
+    extract,
+    case,
+    Date,
+    cast,
+    between,
+    String,
+    and_,
+    or_,
+)
 from sqlalchemy.orm import selectinload, aliased
 from api.schemas.users import UserReadShort
 from typing import List, Dict
@@ -36,13 +55,33 @@ def get_months_between(start_date: date, end_date: date) -> set:
 
     return months
 
+
 from datetime import date
 import uuid
 from api.schemas.stats import StatsUser, StatsMonth
 from api.cruds.base_crud import BaseCRUD
 from api.models.user_models import User, UserRole
-from api.models.events_models import TaskState, TypedTask, State, Task, Event, EventGroup
-from sqlalchemy import Integer, select, func, extract, case, Date, cast, between, String, and_, or_
+from api.models.events_models import (
+    TaskState,
+    TypedTask,
+    State,
+    Task,
+    Event,
+    EventGroup,
+)
+from sqlalchemy import (
+    Integer,
+    select,
+    func,
+    extract,
+    case,
+    Date,
+    cast,
+    between,
+    String,
+    and_,
+    or_,
+)
 from sqlalchemy.orm import selectinload, aliased
 from api.schemas.users import UserReadShort
 from typing import List, Dict

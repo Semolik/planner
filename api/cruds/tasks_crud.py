@@ -25,7 +25,11 @@ from sqlalchemy.sql import case
 
 class TasksCRUD(BaseCRUD):
     async def create_task(
-        self, name: str | None, use_in_pgas: bool, event_id: uuid.UUID | None = None, birthday_user_id: uuid.UUID | None = None
+        self,
+        name: str | None,
+        use_in_pgas: bool,
+        event_id: uuid.UUID | None = None,
+        birthday_user_id: uuid.UUID | None = None,
     ) -> Task:
         task = Task(
             name=name,
@@ -34,6 +38,7 @@ class TasksCRUD(BaseCRUD):
             use_in_pgas=use_in_pgas,
         )
         return await self.create(task)
+
     def get_task_options(self):
         return [
             selectinload(Task.typed_tasks).options(*self.get_typed_task_options()),
@@ -46,6 +51,7 @@ class TasksCRUD(BaseCRUD):
             ),
             selectinload(Task.group),
         ]
+
     def get_typed_task_options(self):
         return [
             selectinload(TypedTask.users),
@@ -374,7 +380,7 @@ class TasksCRUD(BaseCRUD):
             .where(Task.id == task_id)
             .options(
                 selectinload(Task.event).options(selectinload(Event.group)),
-                *self.get_task_options()
+                *self.get_task_options(),
                 # selectinload(Task.typed_tasks).options(*self.get_typed_task_options()),
                 # selectinload(Task.files),
                 # selectinload(Task.images),
@@ -482,9 +488,8 @@ class TasksCRUD(BaseCRUD):
         return result.scalars().all()
 
     async def get_user_completed_typed_tasks(
-            self, user_id: uuid.UUID, period_start: date, period_end: date
+        self, user_id: uuid.UUID, period_start: date, period_end: date
     ) -> list[TypedTask]:
-
         # Алиасы для подзапросов
         task_alias = aliased(Task)
         event_alias = aliased(Event)
@@ -504,7 +509,7 @@ class TasksCRUD(BaseCRUD):
             .select_from(EventGroup)
             .where(
                 EventGroup.id == event_alias.group_id,
-                EventGroup.aggregate_task_id.isnot(None)
+                EventGroup.aggregate_task_id.isnot(None),
             )
             .exists()
         )
@@ -516,7 +521,7 @@ class TasksCRUD(BaseCRUD):
             # Если task привязан к event → используем event.date (независимо от группы)
             (task_alias.event_id.isnot(None), event_alias.date),
             # Во всех остальных случаях (например, дни рождения) → due_date
-            else_=TypedTask.due_date
+            else_=TypedTask.due_date,
         )
 
         query = (
@@ -534,4 +539,3 @@ class TasksCRUD(BaseCRUD):
 
         result = await self.db.execute(query)
         return result.scalars().all()
-

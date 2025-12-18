@@ -57,7 +57,7 @@ class EventsCRUD(BaseCRUD):
             select(Event)
             .where(Event.id == event_id)
             .options(
-             self._get_event_options(),
+                self._get_event_options(),
             )
         )
 
@@ -129,9 +129,7 @@ class EventsCRUD(BaseCRUD):
         return result.scalars().first()
 
     def _get_event_options(self):
-        return (
-            selectinload(Event.task).options(*TasksCRUD(self.db).get_task_options())
-        )
+        return selectinload(Event.task).options(*TasksCRUD(self.db).get_task_options())
 
     async def get_event_levels(self):
         query = select(EventLevel).order_by(EventLevel.order.desc())
