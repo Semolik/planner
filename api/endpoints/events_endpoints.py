@@ -43,7 +43,7 @@ def render_events_docx(events, show_level: bool = True) -> BytesIO:
     doc = Document()
     for event in events:
         date_str = event.date.strftime('%d.%m.%Y')
-        level_str = f" - {event.level}" if show_level and getattr(event, 'level', None) else ""
+        level_str = f", уровень мероприятия - {event.level}" if show_level and getattr(event, 'level', None) else ""
         text = f'{event.name} ({date_str}){level_str}'
         doc.add_paragraph(text, style='List Number')
     file_stream = BytesIO()
