@@ -232,7 +232,7 @@ const linkIsValid = computed(() => {
 });
 
 const createCopywritersSubTask = ref(true);
-const createDesignersSubTask = ref(false);
+const createDesignersSubTask = ref(true);
 const copywriterDescription = ref("");
 const designerDescription = ref("");
 const items = ref([
