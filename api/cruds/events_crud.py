@@ -279,3 +279,18 @@ class EventsCRUD(BaseCRUD):
         )
         result = await self.db.execute(query)
         return result.scalars().all()
+    async def get_events_by_year(self, year: int) -> list[Event]:
+        query = (
+            select(Event)
+            .where(
+                and_(
+                    func.extract('year', Event.date) == year
+                )
+            )
+            .order_by(Event.date)
+            .options(self._get_event_options(), selectinload(Event.group)
+                     .options(*self.get_event_group_options())
+                     )
+        )
+        result = await self.db.execute(query)
+        return result.scalars().all()

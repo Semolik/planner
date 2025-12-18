@@ -1,3 +1,7 @@
+from io import BytesIO
+
+from starlette.responses import StreamingResponse
+from docx import Document
 from api.schemas.events import (
     EventFullInfo,
     EventCreate,
@@ -21,6 +25,45 @@ async def get_actual_events(db=Depends(get_async_session)):
     """
     events = await EventsCRUD(db).get_actual_events()
     return events
+
+@api_router.get('/export', dependencies=[Depends(current_superuser)], response_model=list[EventFullInfo])
+async def export_events(year: int, db=Depends(get_async_session)):
+    events = await EventsCRUD(db).get_events_by_year(year)
+    return events
+
+@api_router.get('/export/docx', dependencies=[Depends(current_superuser)])
+async def export_events_docx(year: int, db=Depends(get_async_session)):
+    # Получаем события за год
+    events = await EventsCRUD(db).get_events_by_year(year)
+
+    # Создаем документ
+    doc = Document()
+
+    # Добавляем события в нумерованный список
+    for event in events:
+        # Форматируем дату в формате dd.mm.yyyy
+        date_str = event.date.strftime('%d.%m.%Y')
+        # Создаем текст в формате: "Название мероприятия (дата)"
+        text = f'{event.name} ({date_str})'
+        # Добавляем параграф с нумерацией
+        doc.add_paragraph(text, style='List Number')
+
+    # Сохраняем документ в BytesIO
+    file_stream = BytesIO()
+    doc.save(file_stream)
+    file_stream.seek(0)
+
+    # Возвращаем файл
+    filename = f'events_{year}.docx'
+    headers = {
+        'Content-Disposition': f'attachment; filename="{filename}"'
+    }
+
+    return StreamingResponse(
+        file_stream,
+        media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        headers=headers
+    )
 
 
 @api_router.post(
@@ -237,3 +280,4 @@ async def delete_event(event_id: uuid.UUID, db=Depends(get_async_session)):
     if db_event is None:
         raise HTTPException(status_code=404, detail="Мероприятие не найдено")
     await EventsCRUD(db).delete(db_event)
+
