@@ -379,12 +379,12 @@ class TasksCRUD(BaseCRUD):
             select(Task)
             .where(Task.id == task_id)
             .options(
-                selectinload(Task.event).options(selectinload(Event.group)),
+                selectinload(Task.event).options(selectinload(Event.group).options(
+                    selectinload(EventGroup.aggregate_task).options(
+                        *self.get_task_options(),
+                    )
+                )),
                 *self.get_task_options(),
-                # selectinload(Task.typed_tasks).options(*self.get_typed_task_options()),
-                # selectinload(Task.files),
-                # selectinload(Task.images),
-                # selectinload(Task.group),
             )
         )
         result = await self.db.execute(query)
