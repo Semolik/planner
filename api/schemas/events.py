@@ -7,6 +7,8 @@ from api.models.events_models import State
 from api.schemas.users import UserReadShort, UserRole
 from pydantic import Field
 
+from api.schemas.utils import EmptyStrToNone
+
 
 class EventBase(BaseModel):
     name: str = Field(..., min_length=1, strip_whitespace=True)
@@ -148,7 +150,7 @@ class TypedTaskState(UpdateTypedTaskState):
 
 class UpdateTypedTask(BaseModel):
     description: str
-    name: str | None
+    name: EmptyStrToNone
     link: str
     for_single_user: bool
     due_date: date
