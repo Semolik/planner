@@ -160,9 +160,11 @@ const isRoleDisabledByAggregation = (role) => {
 
 const getDisabledMessage = (role) => {
     if (role === UserRole.COPYWRITER || role === UserRole.DESIGNER) {
-    if (role === UserRole.COPYWRITER) {
-        return 'Задача управляется через агрегированную публикацию для всей группы мероприятий';
-    } else if (role === UserRole.DESIGNER) {
+        if (role === UserRole.COPYWRITER) {
+            return 'Задача управляется через агрегированную публикацию для всей группы мероприятий';
+        } else if (role === UserRole.DESIGNER) {
+            return 'Задача управляется через агрегированную публикацию для всей группы мероприятий';
+        }
     }
     return '';
 };
