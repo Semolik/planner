@@ -103,6 +103,7 @@ class EventRead(EventBase):
     id: uuid.UUID
     level: str
     level_id: uuid.UUID
+    task_id: uuid.UUID | None = None
     is_passed: bool = False
     group: EventGroupReadShort | None = None
     has_assigned_photographers: bool = False

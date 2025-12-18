@@ -106,7 +106,6 @@
       </div>
     </div>
 
-    <!-- ✅ CommandPalette ВНУТРИ Modal -->
     <UModal
         v-model:open="searchModalOpen"
         title="Поиск"
@@ -847,12 +846,23 @@ const searchCommandGroups = computed(() => {
             id: 'tasks',
             key: 'tasks',
             label: 'Задачи',
-            items: taskResults.map((r) => ({
-                id: `task-${r.data.id}`,
-                label: r.data.name,
-                icon: 'i-heroicons-document-text',
-                to: { name: routesNames.tasksTaskId, params: { task_id: r.data.id } }
-            })),
+            items: taskResults.map((r) => {
+                let out = {
+                    id: `task-${r.data.id}`,
+                    label: r.data.displayed_name,
+                    icon: 'i-heroicons-document-text',
+                    to: { name: routesNames.tasksTaskId, params: { task_id: r.data.id } }
+                }
+                if (r.data.birthday_user) {
+                    for (const typed_task of r.data.typed_tasks) {
+                        if (typed_task.due_date !== null) {
+                           out.suffix = `(${typed_task.due_date.split('T')[0]})`;
+                            break;
+                        }
+                    }
+                }
+                return out;
+            }),
             ignoreFilter: true
         });
     }

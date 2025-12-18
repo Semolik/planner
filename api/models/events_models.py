@@ -77,6 +77,7 @@ class Event(Base, AuditableMixin):
         )
     )
 
+
     field_labels = {
         "name": "Название",
         "name_approved": "Название утверждено",
@@ -634,4 +635,10 @@ TypedTask.displayed_name = column_property(
         ),
         else_="",
     )
+)
+Event.task_id = column_property(
+    select(Task.id)
+    .where(Task.event_id == Event.id)
+    .limit(1)
+    .scalar_subquery()
 )

@@ -1,6 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_, func
+from sqlalchemy import select, or_, func, and_
 from sqlalchemy.orm import selectinload
+
+from api.cruds.events_crud import EventsCRUD
+from api.cruds.tasks_crud import TasksCRUD
 from api.models.events_models import Task, Event, EventGroup
 from api.models.user_models import User
 import re
@@ -36,22 +39,37 @@ class SearchCRUD:
             "users": [],
         }
 
-        task_query = (
-            select(Task)
+        # Сначала получаем ID
+        task_ids_query = (
+            select(Task.id)
             .outerjoin(User, Task.birthday_user_id == User.id)
             .where(
                 or_(
                     func.lower(Task.name).ilike(search_term),
-                    func.lower(
-                        func.concat_ws(' ', User.first_name, User.last_name).correlate(Task)
-                    ).ilike(search_term),
+                    func.lower(User.first_name).ilike(search_term),
+                    func.lower(User.last_name).ilike(search_term)
                 )
             )
-            .options(selectinload(Task.event), selectinload(Task.birthday_user))
             .limit(limit)
         )
-        tasks = await self.session.execute(task_query)
-        results["tasks"] = list(tasks.scalars().all())
+        task_ids_result = await self.session.execute(task_ids_query)
+        task_ids = [row[0] for row in task_ids_result]
+
+        # Затем загружаем полные объекты
+        if task_ids:
+            tasks_query = (
+                select(Task)
+                .where(Task.id.in_(task_ids))
+                .options(
+                    *TasksCRUD(self.session).get_task_options()
+                )
+            )
+            tasks = await self.session.execute(tasks_query)
+            results["tasks"] = list(tasks.scalars().all())
+        else:
+            results["tasks"] = []
+
+
 
         # Поиск по мероприятиям (загружаем связанную задачу)
         event_query = (
@@ -63,7 +81,7 @@ class SearchCRUD:
                     func.lower(Event.link).ilike(search_term),  # добавлен поиск по link
                 )
             )
-            .options(selectinload(Event.task))
+            .options(EventsCRUD(self.session)._get_event_options())
             .limit(limit)
         )
         events = await self.session.execute(event_query)
@@ -78,7 +96,7 @@ class SearchCRUD:
                     func.lower(EventGroup.link).ilike(search_term),
                 )
             )
-            .options(selectinload(EventGroup.events))
+            .options(*EventsCRUD(self.session).get_event_group_options())
             .limit(limit)
         )
         groups = await self.session.execute(group_query)

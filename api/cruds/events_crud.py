@@ -112,7 +112,11 @@ class EventsCRUD(BaseCRUD):
             aggregate_task_id=aggregate_task_id,
         )
         return await self.create(event_group)
-
+    def get_event_group_options(self):
+        return (
+            selectinload(EventGroup.events).options(self._get_event_options()),
+            selectinload(EventGroup.aggregate_task).selectinload(Task.typed_tasks),
+        )
     def _get_event_group_query(self, group_id):
         return (
             select(EventGroup)
