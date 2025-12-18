@@ -42,7 +42,9 @@ class SearchCRUD:
             .where(
                 or_(
                     func.lower(Task.name).ilike(search_term),
-                    func.lower(func.concat_ws(' ', User.first_name, User.last_name)).ilike(search_term),
+                    func.lower(
+                        func.concat_ws(' ', User.first_name, User.last_name).correlate(Task)
+                    ).ilike(search_term),
                 )
             )
             .options(selectinload(Task.event), selectinload(Task.birthday_user))
