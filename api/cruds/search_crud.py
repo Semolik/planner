@@ -36,11 +36,16 @@ class SearchCRUD:
             "users": [],
         }
 
-        # Поиск по задачам (загружаем event если есть)
         task_query = (
             select(Task)
-            .where(func.lower(Task.name).ilike(search_term))
-            .options(selectinload(Task.event))
+            .outerjoin(User, Task.birthday_user_id == User.id)
+            .where(
+                or_(
+                    func.lower(Task.name).ilike(search_term),
+                    func.lower(func.concat_ws(' ', User.first_name, User.last_name)).ilike(search_term),
+                )
+            )
+            .options(selectinload(Task.event), selectinload(Task.birthday_user))
             .limit(limit)
         )
         tasks = await self.session.execute(task_query)
@@ -77,7 +82,6 @@ class SearchCRUD:
         groups = await self.session.execute(group_query)
         results["groups"] = list(groups.scalars().all())
 
-        # Поиск по пользователям (загружаем институт)
         user_query = (
             select(User)
             .where(
