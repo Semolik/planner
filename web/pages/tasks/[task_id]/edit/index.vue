@@ -213,8 +213,6 @@ const saveButtonActive = computed(() => {
             required_photographers.value < 1 ||
             name.value.trim() === "" ||
             !linkIsValid.value ||
-            !timeStart.value ||
-            !timeEnd.value ||
             !date.value ||
             !location.value
         ) {

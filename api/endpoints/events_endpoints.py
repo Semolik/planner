@@ -71,6 +71,7 @@ async def create_event(event: EventCreate, db=Depends(get_async_session)):
         organizer=event.organizer,
         start_time=event.start_time,
         end_time=event.end_time,
+        link=event.link,
         name_approved=event.name_approved,
         required_photographers=event.required_photographers,
         description=event.description,

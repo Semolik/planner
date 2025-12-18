@@ -65,12 +65,22 @@
                             }"
                         />
                     </client-only>
-                    <app-input
-                        v-model="organizer"
-                        label="Контакт организатора"
-                        required
-                        white
-                    />
+                    <div class="flex gap-2 items-center">
+                        <app-input
+                            v-model="organizer"
+                            label="Контакт организатора"
+                            required
+                            white
+                            class="flex-1 min-h-[40px]"
+                        />
+                        <app-input
+                            v-model="link"
+                            label="Ссылка на публикацию"
+                            white
+                            class="flex-1 min-h-[40px]"
+                            :validator="() => linkIsValid"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
@@ -213,6 +223,14 @@ const timeEnd = ref("");
 const currentDate = ref(new Date().toISOString().slice(0, 10));
 const location = ref("");
 const organizer = ref("");
+const link = ref("");
+
+
+const linkIsValid = computed(() => {
+    if (!link.value) return true;
+    return validateUrl(link.value);
+});
+
 const createCopywritersSubTask = ref(true);
 const createDesignersSubTask = ref(false);
 const copywriterDescription = ref("");
@@ -247,7 +265,7 @@ const buttonActive = computed(() => {
     const baseValidation =
         name.value.length > 0 &&
         date.value.length > 0 &&
-        location.value.length > 0 &&
+        location.value.length > 0 && linkIsValid.value &&
         event_level.value !== null;
     console.log("Base validation:", baseValidation);
 
@@ -336,7 +354,7 @@ const createEvent = async () => {
             end_time: timeEnd.value ? `${timeEnd.value}:00Z` : null,
             name_approved: false,
             location: location.value,
-            link: "",
+            link: link.value,
             organizer: organizer.value,
             required_photographers: 1,
             group_id: selectedGroup.value ? selectedGroup.value.id : null,
