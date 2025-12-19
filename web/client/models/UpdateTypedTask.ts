@@ -4,7 +4,7 @@
 /* eslint-disable */
 export type UpdateTypedTask = {
     description: string;
-    name: (string | null);
+    name: string | null;
     link: string;
     for_single_user: boolean;
     due_date: string;

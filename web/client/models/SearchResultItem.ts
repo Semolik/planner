@@ -2,16 +2,16 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { SearchEventData } from './SearchEventData';
-import type { SearchGroupData } from './SearchGroupData';
-import type { SearchTaskData } from './SearchTaskData';
-import type { SearchUserData } from './SearchUserData';
+import type { EventGroupReadShort } from './EventGroupReadShort';
+import type { EventRead } from './EventRead';
+import type { TaskRead } from './TaskRead';
+import type { UserReadShort } from './UserReadShort';
 /**
  * Единый результат поиска с типом и данными
  */
 export type SearchResultItem = {
     type: SearchResultItem.type;
-    data: (SearchTaskData | SearchEventData | SearchGroupData | SearchUserData);
+    data: (TaskRead | EventRead | EventGroupReadShort | UserReadShort);
 };
 export namespace SearchResultItem {
     export enum type {

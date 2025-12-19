@@ -16,5 +16,6 @@ export type EventUpdate = {
     description: string;
     level_id: string;
     use_in_pgas: boolean;
+    exclude_admin_report: boolean;
 };
 

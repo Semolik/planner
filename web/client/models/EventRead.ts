@@ -18,8 +18,10 @@ export type EventRead = {
     id: string;
     level: string;
     level_id: string;
+    task_id?: (string | null);
     is_passed?: boolean;
     group?: (EventGroupReadShort | null);
     has_assigned_photographers?: boolean;
+    exclude_admin_report?: boolean;
 };
 

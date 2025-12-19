@@ -6,7 +6,7 @@ import type { TypedTaskState } from './TypedTaskState';
 import type { UserRole } from './UserRole';
 export type TypedTaskRead = {
     description: string;
-    name: (string | null);
+    name: string | null;
     link: string;
     for_single_user: boolean;
     due_date: string;
@@ -14,5 +14,6 @@ export type TypedTaskRead = {
     id: string;
     task_states: Array<TypedTaskState>;
     due_date_passed?: boolean;
+    displayed_name?: (string | null);
 };
 

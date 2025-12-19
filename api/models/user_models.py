@@ -98,3 +98,21 @@ class RolePeriodConfig(Base):
     )
     user_role: Mapped[UserRole] = mapped_column(Enum(UserRole), primary_key=True)
     count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
+class CustomAchievementModel(Base):
+    __tablename__ = "custom_achievements"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    date_from: Mapped[Date] = mapped_column(Date, nullable=False)
+    date_to: Mapped[Date | None] = mapped_column(Date, nullable=True)
+    level_of_participation: Mapped[str | None] = mapped_column(String, nullable=True)
+    user: Mapped["User"] = relationship("User", foreign_keys=[user_id])
+    link: Mapped[str | None] = mapped_column(String, nullable=True)
+    achievement_level: Mapped[str | None] = mapped_column(String, nullable=True)

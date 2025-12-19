@@ -18,6 +18,7 @@ from api.models.events_models import *  # noqa
 from api.models.files_models import *  # noqa
 from api.models.home_models import *  # noqa
 from api.models.vk_models import *  # noqa
+from api.models.meetings_models import *  # noqa
 
 
 def get_url():

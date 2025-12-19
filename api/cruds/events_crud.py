@@ -292,16 +292,17 @@ class EventsCRUD(BaseCRUD):
             .join(TaskState, TaskState.type_task_id == TypedTask.id)
             .where(
                 and_(
-                    func.extract('year', Event.date) == year,
+                    func.extract("year", Event.date) == year,
                     TaskState.state == State.COMPLETED,
-                    ~Event.exclude_admin_report
+                    ~Event.exclude_admin_report,
                 )
             )
             .distinct(Event.id)
             .order_by(Event.id, Event.date.asc())
-            .options(self._get_event_options(), selectinload(Event.group)
-                     .options(*self.get_event_group_options())
-                     )
+            .options(
+                self._get_event_options(),
+                selectinload(Event.group).options(*self.get_event_group_options()),
+            )
             .correlate(Task, TypedTask, TaskState, Event)
         )
         result = await self.db.execute(query)
@@ -331,8 +332,8 @@ class EventsCRUD(BaseCRUD):
                     func.extract("year", Event.date) == year,
                     or_(
                         Event.id.not_in(completed_events_subquery),
-                        Event.exclude_admin_report
-                    )
+                        Event.exclude_admin_report,
+                    ),
                 )
             )
             .distinct()

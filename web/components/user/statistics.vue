@@ -273,7 +273,13 @@ const requiredTasksMap = computed(() => {
 
 // ✅ ПРОВЕРКА НАЛИЧИЯ РОЛИ
 const hasRole = (role: string): boolean => {
-    return (requiredTasksMap.value[role] || 0) > 0;
+    // Проверяем роли пользователя
+    const userHasRole = user.value?.roles?.includes(role) || false;
+
+    // Проверяем наличие выполненных задач
+    const hasCompletedTasks = taskStats.value[role as keyof typeof taskStats.value] > 0;
+
+    return userHasRole || hasCompletedTasks;
 };
 
 const formattedRequirements = computed(() => {

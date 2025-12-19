@@ -66,11 +66,6 @@ const asideBlocks = computed(() => {
                     name: "Мои задачи",
                     icon: "material-symbols:task-alt-rounded",
                     path: routesNames.tasksMy,
-                },
-                {
-                  name: "Моя статистика",
-                  icon: "material-symbols:bar-chart-rounded",
-                  path: routesNames.statisticsMe,
                 }
             ],
         },
@@ -86,6 +81,27 @@ const asideBlocks = computed(() => {
                     name: "Группы мероприятий",
                     path: routesNames.eventsGroups,
                     icon: "material-symbols:folder-rounded",
+                },
+            ],
+        },
+        {
+            name: "Отчеты",
+            items: [
+
+                {
+                  name: "Моя статистика",
+                  icon: "material-symbols:bar-chart-rounded",
+                  path: routesNames.statisticsMe,
+                },
+                {
+                    name: "Планерки",
+                    path: routesNames.meetings,
+                    icon: "material-symbols:meeting-room-rounded",
+                },
+                {
+                    name: "ПГАС",
+                    path: routesNames.pgas,
+                    icon: "material-symbols:attach-money-rounded",
                 },
             ],
         },

@@ -22,6 +22,92 @@ export class EventsService {
         });
     }
     /**
+     * Export Events
+     * @param year
+     * @returns EventFullInfo Successful Response
+     * @throws ApiError
+     */
+    public static exportEventsEventsExportGet(
+        year: number,
+    ): CancelablePromise<Array<EventFullInfo>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/events/export',
+            query: {
+                'year': year,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Export Excluded Events
+     * @param year
+     * @returns EventFullInfo Successful Response
+     * @throws ApiError
+     */
+    public static exportExcludedEventsEventsExportExcludedGet(
+        year: number,
+    ): CancelablePromise<Array<EventFullInfo>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/events/export/excluded',
+            query: {
+                'year': year,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Export Events Docx
+     * @param year
+     * @param showLevel
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static exportEventsDocxEventsExportDocxGet(
+        year: number,
+        showLevel: boolean = true,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/events/export/docx',
+            query: {
+                'year': year,
+                'show_level': showLevel,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Export Excluded Events Docx
+     * @param year
+     * @param showLevel
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static exportExcludedEventsDocxEventsExportExcludedDocxGet(
+        year: number,
+        showLevel: boolean = true,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/events/export/excluded/docx',
+            query: {
+                'year': year,
+                'show_level': showLevel,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * Create Event
      * @param requestBody
      * @returns EventFullInfo Successful Response
