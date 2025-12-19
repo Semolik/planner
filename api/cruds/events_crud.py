@@ -294,6 +294,7 @@ class EventsCRUD(BaseCRUD):
                 and_(
                     func.extract("year", Event.date) == year,
                     TaskState.state == State.COMPLETED,
+                    ~Event.exclude_admin_report
                 )
             )
             .distinct(Event.id)
