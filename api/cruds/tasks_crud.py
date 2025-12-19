@@ -379,11 +379,13 @@ class TasksCRUD(BaseCRUD):
             select(Task)
             .where(Task.id == task_id)
             .options(
-                selectinload(Task.event).options(selectinload(Event.group).options(
-                    selectinload(EventGroup.aggregate_task).options(
-                        *self.get_task_options(),
+                selectinload(Task.event).options(
+                    selectinload(Event.group).options(
+                        selectinload(EventGroup.aggregate_task).options(
+                            *self.get_task_options(),
+                        )
                     )
-                )),
+                ),
                 *self.get_task_options(),
             )
         )

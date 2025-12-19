@@ -43,6 +43,9 @@ class Event(Base, AuditableMixin):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
+    exclude_admin_report: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
     name_approved: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     date: Mapped[date] = mapped_column(Date, nullable=False)
     start_time: Mapped[time | None] = mapped_column(Time, nullable=True)
@@ -76,7 +79,6 @@ class Event(Base, AuditableMixin):
             else_=False,
         )
     )
-
 
     field_labels = {
         "name": "Название",

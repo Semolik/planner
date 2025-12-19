@@ -26,15 +26,26 @@ async def get_actual_events(db=Depends(get_async_session)):
     events = await EventsCRUD(db).get_actual_events()
     return events
 
-@api_router.get('/export', dependencies=[Depends(current_superuser)], response_model=list[EventFullInfo])
+
+@api_router.get(
+    "/export",
+    dependencies=[Depends(current_superuser)],
+    response_model=list[EventFullInfo],
+)
 async def export_events(year: int, db=Depends(get_async_session)):
     events = await EventsCRUD(db).get_events_by_year(year)
     return events
 
-@api_router.get('/export/excluded', dependencies=[Depends(current_superuser)], response_model=list[EventFullInfo])
+
+@api_router.get(
+    "/export/excluded",
+    dependencies=[Depends(current_superuser)],
+    response_model=list[EventFullInfo],
+)
 async def export_excluded_events(year: int, db=Depends(get_async_session)):
     events = await EventsCRUD(db).get_events_excluded_by_year(year)
     return events
+
 
 def render_events_docx(events, show_level: bool = True) -> BytesIO:
     """
@@ -42,42 +53,49 @@ def render_events_docx(events, show_level: bool = True) -> BytesIO:
     """
     doc = Document()
     for event in events:
-        date_str = event.date.strftime('%d.%m.%Y')
-        level_str = f", уровень мероприятия - {event.level}" if show_level and getattr(event, 'level', None) else ""
-        text = f'{event.name} ({date_str}){level_str}'
-        doc.add_paragraph(text, style='List Number')
+        date_str = event.date.strftime("%d.%m.%Y")
+        level_str = (
+            f", уровень мероприятия - {event.level}"
+            if show_level and getattr(event, "level", None)
+            else ""
+        )
+        text = f"{event.name} ({date_str}){level_str}"
+        doc.add_paragraph(text, style="List Number")
     file_stream = BytesIO()
     doc.save(file_stream)
     file_stream.seek(0)
     return file_stream
 
-@api_router.get('/export/docx', dependencies=[Depends(current_superuser)])
-async def export_events_docx(year: int, db=Depends(get_async_session), show_level: bool = True):
+
+@api_router.get("/export/docx", dependencies=[Depends(current_superuser)])
+async def export_events_docx(
+    year: int, db=Depends(get_async_session), show_level: bool = True
+):
     events = await EventsCRUD(db).get_events_by_year(year)
     file_stream = render_events_docx(events, show_level=show_level)
-    filename = f'events_{year}.docx'
-    headers = {
-        'Content-Disposition': f'attachment; filename="{filename}"'
-    }
+    filename = f"events_{year}.docx"
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return StreamingResponse(
         file_stream,
-        media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        headers=headers
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers=headers,
     )
 
+
 @api_router.get("/export/excluded/docx", dependencies=[Depends(current_superuser)])
-async def export_excluded_events_docx(year: int, db=Depends(get_async_session), show_level: bool = True):
+async def export_excluded_events_docx(
+    year: int, db=Depends(get_async_session), show_level: bool = True
+):
     events = await EventsCRUD(db).get_events_excluded_by_year(year)
     file_stream = render_events_docx(events, show_level=show_level)
-    filename = f'excluded_events_{year}.docx'
-    headers = {
-        'Content-Disposition': f'attachment; filename="{filename}"'
-    }
+    filename = f"excluded_events_{year}.docx"
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return StreamingResponse(
         file_stream,
-        media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        headers=headers
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers=headers,
     )
+
 
 @api_router.post(
     "", response_model=EventFullInfo, dependencies=[Depends(current_superuser)]
@@ -223,7 +241,6 @@ async def update_event(
         )
     # Проверяем, переносится ли мероприятие в агрегированную группу
     old_group_id = db_event.group_id
-    new_group_is_aggregated = False
 
     if event.group_id is not None:
         group = await EventsCRUD(db).get_event_group(event.group_id)
@@ -232,8 +249,6 @@ async def update_event(
 
         # Проверяем, агрегированная ли новая группа
         if group.aggregate_task_id is not None:
-            new_group_is_aggregated = True
-
             # Если группа изменилась и новая группа агрегированная, удаляем подзадачи копирайтера
             if old_group_id != event.group_id:
                 # Получаем подзадачи текущего мероприятия
@@ -241,8 +256,6 @@ async def update_event(
                 if task and task.typed_tasks:
                     tasks_crud = TasksCRUD(db)
 
-                    # Проверяем, есть ли у агрегированной задачи группы подзадача дизайнера
-                    # Если есть - значит группа с общим альбомом
                     aggregate_task = group.aggregate_task
                     has_aggregate_designer = (
                         any(
@@ -268,6 +281,7 @@ async def update_event(
         event=db_event,
         name=event.name,
         date=event.date,
+        exclude_admin_report=event.exclude_admin_report,
         location=event.location,
         organizer=event.organizer,
         start_time=event.start_time,

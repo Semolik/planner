@@ -47,7 +47,7 @@ class SearchCRUD:
                 or_(
                     func.lower(Task.name).ilike(search_term),
                     func.lower(User.first_name).ilike(search_term),
-                    func.lower(User.last_name).ilike(search_term)
+                    func.lower(User.last_name).ilike(search_term),
                 )
             )
             .limit(limit)
@@ -60,16 +60,12 @@ class SearchCRUD:
             tasks_query = (
                 select(Task)
                 .where(Task.id.in_(task_ids))
-                .options(
-                    *TasksCRUD(self.session).get_task_options()
-                )
+                .options(*TasksCRUD(self.session).get_task_options())
             )
             tasks = await self.session.execute(tasks_query)
             results["tasks"] = list(tasks.scalars().all())
         else:
             results["tasks"] = []
-
-
 
         # Поиск по мероприятиям (загружаем связанную задачу)
         event_query = (

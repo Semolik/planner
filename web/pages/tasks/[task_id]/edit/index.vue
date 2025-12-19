@@ -21,6 +21,13 @@
                 label="Учитывать в ПГАС"
                 class="ml-1"
             />
+            <UCheckbox
+                  v-if="task.event"
+                v-model="excludeAdminReport"
+                color="neutral"
+                label="Исключить мероприятие из админского отчёта"
+                class="ml-1"
+            />
         </div>
         <template v-if="task.event">
 
@@ -184,6 +191,7 @@ const timeEnd = ref(task.value.event ? task.value.event.end_time : "");
 const required_photographers = ref(
     task.value.event ? task.value.event.required_photographers : 0
 );
+const excludeAdminReport = ref(task.value.event ? task.value.event.exclude_admin_report : false);
 const deleteTaskModalOpen = ref(false);
 const location = ref(task.value.event ? task.value.event.location : "");
 const organizer = ref(task.value.event ? task.value.event.organizer : "");
@@ -231,6 +239,7 @@ const saveButtonActive = computed(() => {
             nameApproved.value !== task.value.event.name_approved ||
             link.value !== task.value.event.link ||
             event_level.value?.id !== task.value.event.level_id ||
+                  excludeAdminReport.value !== task.value.event.exclude_admin_report ||
             (selectedGroup.value
                 ? selectedGroup.value.id == null
                     ? true
@@ -306,6 +315,7 @@ const updateTask = async () => {
                 level_id: event_level.value?.id || null,
                 group_id: selectedGroup.value?.id || null,
                 use_in_pgas: useInPGAS.value,
+                exclude_admin_report: excludeAdminReport.value,
             };
             task.value.event = await EventsService.updateEventEventsEventIdPut(
                 task.value.event.id,

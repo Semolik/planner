@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import  Literal, Union
+from typing import Literal, Union
 
 
 from api.schemas.events import EventRead, EventGroupReadShort, TaskRead
@@ -19,4 +19,3 @@ class SearchResponse(BaseModel):
     query: str
     results: list[SearchResultItem]
     total: int
-

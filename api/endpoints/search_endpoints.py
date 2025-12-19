@@ -1,7 +1,13 @@
 from fastapi import APIRouter, Depends, Query
 from api.db.session import get_async_session
 from api.cruds.search_crud import SearchCRUD
-from api.schemas.events import TaskReadShort, EventReadShort, EventGroupReadShort, TaskRead, EventRead
+from api.schemas.events import (
+    TaskReadShort,
+    EventReadShort,
+    EventGroupReadShort,
+    TaskRead,
+    EventRead,
+)
 from api.schemas.search import (
     SearchResponse,
     SearchResultItem,
@@ -34,8 +40,7 @@ async def search(
     for task in results["tasks"]:
         search_results.append(
             SearchResultItem(
-                type="task",
-                data=TaskRead.model_validate(task, from_attributes=True)
+                type="task", data=TaskRead.model_validate(task, from_attributes=True)
             )
         )
 
@@ -43,8 +48,7 @@ async def search(
     for event in results["events"]:
         search_results.append(
             SearchResultItem(
-                type="event",
-                data=EventRead.model_validate(event, from_attributes=True)
+                type="event", data=EventRead.model_validate(event, from_attributes=True)
             )
         )
 
@@ -53,9 +57,7 @@ async def search(
         search_results.append(
             SearchResultItem(
                 type="group",
-                data=EventGroupReadShort.model_validate(
-                    group, from_attributes=True
-                ),
+                data=EventGroupReadShort.model_validate(group, from_attributes=True),
             )
         )
 
@@ -64,7 +66,7 @@ async def search(
         search_results.append(
             SearchResultItem(
                 type="user",
-                data=UserReadShort.model_validate(user, from_attributes=True)
+                data=UserReadShort.model_validate(user, from_attributes=True),
             )
         )
 

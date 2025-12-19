@@ -27,6 +27,7 @@ class EventBase(BaseModel):
 class EventUpdate(EventBase):
     level_id: uuid.UUID
     use_in_pgas: bool
+    exclude_admin_report: bool
 
 
 class PublicationTypedTasksParams(BaseModel):
@@ -107,6 +108,7 @@ class EventRead(EventBase):
     is_passed: bool = False
     group: EventGroupReadShort | None = None
     has_assigned_photographers: bool = False
+    exclude_admin_report: bool = False
 
     class Config:
         from_attributes = True

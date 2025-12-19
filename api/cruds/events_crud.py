@@ -81,18 +81,20 @@ class EventsCRUD(BaseCRUD):
         description: str = "",
         group_id: uuid.UUID = None,
         link: str = "",
+        exclude_admin_report: bool = False,
     ) -> Event:
         event.name = name
         event.date = date
         event.location = location
         event.organizer = organizer
         event.start_time = start_time
-        event.end_time = end_time if end_time else start_time
+        event.end_time = end_time
         event.name_approved = name_approved
         event.required_photographers = required_photographers
         event.description = description
         event.level_id = level_id
         event.link = link
+        event.exclude_admin_report = exclude_admin_report
         event.group_id = group_id
         return await self.update(event)
 
@@ -112,11 +114,13 @@ class EventsCRUD(BaseCRUD):
             aggregate_task_id=aggregate_task_id,
         )
         return await self.create(event_group)
+
     def get_event_group_options(self):
         return (
             selectinload(EventGroup.events).options(self._get_event_options()),
             selectinload(EventGroup.aggregate_task).selectinload(Task.typed_tasks),
         )
+
     def _get_event_group_query(self, group_id):
         return (
             select(EventGroup)
@@ -288,15 +292,15 @@ class EventsCRUD(BaseCRUD):
             .join(TaskState, TaskState.type_task_id == TypedTask.id)
             .where(
                 and_(
-                    func.extract('year', Event.date) == year,
-                    TaskState.state == State.COMPLETED
+                    func.extract("year", Event.date) == year,
+                    TaskState.state == State.COMPLETED,
                 )
             )
             .distinct(Event.id)
             .order_by(Event.id, Event.date)
             .options(
                 self._get_event_options(),
-                selectinload(Event.group).options(*self.get_event_group_options())
+                selectinload(Event.group).options(*self.get_event_group_options()),
             )
         )
         result = await self.db.execute(query)
@@ -323,15 +327,15 @@ class EventsCRUD(BaseCRUD):
             select(Event)
             .where(
                 and_(
-                    func.extract('year', Event.date) == year,
-                    Event.id.not_in(completed_events_subquery)
+                    func.extract("year", Event.date) == year,
+                    Event.id.not_in(completed_events_subquery),
                 )
             )
             .distinct()
             .order_by(Event.date)
             .options(
                 self._get_event_options(),
-                selectinload(Event.group).options(*self.get_event_group_options())
+                selectinload(Event.group).options(*self.get_event_group_options()),
             )
         )
 
