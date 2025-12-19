@@ -63,7 +63,7 @@ def render_events_docx(events, show_level: bool = True) -> BytesIO:
     for event in events:
         date_str = event.date.strftime("%d.%m.%Y")
         level_str = (
-            f" - {event.level}"
+            f", уровень мероприятия - {event.level}"
             if show_level and getattr(event, "level", None)
             else ""
         )
