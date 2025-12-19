@@ -297,7 +297,7 @@ class EventsCRUD(BaseCRUD):
                 )
             )
             .distinct(Event.id)
-            .order_by(Event.date.asc())
+            .order_by(Event.id, Event.date.asc())
             .options(self._get_event_options(), selectinload(Event.group)
                      .options(*self.get_event_group_options())
                      )
