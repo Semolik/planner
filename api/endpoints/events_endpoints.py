@@ -49,17 +49,12 @@ async def export_excluded_events(year: int, db=Depends(get_async_session)):
 
 
 def render_events_docx(events, show_level: bool = True) -> BytesIO:
-    """
-    Генерирует DOCX-файл с мероприятиями. Если show_level=True, выводит уровень мероприятия после даты.
-    Форматирует текст: 1.5 интервал, 14 кегль, Times New Roman.
-    Сортирует события по дате в Python.
-    """
     events = sorted(events, key=lambda e: e.date)
     doc = Document()
     style = doc.styles["Normal"]
     font = style.font
     font.name = "Times New Roman"
-    font.size = Pt(14)
+    font.size = Pt(11)
     for event in events:
         date_str = event.date.strftime("%d.%m.%Y")
         level_str = (
