@@ -329,7 +329,10 @@ class EventsCRUD(BaseCRUD):
             .where(
                 and_(
                     func.extract("year", Event.date) == year,
-                    Event.id.not_in(completed_events_subquery),
+                    or_(
+                        Event.id.not_in(completed_events_subquery),
+                        Event.exclude_admin_report
+                    )
                 )
             )
             .distinct()
