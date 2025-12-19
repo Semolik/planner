@@ -3,15 +3,15 @@ import { h, resolveComponent, ref, computed } from "vue";
 import type { TableColumn } from "@nuxt/ui";
 import {
     CustomAchievementsService,
+    AchievementsService,
     EventsLevelsService,
-    type CustomAchievementRead,
-    type CustomAchievementCreate,
-    type CustomAchievementUpdate,
+    type AchievementRead,
+    type AchievementCreate,
+    type AchievementUpdate,
     type EventLevelRead,
 } from "~/client";
 import { useAuthStore } from "@/stores/auth";
 import { storeToRefs } from "pinia";
-import {validateUrl } from '@/composables/url'
 
 definePageMeta({
     layout: "no-padding",
@@ -30,14 +30,27 @@ const { $toast } = useNuxtApp();
 const authStore = useAuthStore();
 const { userData } = storeToRefs(authStore);
 
-const data = ref<CustomAchievementRead[]>([]);
+const data = ref<AchievementRead[]>([]);
 const eventLevels = ref<EventLevelRead[]>([]);
 const isLoading = ref(false);
 const showOnlyCustom = ref(false);
 
+// Выбор года
+const currentYear = new Date().getFullYear();
+const selectedYear = ref(currentYear);
+
+// Генерация списка годов (текущий и предыдущие 5 лет)
+const availableYears = computed(() => {
+    const years = [];
+    for (let i = 0; i < 6; i++) {
+        years.push(currentYear - i);
+    }
+    return years;
+});
+
 // Модалка создания
 const createModalOpen = ref(false);
-const createForm = ref<CustomAchievementCreate>({
+const createForm = ref<AchievementCreate>({
     name: "",
     date_from: "",
     date_to: null,
@@ -52,7 +65,7 @@ const pendingClose = ref(false);
 
 // Редактирование в таблице
 const editingRowId = ref<string | null>(null);
-const editForm = ref<CustomAchievementUpdate>({
+const editForm = ref<AchievementUpdate>({
     name: "",
     date_from: "",
     date_to: null,
@@ -62,11 +75,11 @@ const editForm = ref<CustomAchievementUpdate>({
 });
 
 // Оригинальные данные для сравнения
-const originalEditForm = ref<CustomAchievementUpdate | null>(null);
+const originalEditForm = ref<AchievementUpdate | null>(null);
 
 // Модалка удаления
 const deleteModalOpen = ref(false);
-const selectedAchievement = ref<CustomAchievementRead | null>(null);
+const selectedAchievement = ref<AchievementRead | null>(null);
 
 // Предустановленные варианты уровня участия
 const participationLevels = [
@@ -104,13 +117,12 @@ const isFormDirty = computed(() => {
     );
 });
 
-// Валидация ссылки для формы создания
-const createLinkIsValid = computed(() => {
+// Валидация ссылки
+const linkIsValid = computed(() => {
     if (!createForm.value.link) return true;
     return validateUrl(createForm.value.link);
 });
 
-// Валидация ссылки для формы редактирования
 const editLinkIsValid = computed(() => {
     if (!editForm.value.link) return true;
     return validateUrl(editForm.value.link);
@@ -122,7 +134,7 @@ const isCreateFormValid = computed(() => {
         createForm.value.name &&
         createForm.value.name.trim().length > 0 &&
         createForm.value.date_from &&
-        createLinkIsValid.value
+        linkIsValid.value
     );
 });
 
@@ -140,7 +152,7 @@ const isEditFormChanged = computed(() => {
     );
 });
 
-// Проверка валидности формы редактирования
+// Проверка валидности формы редактирования (только название и дата начала обязательны)
 const isEditFormValid = computed(() => {
     return !!(
         editForm.value.name &&
@@ -159,7 +171,7 @@ const sortedData = computed(() => {
     });
 });
 
-const columns: TableColumn<CustomAchievementRead>[] = [
+const columns: TableColumn<AchievementRead>[] = [
     {
         accessorKey: "name",
         header: "Название мероприятия",
@@ -282,9 +294,7 @@ const columns: TableColumn<CustomAchievementRead>[] = [
                         placeholder: "https://...",
                         white: true,
                         height: "32px",
-                        validator: () => {
-                            return editLinkIsValid.value;
-                        },
+                        validator: () => editLinkIsValid.value,
                     }),
                 ]);
             }
@@ -356,37 +366,42 @@ const columns: TableColumn<CustomAchievementRead>[] = [
                 );
             }
 
-            return h("div", { class: "text-right flex gap-1 justify-end" }, [
-                h(
-                    "div",
-                    {
-                        class: "flex w-9 h-9 items-center justify-center bg-black rounded-xl hover:bg-gray-800 transition-colors cursor-pointer",
-                        onClick: () => startEdit(row.original),
-                    },
-                    [
-                        h(Icon, {
-                            name: "material-symbols:edit-outline",
-                            class: "text-white",
-                        }),
-                    ]
-                ),
-                h(
-                    "div",
-                    {
-                        class: "flex w-9 h-9 items-center justify-center bg-red-600 rounded-xl hover:bg-red-700 transition-colors cursor-pointer",
-                        onClick: () => {
-                            selectedAchievement.value = row.original;
-                            deleteModalOpen.value = true;
+            // Показываем кнопки редактирования/удаления только для кастомных достижений
+            if (row.original.is_custom) {
+                return h("div", { class: "text-right flex gap-1 justify-end" }, [
+                    h(
+                        "div",
+                        {
+                            class: "flex w-9 h-9 items-center justify-center bg-black rounded-xl hover:bg-gray-800 transition-colors cursor-pointer",
+                            onClick: () => startEdit(row.original),
                         },
-                    },
-                    [
-                        h(Icon, {
-                            name: "material-symbols:delete-outline",
-                            class: "text-white",
-                        }),
-                    ]
-                ),
-            ]);
+                        [
+                            h(Icon, {
+                                name: "material-symbols:edit-outline",
+                                class: "text-white",
+                            }),
+                        ]
+                    ),
+                    h(
+                        "div",
+                        {
+                            class: "flex w-9 h-9 items-center justify-center bg-red-600 rounded-xl hover:bg-red-700 transition-colors cursor-pointer",
+                            onClick: () => {
+                                selectedAchievement.value = row.original;
+                                deleteModalOpen.value = true;
+                            },
+                        },
+                        [
+                            h(Icon, {
+                                name: "material-symbols:delete-outline",
+                                class: "text-white",
+                            }),
+                        ]
+                    ),
+                ]);
+            }
+
+            return h("div", { class: "text-right" }, "-");
         },
     },
 ];
@@ -401,10 +416,11 @@ const filteredData = computed(() => {
 async function loadAchievements() {
     try {
         isLoading.value = true;
-        // TODO: Замените на правильный метод API когда он будет доступен
-        // const achievements = await CustomAchievementsService.getCustomAchievements();
-        // data.value = achievements;
-        data.value = [];
+        const achievements = await AchievementsService.getAchievementsByYearAchievementsGet(
+            selectedYear.value,
+            showOnlyCustom.value
+        );
+        data.value = achievements;
     } catch (error) {
         $toast.error(HandleOpenApiError(error).message);
     } finally {
@@ -427,7 +443,7 @@ async function createAchievement() {
         return;
     }
 
-    if (!createLinkIsValid.value) {
+    if (!linkIsValid.value) {
         $toast.error("Введите корректную ссылку");
         return;
     }
@@ -443,6 +459,8 @@ async function createAchievement() {
 
         pendingClose.value = true;
         createModalOpen.value = false;
+
+        $toast.success("Достижение успешно добавлено");
     } catch (error) {
         $toast.error(HandleOpenApiError(error).message);
     } finally {
@@ -450,7 +468,10 @@ async function createAchievement() {
     }
 }
 
-function startEdit(achievement: CustomAchievementRead) {
+function startEdit(achievement: AchievementRead) {
+    // Можно редактировать только кастомные достижения
+    if (!achievement.is_custom) return;
+
     editingRowId.value = achievement.id;
     editForm.value = {
         name: achievement.name,
@@ -503,6 +524,8 @@ async function updateAchievement(id: string) {
 
         editingRowId.value = null;
         originalEditForm.value = null;
+
+        $toast.success("Достижение успешно обновлено");
     } catch (error) {
         $toast.error(HandleOpenApiError(error).message);
     } finally {
@@ -525,6 +548,8 @@ async function deleteAchievement() {
         );
 
         deleteModalOpen.value = false;
+
+        $toast.success("Достижение успешно удалено");
     } catch (error) {
         $toast.error(HandleOpenApiError(error).message);
     } finally {
@@ -589,6 +614,11 @@ function cancelClose() {
     pendingClose.value = false;
 }
 
+// Следим за изменением года и фильтра
+watch([selectedYear, showOnlyCustom], () => {
+    loadAchievements();
+});
+
 onMounted(() => {
     loadAchievements();
     loadEventLevels();
@@ -601,7 +631,20 @@ onMounted(() => {
             class="flex md:items-center gap-2 min-h-[60px] overflow-x-auto px-2 head md:flex-row flex-col-reverse justify-between"
         >
             <div class="text-lg font-semibold">ПГАС</div>
-            <div class="flex gap-2 items-center">
+            <div class="flex gap-2 items-center flex-wrap">
+                <select
+                    v-model="selectedYear"
+                    class="px-3 py-1 border rounded-lg bg-white text-sm"
+                >
+                    <option
+                        v-for="year in availableYears"
+                        :key="year"
+                        :value="year"
+                    >
+                        {{ year }}
+                    </option>
+                </select>
+
                 <app-button
                     :active="showOnlyCustom"
                     :outline="!showOnlyCustom"
@@ -714,7 +757,7 @@ onMounted(() => {
                     label="Ссылка на подтверждение *"
                     placeholder="https://..."
                     white
-                    :validator="() => createLinkIsValid"
+                    :validator="() => linkIsValid"
                 />
 
                 <div class="flex gap-2 mt-1">

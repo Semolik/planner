@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from api.models.user_models import User
 from api.schemas.custom_achievements import (
-    CustomAchievementRead,
-    CustomAchievementCreate,
-    CustomAchievementUpdate,
+    AchievementRead,
+    AchievementCreate,
+    AchievementUpdate,
 )
 from api.core.users_controller import current_user
 from api.cruds.custom_achievements_crud import CustomAchievementsCRUD
@@ -14,9 +14,9 @@ from api.db.session import get_async_session
 
 api_router = APIRouter(prefix="/custom-achievements", tags=["custom-achievements"])
 
-@api_router.post("", response_model=CustomAchievementRead)
+@api_router.post("", response_model=AchievementRead)
 async def create_custom_achievement(
-    custom_achievement: CustomAchievementCreate,
+    custom_achievement: AchievementCreate,
     db=Depends(get_async_session),
     current_user: User = Depends(current_user),
 ):
@@ -27,10 +27,10 @@ async def create_custom_achievement(
 
 @api_router.put(
     "/{custom_achievement_id}",
-    response_model=CustomAchievementRead,
+    response_model=AchievementRead,
 )
 async def update_custom_achievement(
-    custom_achievement: CustomAchievementUpdate,
+    custom_achievement: AchievementUpdate,
     custom_achievement_id: uuid.UUID,
     db=Depends(get_async_session),
     current_user: User = Depends(current_user),

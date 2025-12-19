@@ -2,7 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type CustomAchievementUpdate = {
+export type AchievementUpdate = {
     name: string;
     date_from: string;
     date_to: (string | null);

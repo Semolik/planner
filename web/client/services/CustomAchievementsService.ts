@@ -2,9 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { CustomAchievementCreate } from '../models/CustomAchievementCreate';
-import type { CustomAchievementRead } from '../models/CustomAchievementRead';
-import type { CustomAchievementUpdate } from '../models/CustomAchievementUpdate';
+import type { AchievementCreate } from '../models/AchievementCreate';
+import type { AchievementRead } from '../models/AchievementRead';
+import type { AchievementUpdate } from '../models/AchievementUpdate';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -12,12 +12,12 @@ export class CustomAchievementsService {
     /**
      * Create Custom Achievement
      * @param requestBody
-     * @returns CustomAchievementRead Successful Response
+     * @returns AchievementRead Successful Response
      * @throws ApiError
      */
     public static createCustomAchievementCustomAchievementsPost(
-        requestBody: CustomAchievementCreate,
-    ): CancelablePromise<CustomAchievementRead> {
+        requestBody: AchievementCreate,
+    ): CancelablePromise<AchievementRead> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/custom-achievements',
@@ -32,13 +32,13 @@ export class CustomAchievementsService {
      * Update Custom Achievement
      * @param customAchievementId
      * @param requestBody
-     * @returns CustomAchievementRead Successful Response
+     * @returns AchievementRead Successful Response
      * @throws ApiError
      */
     public static updateCustomAchievementCustomAchievementsCustomAchievementIdPut(
         customAchievementId: string,
-        requestBody: CustomAchievementUpdate,
-    ): CancelablePromise<CustomAchievementRead> {
+        requestBody: AchievementUpdate,
+    ): CancelablePromise<AchievementRead> {
         return __request(OpenAPI, {
             method: 'PUT',
             url: '/custom-achievements/{custom_achievement_id}',

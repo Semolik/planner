@@ -7,6 +7,9 @@ export { CancelablePromise, CancelError } from './core/CancelablePromise';
 export { OpenAPI } from './core/OpenAPI';
 export type { OpenAPIConfig } from './core/OpenAPI';
 
+export type { AchievementCreate } from './models/AchievementCreate';
+export type { AchievementRead } from './models/AchievementRead';
+export type { AchievementUpdate } from './models/AchievementUpdate';
 export type { Body_add_file_to_home_note_home_notes__note_id__files_post } from './models/Body_add_file_to_home_note_home_notes__note_id__files_post';
 export type { Body_auth_jwt_login_auth_jwt_login_post } from './models/Body_auth_jwt_login_auth_jwt_login_post';
 export type { Body_create_home_note_home_notes_post } from './models/Body_create_home_note_home_notes_post';
@@ -21,9 +24,6 @@ export type { ChatsSettingsResponse } from './models/ChatsSettingsResponse';
 export type { CreateOrUpdatePeriodRequest } from './models/CreateOrUpdatePeriodRequest';
 export type { CreateTypedTask } from './models/CreateTypedTask';
 export type { CreateTypedTaskState } from './models/CreateTypedTaskState';
-export type { CustomAchievementCreate } from './models/CustomAchievementCreate';
-export type { CustomAchievementRead } from './models/CustomAchievementRead';
-export type { CustomAchievementUpdate } from './models/CustomAchievementUpdate';
 export type { ErrorModel } from './models/ErrorModel';
 export type { EventCreate } from './models/EventCreate';
 export type { EventFullInfo } from './models/EventFullInfo';
@@ -75,6 +75,7 @@ export type { UserUpdate } from './models/UserUpdate';
 export type { ValidationError } from './models/ValidationError';
 export type { VKAuthParams } from './models/VKAuthParams';
 
+export { AchievementsService } from './services/AchievementsService';
 export { AuthService } from './services/AuthService';
 export { CalendarService } from './services/CalendarService';
 export { CustomAchievementsService } from './services/CustomAchievementsService';

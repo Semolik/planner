@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from datetime import date
 
 
-class CustomAchievementCreate(BaseModel):
+class AchievementCreate(BaseModel):
     name: str
     date_from: date
     date_to: date | None
@@ -13,12 +13,13 @@ class CustomAchievementCreate(BaseModel):
     achievement_level: str | None
 
 
-class CustomAchievementUpdate(CustomAchievementCreate):
+class AchievementUpdate(AchievementCreate):
     pass
 
 
-class CustomAchievementRead(CustomAchievementUpdate):
+class AchievementRead(AchievementUpdate):
     id: uuid.UUID
+    is_custom: bool = True
 
     class Config:
         from_attributes = True
