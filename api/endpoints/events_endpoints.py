@@ -2,6 +2,7 @@ from io import BytesIO
 
 from starlette.responses import StreamingResponse
 from docx import Document
+from docx.shared import Pt
 from api.schemas.events import (
     EventFullInfo,
     EventCreate,
@@ -50,17 +51,24 @@ async def export_excluded_events(year: int, db=Depends(get_async_session)):
 def render_events_docx(events, show_level: bool = True) -> BytesIO:
     """
     Генерирует DOCX-файл с мероприятиями. Если show_level=True, выводит уровень мероприятия после даты.
+    Форматирует текст: 1.5 интервал, 14 кегль, Times New Roman.
     """
     doc = Document()
+    style = doc.styles["Normal"]
+    font = style.font
+    font.name = "Times New Roman"
+    font.size = Pt(14)
     for event in events:
         date_str = event.date.strftime("%d.%m.%Y")
         level_str = (
-            f", уровень мероприятия - {event.level}"
+            f" - {event.level}"
             if show_level and getattr(event, "level", None)
             else ""
         )
         text = f"{event.name} ({date_str}){level_str}"
-        doc.add_paragraph(text, style="List Number")
+        p = doc.add_paragraph(text, style="List Number")
+        p_format = p.paragraph_format
+        p_format.line_spacing = 1.5
     file_stream = BytesIO()
     doc.save(file_stream)
     file_stream.seek(0)
