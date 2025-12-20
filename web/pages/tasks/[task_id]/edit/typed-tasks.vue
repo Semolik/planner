@@ -138,7 +138,7 @@
 <script setup>
 import { UserRole, TypedTasksService, TasksService } from "~/client";
 import { useAppSettingsStore } from "~/stores/app-settings";
-
+const {$toast} = useNuxtApp();
 const appSettingsStore = useAppSettingsStore();
 const task = inject("task");
 const emit = defineEmits(["update:task"]);
@@ -270,10 +270,9 @@ const hasFormChanged = computed(() => {
 
 const formValid = computed(() => {
     const isValidDueDate = form.value.dueDate !== "";
-    const isValidName = form.value.name.trim().length > 0;
     return isEditing.value
-        ? isValidDueDate && isValidName && hasFormChanged.value
-        : isValidDueDate && isValidName;
+        ? isValidDueDate && hasFormChanged.value
+        : isValidDueDate;
 });
 
 function openCreateModal(role) {
@@ -302,7 +301,7 @@ async function createTypedTask() {
                 task.value.id,
                 {
                     task_type: currentEditRole.value,
-                    name: form.value.name,
+                    name: form.value.name.trim() || null,
                     description: form.value.description,
                     link: "",
                     for_single_user: form.value.forSingleUser,
@@ -328,7 +327,7 @@ async function updateTypedTask() {
             await TypedTasksService.updateTypedTaskTasksTypedTasksTypedTaskIdPut(
                 currentTypedTask.value.id,
                 {
-                    name: form.value.name,
+                    name: form.value.name.trim() || null,
                     description: form.value.description,
                     link: "",
                     for_single_user: form.value.forSingleUser,

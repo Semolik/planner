@@ -17,10 +17,10 @@ api_router = APIRouter(prefix="/achievements", tags=["achievements"])
 
 @api_router.get("", response_model=list[AchievementRead])
 async def get_achievements_by_year(
-        year: int,
-        only_custom: bool = False,
-        db=Depends(get_async_session),
-        current_user: User = Depends(current_user),
+    year: int,
+    only_custom: bool = False,
+    db=Depends(get_async_session),
+    current_user: User = Depends(current_user),
 ):
     achievements = await CustomAchievementsCRUD(db).get_user_achievements_by_year(
         user_id=current_user.id,

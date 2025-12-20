@@ -604,10 +604,11 @@ TypedTask.displayed_name = column_property(
             .isnot(None),
             select(
                 func.concat(
-                    "Дизайн открытки ко Дню Рождения ",
+                    "Дизайн открытки ко Дню Рождения (",
                     User.last_name,
                     " ",
                     User.first_name,
+                    ")",
                 )
             )
             .where(

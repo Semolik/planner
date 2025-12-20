@@ -188,7 +188,7 @@ class TaskReadShort(TaskReadShortWithoutEvent):
 
 
 class TypedTaskReadFull(TypedTaskRead):
-    parent_task: TaskReadShort
+    parent_task: TaskReadShortWithoutEvent
 
 
 class TaskRead(TaskReadShort):

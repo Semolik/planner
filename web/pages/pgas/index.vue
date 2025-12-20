@@ -115,19 +115,7 @@ watch(
 
 // --- Подсчёт задач по ролям для справки ---
 const achievementsForReport = ref<AchievementRead[]>([]);
-const reportStats = computed(() => {
-  let copywriter = 0, designer = 0, photographer = 0;
-  for (const a of achievementsForReport.value) {
-    if (a.level_of_participation === 'Журналист') copywriter++;
-    if (a.level_of_participation === 'Дизайнер') designer++;
-    if (
-      a.level_of_participation === 'Фотограф' &&
-      !a.event_id &&
-      !(a as any).is_aggregated // не учитывать агрегированные задачи
-    ) photographer++;
-  }
-  return { copywriter, designer, photographer };
-});
+
 
 async function openReportModal() {
   reportModalOpen.value = true;
@@ -735,14 +723,6 @@ function cancelClose() {
   pendingClose.value = false;
 }
 
-// Обработчик выбора из дропдауна
-const handleDropdownSelect = (key: string) => {
-  if (key === "report") {
-    generateReport();
-  } else if (key === "table") {
-    generateTable();
-  }
-};
 
 function generateReport() {
   openReportModal();
@@ -804,27 +784,45 @@ const reportColumns: TableColumn<any>[] = [
   },
 ];
 
-// --- Универсальная фильтрация задач по ролям ---
-function getTasksByRole(role: string, achievements: AchievementRead[]) {
-  if (role === 'Фотограф') {
-    return achievements.filter(
-      (a) => a.level_of_participation === 'Фотограф' && !a.event_id && !(a as any).is_aggregated
-    );
-  } else if (role === 'Дизайнер') {
-    return achievements.filter((a) => a.level_of_participation === 'Дизайнер');
-  } else if (role === 'Журналист') {
-    return achievements.filter((a) => a.level_of_participation === 'Журналист');
-  }
-  return [];
-}
 
 // --- Модалка предпросмотра задач по ролям ---
 const previewModalOpen = ref(false);
 const previewTasks = ref<AchievementRead[]>([]);
 const previewRole = ref<string>("");
+// --- Централизованная функция фильтрации системных достижений по ролям ---
+function getSystemTasksByRole(role: string, achievements: AchievementRead[]) {
+  // Базовая фильтрация: только системные достижения (не кастомные)
+  const systemAchievements = achievements.filter(a => !a.is_custom);
+
+  if (role === 'Фотограф') {
+    return systemAchievements.filter(
+      a => a.level_of_participation === 'Фотограф' &&
+           !a.event_id &&
+           !(a as any).is_aggregated
+    );
+  } else if (role === 'Дизайнер') {
+    return systemAchievements.filter(a => a.level_of_participation === 'Дизайнер');
+  } else if (role === 'Журналист') {
+    return systemAchievements.filter(a => a.level_of_participation === 'Журналист');
+  }
+  return [];
+}
+
+// --- Подсчёт задач по ролям для справки (использует централизованную логику) ---
+const reportStats = computed(() => {
+  const copywriterTasks = getSystemTasksByRole('Журналист', achievementsForReport.value);
+  const designerTasks = getSystemTasksByRole('Дизайнер', achievementsForReport.value);
+  const photographerTasks = getSystemTasksByRole('Фотограф', achievementsForReport.value);
+
+  return {
+    copywriter: copywriterTasks.length,
+    designer: designerTasks.length,
+    photographer: photographerTasks.length
+  };
+});
 
 function openPreviewModal(role: string) {
-  previewTasks.value = getTasksByRole(role, achievementsForReport.value);
+  previewTasks.value = getSystemTasksByRole(role, achievementsForReport.value);
   previewRole.value = role;
   previewModalOpen.value = true;
 }
@@ -1071,7 +1069,7 @@ function previewLink(link: string | null) {
                 mini
                 @click="openPreviewModal('Журналист')"
               >
-                {{ reportStats.copywriter }} задач копирайтера
+                {{ reportStats.copywriter }} {{usePluralize(reportStats.copywriter, ['задача', 'задачи', 'задач'])}} журналиста
               </app-button>
               <app-button
                 v-if="reportStats.designer"
@@ -1079,7 +1077,7 @@ function previewLink(link: string | null) {
                 mini
                 @click="openPreviewModal('Дизайнер')"
               >
-                {{ reportStats.designer }} задач дизайнера
+                {{ reportStats.designer }} {{usePluralize(reportStats.designer, ['задача', 'задачи', 'задач'])}} дизайнера
               </app-button>
               <app-button
                 v-if="reportStats.photographer"
@@ -1087,7 +1085,7 @@ function previewLink(link: string | null) {
                 mini
                 @click="openPreviewModal('Фотограф')"
               >
-                {{ reportStats.photographer }} задач фотографа
+                {{ reportStats.photographer }} {{usePluralize(reportStats.photographer, ['задача', 'задачи', 'задач'])}} фотографа
               </app-button>
               <span v-if="!reportStats.copywriter && !reportStats.designer && !reportStats.photographer">нет задач по ролям</span>
             </div>

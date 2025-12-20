@@ -14,6 +14,7 @@ from api.db.session import get_async_session
 
 api_router = APIRouter(prefix="/custom-achievements", tags=["custom-achievements"])
 
+
 @api_router.post("", response_model=AchievementRead)
 async def create_custom_achievement(
     custom_achievement: AchievementCreate,

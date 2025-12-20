@@ -7,7 +7,14 @@ from sqlalchemy.orm import aliased
 
 from api.cruds.base_crud import BaseCRUD
 from api.cruds.tasks_crud import TasksCRUD
-from api.models.events_models import Event, Task, TypedTask, TaskState, State, EventGroup
+from api.models.events_models import (
+    Event,
+    Task,
+    TypedTask,
+    TaskState,
+    State,
+    EventGroup,
+)
 from api.models.user_models import CustomAchievementModel, UserRole
 from api.schemas.custom_achievements import (
     AchievementCreate,
@@ -59,18 +66,20 @@ class CustomAchievementsCRUD(BaseCRUD):
         custom_achievements = custom_result.scalars().all()
 
         for achievement in custom_achievements:
-            results.append({
-                "id": achievement.id,
-                "name": achievement.name,
-                "date_from": achievement.date_from,
-                "date_to": achievement.date_to,
-                "level_of_participation": achievement.level_of_participation,
-                "achievement_level": achievement.achievement_level,
-                "link": achievement.link,
-                "is_custom": True,
-                "event_id": None,
-                "is_aggregated": False,
-            })
+            results.append(
+                {
+                    "id": achievement.id,
+                    "name": achievement.name,
+                    "date_from": achievement.date_from,
+                    "date_to": achievement.date_to,
+                    "level_of_participation": achievement.level_of_participation,
+                    "achievement_level": achievement.achievement_level,
+                    "link": achievement.link,
+                    "is_custom": True,
+                    "event_id": None,
+                    "is_aggregated": False,
+                }
+            )
 
         if only_custom:
             results.sort(key=lambda x: x["date_from"] or date.min, reverse=True)
@@ -110,7 +119,9 @@ class CustomAchievementsCRUD(BaseCRUD):
                 TaskState.user_id == user_id,
                 TaskState.state == State.COMPLETED,
                 effective_date.between(period_start, period_end),
-                task_alias.use_in_pgas.is_(True),  # ВАЖНО: только задачи, используемые в ПГАС
+                task_alias.use_in_pgas.is_(
+                    True
+                ),  # ВАЖНО: только задачи, используемые в ПГАС
             )
             .options(*TasksCRUD(self.db).get_typed_task_options())
         )
@@ -203,33 +214,46 @@ class CustomAchievementsCRUD(BaseCRUD):
                 "name": name,
                 "date_from": final_date,
                 "date_to": None,
-                "achievement_level": getattr(event_obj, "level", None) if event_obj is not None else None,
+                "achievement_level": getattr(event_obj, "level", None)
+                if event_obj is not None
+                else None,
                 "is_custom": False,
                 "event_id": task_obj.event_id,
-                "is_aggregated": task_obj.id in aggregate_task_ids if task_obj is not None else False,
+                "is_aggregated": task_obj.id in aggregate_task_ids
+                if task_obj is not None
+                else False,
             }
 
             # фотограф с линком (если роль есть)
             if UserRole.PHOTOGRAPHER.value in roles_for_user:
-                results.append({
-                    "id": task_obj.id,
-                    "level_of_participation": role_mapping.get(
-                        UserRole.PHOTOGRAPHER.value, UserRole.PHOTOGRAPHER.value
-                    ),
-                    "link": photographer_link,
-                    **achievement_base,
-                })
+                results.append(
+                    {
+                        "id": task_obj.id,
+                        "level_of_participation": role_mapping.get(
+                            UserRole.PHOTOGRAPHER.value, UserRole.PHOTOGRAPHER.value
+                        ),
+                        "link": photographer_link,
+                        **achievement_base,
+                    }
+                )
 
             # остальные роли — без ссылок
             for role_key in roles_for_user:
                 if role_key == UserRole.PHOTOGRAPHER.value:
                     continue
-                results.append({
-                    "id": task_obj.id,
-                    "level_of_participation": role_mapping.get(role_key, role_key),
-                    "link": None,
-                    **achievement_base,
-                })
+                if (
+                    task_obj.birthday_user_id is not None
+                    and achievement_base["achievement_level"] is None
+                ):
+                    achievement_base["achievement_level"] = "Университетский"
+                results.append(
+                    {
+                        "id": task_obj.id,
+                        "level_of_participation": role_mapping.get(role_key, role_key),
+                        "link": None,
+                        **achievement_base,
+                    }
+                )
 
         # ---------- финальная сортировка ----------
         results.sort(key=lambda x: x["date_from"] or date.min)
