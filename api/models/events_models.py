@@ -609,9 +609,9 @@ TypedTask.displayed_name = column_property(
                     select(
                         func.concat(
                             "Дизайн открытки ко Дню Рождения (",
-                            User.last_name,
+                            User. first_name,
                             " ",
-                            User.first_name,
+                            User.last_name,
                             ")",
                         )
                     )
@@ -632,9 +632,9 @@ TypedTask.displayed_name = column_property(
                     select(
                         func.concat(
                             "Публикация поздравление с Днём Рождения (",
-                            User.last_name,
-                            " ",
                             User.first_name,
+                            " ",
+                            User.last_name,
                             ")",
                         )
                     )

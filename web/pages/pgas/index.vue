@@ -260,38 +260,48 @@ const sortedData = computed(() => {
 
 const columns: TableColumn<AchievementRead>[] = [
   {
-    accessorKey: "name",
-    header: "Название мероприятия",
-    cell: ({ row }) => {
-      if (editingRowId.value === row.original.id) {
-        return h("div", { class: "py-2 w-full" }, [
-          h(AppInput, {
-            modelValue: editForm.value.name,
-            "onUpdate:modelValue": (value: string) => {
-              editForm.value.name = value;
-            },
-            white: true,
-            height: "32px",
-            required: true,
-            validator: (value: string) => {
-              return value && value.trim().length > 0;
-            },
-          }),
-        ]);
-      }
-      if (!row.original.is_custom) {
-        return h(
-          NuxtLink,
-          {
-            to: `/tasks/${row.original.id}`,
-            class: "text-blue-600 hover:underline cursor-pointer",
+  accessorKey: "name",
+  header: "Название мероприятия",
+  cell: ({ row }) => {
+    if (editingRowId.value === row.original.id) {
+      return h("div", { class: "py-2 w-full" }, [
+        h(AppInput, {
+          modelValue: editForm.value.name,
+          "onUpdate:modelValue": (value: string) => {
+            editForm.value.name = value;
           },
-          { default: () => row.original.name },
-        );
-      }
-      return row.original.name;
-    },
+          white: true,
+          height: "32px",
+          required: true,
+          validator: (value: string) => {
+            return value && value.trim().length > 0;
+          },
+        }),
+      ]);
+    }
+    if (!row.original.is_custom) {
+      return h(
+        NuxtLink,
+        {
+          to: `/tasks/${row.original.id}`,
+          class: "text-blue-600 hover:underline cursor-pointer truncate max-w-[500px] block",
+        },
+        { default: () => row.original.name },
+      );
+    }
+    // Для кастомных достижений
+    return h(
+      "div",
+      {
+        class: "truncate max-w-[500px] block",
+        title: row.original.name // tooltip с полным текстом
+      },
+      row.original.name
+    );
   },
+},
+
+
   {
     accessorKey: "date_from",
     header: "Дата проведения",
@@ -1119,7 +1129,7 @@ function previewLink(link: string | null) {
     </UModal>
 
     <!-- Модалка предпросмотра задач по ролям -->
-    <UModal :open="previewModalOpen" @update:open="previewModalOpen = $event" :title="`Задачи: ${previewRole}`">
+    <UModal :open="previewModalOpen" @update:open="previewModalOpen = $event" :title="`Задачи: ${previewRole}`" :ui="{ content: 'max-w-2xl' }">
       <template #body>
         <div v-if="previewTasks.length === 0" class="text-gray-500 py-4 text-center">
           Нет задач для выбранной роли
