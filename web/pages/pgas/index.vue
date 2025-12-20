@@ -258,50 +258,76 @@ const sortedData = computed(() => {
   });
 });
 
-const columns: TableColumn<AchievementRead>[] = [
+// --- Состояние для раскрытия групп ---
+const expandedGroups = ref<string[]>([]);
+
+// --- Группировка задач копирайтеров в одну строку с ручным раскрытием ---
+const groupedCopywriterTasks = computed(() => {
+  const copywriterTasks = sortedData.value.filter(
+    (item) => !item.is_custom && item.level_of_participation === 'Журналист'
+  );
+  const otherTasks = sortedData.value.filter(
+    (item) => !( !item.is_custom && item.level_of_participation === 'Журналист' )
+  );
+  if (copywriterTasks.length === 0) return otherTasks;
+  const groupRow = {
+    id: 'copywriters-group',
+    name: 'Посты в социальных сетях ОФ',
+    isGroup: true,
+    children: copywriterTasks,
+  };
+  // Если группа раскрыта, вставляем дочерние строки после группы
+  if (expandedGroups.value.includes('copywriters-group')) {
+    return [groupRow, ...copywriterTasks, ...otherTasks];
+  }
+  return [groupRow, ...otherTasks];
+});
+
+const columns: TableColumn<any>[] = [
   {
-  accessorKey: "name",
-  header: "Название мероприятия",
-  cell: ({ row }) => {
-    if (editingRowId.value === row.original.id) {
-      return h("div", { class: "py-2 w-full" }, [
-        h(AppInput, {
-          modelValue: editForm.value.name,
-          "onUpdate:modelValue": (value: string) => {
-            editForm.value.name = value;
+    accessorKey: 'name',
+    header: 'Название мероприятия',
+    cell: ({ row }) => {
+      if (row.original.isGroup) {
+        // Группа копирайтеров
+        return h(
+          'div',
+          {
+            class: 'font-bold cursor-pointer',
+            onClick: () => {
+              const idx = expandedGroups.value.indexOf(row.original.id);
+              if (idx === -1) {
+                expandedGroups.value.push(row.original.id);
+              } else {
+                expandedGroups.value.splice(idx, 1);
+              }
+            },
           },
-          white: true,
-          height: "32px",
-          required: true,
-          validator: (value: string) => {
-            return value && value.trim().length > 0;
-          },
-        }),
-      ]);
-    }
-    if (!row.original.is_custom) {
+          [
+            h(
+              Icon,
+              {
+                name: expandedGroups.value.includes(row.original.id)
+                  ? 'material-symbols:expand-less'
+                  : 'material-symbols:expand-more',
+                class: 'mr-1',
+              }
+            ),
+            row.original.name,
+          ]
+        );
+      }
+      // Для кастомных достижений
       return h(
-        NuxtLink,
+        'div',
         {
-          to: `/tasks/${row.original.id}`,
-          class: "text-blue-600 hover:underline cursor-pointer truncate max-w-[500px] block",
+          class: 'truncate max-w-[500px] block',
+          title: row.original.name,
         },
-        { default: () => row.original.name },
+        row.original.name
       );
-    }
-    // Для кастомных достижений
-    return h(
-      "div",
-      {
-        class: "truncate max-w-[500px] block",
-        title: row.original.name // tooltip с полным текстом
-      },
-      row.original.name
-    );
+    },
   },
-},
-
-
   {
     accessorKey: "date_from",
     header: "Дата проведения",
@@ -347,6 +373,10 @@ const columns: TableColumn<AchievementRead>[] = [
     accessorKey: "level_of_participation",
     header: "Уровень участия",
     cell: ({ row }) => {
+      if (row.original.isGroup) {
+        return 'Журналист';
+      }
+
       if (editingRowId.value === row.original.id) {
         return h("div", { class: "py-2 w-full min-w-[180px]" }, [
           h(AppInput, {
@@ -383,6 +413,14 @@ const columns: TableColumn<AchievementRead>[] = [
             },
           }),
         ]);
+      }
+      // Для строки группировки копирайтеров показываем диапазон по количеству задач
+      if (row.original.isGroup && row.original.id === 'copywriters-group') {
+        const count = row.original.children?.length || 0;
+        if (count < 5) return "не учитывается (менее 5)";
+        if (count <= 10) return "5-10";
+        if (count <= 20) return "11-20";
+        return "более 21";
       }
       return row.original.achievement_level || "-";
     },
@@ -529,11 +567,12 @@ const columns: TableColumn<AchievementRead>[] = [
   },
 ];
 
+// Используем новую структуру данных для таблицы
 const filteredData = computed(() => {
   if (showOnlyCustom.value) {
     return sortedData.value.filter((item) => item.is_custom);
   }
-  return sortedData.value;
+  return groupedCopywriterTasks.value;
 });
 
 async function loadAchievements() {
@@ -921,7 +960,7 @@ function previewLink(link: string | null) {
             label="Название мероприятия *"
             required
             white
-            :validator="(value) => value && value.trim().length > 0"
+            :validator="(value: string) => value && value.trim().length > 0"
           />
 
           <div class="grid grid-cols-2 gap-2">
@@ -931,7 +970,7 @@ function previewLink(link: string | null) {
               label="Дата начала *"
               required
               white
-              :validator="(value) => !!value"
+              :validator="(value: string) => !!value"
             />
             <app-input
               v-model="createForm.date_to"
@@ -945,7 +984,7 @@ function previewLink(link: string | null) {
             v-model="createForm.level_of_participation"
             label="Уровень участия *"
             white
-            :validator="(value) => value && value.trim().length > 0"
+            :validator="(value: string) => value && value.trim().length > 0"
           />
 
           <div class="flex flex-wrap gap-1">
@@ -969,7 +1008,7 @@ function previewLink(link: string | null) {
             v-model="createForm.achievement_level"
             label="Уровень мероприятия *"
             white
-            :validator="(value) => value && value.trim().length > 0"
+            :validator="(value: string) => value && value.trim().length > 0"
           />
 
           <div class="flex flex-wrap gap-1">
