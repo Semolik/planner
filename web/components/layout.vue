@@ -149,25 +149,43 @@ const asideBlocks = computed(() => {
 </script>
 <style lang="scss">
 .default-layout {
-    display: flex;
-    height: 100%;
-    max-width: 100%;
-    overflow-y: auto;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    max-width: 100vw;
+    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
     isolation: isolate;
-    @include lg(true) {
+    
+    & > .aside-fixed {
+        grid-row: 1 / span 2;
+        grid-column: 1 / 2;
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 280px;
+        height: 100vh;
+        z-index: 10;
+        background: white;
+        border-right: 1px solid $border-color;
+        display: flex;
         flex-direction: column;
     }
-
     &__content {
-        flex: 1;
+        grid-column: 2 / 3;
+        grid-row: 1 / 2;
         min-width: 0;
-        max-height: 100%;
+        max-height: 100vh;
         width: 100%;
+        height: 100vh;
         overflow-y: auto;
-        margin: 0 auto;
+        margin: 0;
         z-index: 0;
         &.padding {
             padding: 13px;
+        }
+        @include lg {
+            margin-left: 0;
         }
         @include lg(true) {
             overflow: auto;

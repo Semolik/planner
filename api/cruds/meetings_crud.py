@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from api.cruds.base_crud import BaseCRUD
 from api.models.meetings_models import MeetingModel
@@ -19,6 +19,9 @@ class MeetingsCRUD(BaseCRUD):
             setattr(meeting, field, value)
         return await self.update(meeting)
 
-    async def get_all_meetings(self) -> list[MeetingModel]:
-        query = await self.db.execute(select(MeetingModel))
-        return query.scalars().all()
+    async def get_all_meetings(self, year: int | None = None) -> list[MeetingModel]:
+        query = select(MeetingModel)
+        if year is not None:
+            query = query.where(func.extract("year", MeetingModel.date) == year)
+        result = await self.db.execute(query)
+        return result.scalars().all()

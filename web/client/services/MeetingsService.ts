@@ -10,17 +10,6 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class MeetingsService {
     /**
-     * Get Meetings
-     * @returns MeetingRead Successful Response
-     * @throws ApiError
-     */
-    public static getMeetingsMeetingsGet(): CancelablePromise<Array<MeetingRead>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/meetings',
-        });
-    }
-    /**
      * Create Meeting
      * @param requestBody
      * @returns MeetingRead Successful Response
@@ -34,6 +23,26 @@ export class MeetingsService {
             url: '/meetings',
             body: requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Get Meetings
+     * @param year
+     * @returns MeetingRead Successful Response
+     * @throws ApiError
+     */
+    public static getMeetingsMeetingsGet(
+        year?: (number | null),
+    ): CancelablePromise<Array<MeetingRead>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/meetings',
+            query: {
+                'year': year,
+            },
             errors: {
                 422: `Validation Error`,
             },

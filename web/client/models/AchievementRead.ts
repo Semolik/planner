@@ -11,5 +11,7 @@ export type AchievementRead = {
     achievement_level: (string | null);
     id: string;
     is_custom?: boolean;
+    event_id?: (string | null);
+    is_aggregated?: boolean;
 };
 

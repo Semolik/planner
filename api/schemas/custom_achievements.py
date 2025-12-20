@@ -20,6 +20,8 @@ class AchievementUpdate(AchievementCreate):
 class AchievementRead(AchievementUpdate):
     id: uuid.UUID
     is_custom: bool = True
+    event_id: uuid.UUID | None = None
+    is_aggregated: bool = False
 
     class Config:
         from_attributes = True

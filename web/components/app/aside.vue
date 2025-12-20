@@ -1,76 +1,77 @@
 <template>
-    <aside>
+    <aside class="aside-fixed">
         <slot name="head" />
-
-        <div v-for="(block, index) in blocks" :key="index" class="aside-block">
-            <div v-if="block.name" class="block-name">{{ block.name }}</div>
-            <div class="items">
-                <template v-if="index === 0 && authStore.isAdmin">
-                    <div
-                        v-if="$viewport.isGreaterOrEquals('lg')"
-                        v-auto-animate
-                        class="dropdown-button"
-                        :class="{ open: dropdownOpen }"
-                        @click="dropdownOpen = !dropdownOpen"
-                    >
-                        <div class="button-content">
-                            Создать
-                            <Icon name="i-lucide-chevron-down" />
+        <div class="aside-scrollable">
+            <div v-for="(block, index) in blocks" :key="index" class="aside-block">
+                <div v-if="block.name" class="block-name">{{ block.name }}</div>
+                <div class="items">
+                    <template v-if="index === 0 && authStore.isAdmin">
+                        <div
+                            v-if="$viewport.isGreaterOrEquals('lg')"
+                            v-auto-animate
+                            class="dropdown-button"
+                            :class="{ open: dropdownOpen }"
+                            @click="dropdownOpen = !dropdownOpen"
+                        >
+                            <div class="button-content">
+                                Создать
+                                <Icon name="i-lucide-chevron-down" />
+                            </div>
+                            <div v-if="dropdownOpen" class="links" @click.stop>
+                                <nuxt-link
+                                    class="link"
+                                    :to="{ name: routesNames.tasksAdd }"
+                                    @click.stop.prevent="dropdownOpen = false"
+                                >
+                                    задачу
+                                </nuxt-link>
+                                <nuxt-link
+                                    class="link"
+                                    :to="{ name: routesNames.eventsAdd }"
+                                    @click.stop.prevent="dropdownOpen = false"
+                                >
+                                    мероприятие
+                                </nuxt-link>
+                            </div>
                         </div>
-                        <div v-if="dropdownOpen" class="links" @click.stop>
+                        <div v-else class="aside-line">
                             <nuxt-link
-                                class="link"
+                                class="aside-item"
                                 :to="{ name: routesNames.tasksAdd }"
-                                @click.stop.prevent="dropdownOpen = false"
                             >
-                                задачу
+                                <Icon name="material-symbols:add-rounded" />
+                                <span> Задача </span>
                             </nuxt-link>
                             <nuxt-link
-                                class="link"
+                                class="aside-item"
                                 :to="{ name: routesNames.eventsAdd }"
-                                @click.stop.prevent="dropdownOpen = false"
                             >
-                                мероприятие
+                                <Icon name="material-symbols:add-rounded" />
+                                <span> Мероприятие </span>
                             </nuxt-link>
                         </div>
-                    </div>
-                    <div v-else class="aside-line">
-                        <nuxt-link
-                            class="aside-item"
-                            :to="{ name: routesNames.tasksAdd }"
-                        >
-                            <Icon name="material-symbols:add-rounded" />
-                            <span> Задача </span>
-                        </nuxt-link>
-                        <nuxt-link
-                            class="aside-item"
-                            :to="{ name: routesNames.eventsAdd }"
-                        >
-                            <Icon name="material-symbols:add-rounded" />
-                            <span> Мероприятие </span>
-                        </nuxt-link>
-                    </div>
-                </template>
-                <nuxt-link
-                    v-for="item in block.items"
-                    :key="item.path"
-                    class="aside-item"
-                    :to="{
-                        name: item.path,
-                    }"
-                >
-                    <Icon :name="item.icon" />
-                    <span>
-                        {{ item.name }}
-                    </span>
-                </nuxt-link>
+                    </template>
+                    <nuxt-link
+                        v-for="item in block.items"
+                        :key="item.path"
+                        class="aside-item"
+                        :to="{
+                            name: item.path,
+                        }"
+                    >
+                        <Icon :name="item.icon" />
+                        <span>
+                            {{ item.name }}
+                        </span>
+                    </nuxt-link>
+                </div>
             </div>
-        </div>
-        <div class="aside-block mt-auto">
-            <div class="items">
-                <div class="aside-item logout" @click="logout">
-                    <Icon name="material-symbols:logout-rounded" />
-                    Выйти
+            <div class="aside-block mt-auto">
+                <div class="items">
+                    <div class="aside-item logout" @click="logout">
+                        <Icon name="material-symbols:logout-rounded" />
+                        Выйти
+                    </div>
                 </div>
             </div>
         </div>
@@ -104,6 +105,26 @@ const logout = () => {
 };
 </script>
 <style lang="scss" scoped>
+.aside-fixed {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 280px;
+    min-width: 280px;
+    max-width: 280px;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    z-index: 10;
+    border-right: 1px solid $border-color;
+}
+.aside-scrollable {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
 aside {
     display: flex;
     flex-direction: column;

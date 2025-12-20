@@ -56,6 +56,7 @@ async def get_meeting(
 
 @api_router.get("", response_model=List[MeetingRead])
 async def get_meetings(
+    year: int | None = None,
     db=Depends(get_async_session),
 ):
-    return await MeetingsCRUD(db).get_all_meetings()
+    return await MeetingsCRUD(db).get_all_meetings(year=year)
