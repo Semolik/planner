@@ -595,6 +595,7 @@ TypedTask.displayed_name = column_property(
             ),
         ),
         # День рождения
+
         (
             select(Task.birthday_user_id)
             .where(Task.id == TypedTask.task_id)
@@ -602,26 +603,55 @@ TypedTask.displayed_name = column_property(
             .correlate(TypedTask)
             .scalar_subquery()
             .isnot(None),
-            select(
-                func.concat(
-                    "Дизайн открытки ко Дню Рождения (",
-                    User.last_name,
-                    " ",
-                    User.first_name,
-                    ")",
-                )
-            )
-            .where(
-                User.id
-                == select(Task.birthday_user_id)
-                .where(Task.id == TypedTask.task_id)
-                .limit(1)
-                .correlate(TypedTask)
-                .scalar_subquery()
-            )
-            .limit(1)
-            .correlate(TypedTask)
-            .scalar_subquery(),
+            case(
+                (
+                    TypedTask.task_type == UserRole.DESIGNER,
+                    select(
+                        func.concat(
+                            "Дизайн открытки ко Дню Рождения (",
+                            User.last_name,
+                            " ",
+                            User.first_name,
+                            ")",
+                        )
+                    )
+                    .where(
+                        User.id
+                        == select(Task.birthday_user_id)
+                        .where(Task.id == TypedTask.task_id)
+                        .limit(1)
+                        .correlate(TypedTask)
+                        .scalar_subquery()
+                    )
+                    .limit(1)
+                    .correlate(TypedTask)
+                    .scalar_subquery(),
+                ),
+                (
+                    TypedTask.task_type == UserRole.COPYWRITER,
+                    select(
+                        func.concat(
+                            "Публикация поздравление с Днём Рождения (",
+                            User.last_name,
+                            " ",
+                            User.first_name,
+                            ")",
+                        )
+                    )
+                    .where(
+                        User.id
+                        == select(Task.birthday_user_id)
+                        .where(Task.id == TypedTask.task_id)
+                        .limit(1)
+                        .correlate(TypedTask)
+                        .scalar_subquery()
+                    )
+                    .limit(1)
+                    .correlate(TypedTask)
+                    .scalar_subquery(),
+                ),
+                else_="",
+            ),
         ),
         (
             select(Task.name)
