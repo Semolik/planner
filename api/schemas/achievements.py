@@ -11,6 +11,8 @@ class AchievementCreate(BaseModel):
     level_of_participation: str | None
     link: str | None
     achievement_level: str | None
+    score: int = 0
+
 
 
 class AchievementUpdate(AchievementCreate):

@@ -9,6 +9,7 @@ export type AchievementRead = {
     level_of_participation: (string | null);
     link: (string | null);
     achievement_level: (string | null);
+    score?: number;
     id: string;
     is_custom?: boolean;
     event_id?: (string | null);

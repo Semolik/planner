@@ -63,8 +63,8 @@ const createForm = ref<AchievementCreate>({
     level_of_participation: null,
     link: null,
     achievement_level: null,
+    score: 0,  // ← добавить
 });
-
 // Модалка подтверждения закрытия
 const confirmCloseModalOpen = ref(false);
 const pendingClose = ref(false);
@@ -78,6 +78,7 @@ const editForm = ref<AchievementUpdate>({
     level_of_participation: null,
     link: null,
     achievement_level: null,
+    score: null,  // ← добавить
 });
 
 // Оригинальные данные для сравнения
@@ -203,13 +204,7 @@ function confirmReportMeetings() {
     selectedMeetingIds.value.forEach(id => {
         params.append('meetings_ids', id);
     });
-
-
     const downloadUrl = `/api/achievements/export?${params.toString()}`;
-
-
-
-
     const link = document.createElement('a');
     link.href = downloadUrl;
     link.target = '_blank';
@@ -259,7 +254,8 @@ const isFormDirty = computed(() => {
         createForm.value.date_to !== null ||
         createForm.value.level_of_participation !== null ||
         createForm.value.link !== null ||
-        createForm.value.achievement_level !== null
+        createForm.value.achievement_level !== null ||
+        createForm.value.score !== 0
     );
 });
 
@@ -296,7 +292,8 @@ const isEditFormChanged = computed(() => {
             originalEditForm.value.level_of_participation ||
         editForm.value.link !== originalEditForm.value.link ||
         editForm.value.achievement_level !==
-            originalEditForm.value.achievement_level
+            originalEditForm.value.achievement_level ||
+              editForm.value.score !== originalEditForm.value.score
     );
 });
 
@@ -486,6 +483,35 @@ const columns: TableColumn<any>[] = [
             return row.original.achievement_level || "-";
         },
     },
+      {
+        accessorKey: "score",
+        header: "Балл",
+        cell: ({ row }) => {
+          // Для копирайтеров показываем баллы по количеству постов
+          if (row.original.isGroup && row.original.id === 'copywriters-group') {
+            const count = row.original.children?.length || 0;
+            if (count >= 5 && count <= 10) return 20;
+            if (count >= 11 && count <= 20) return 80;
+            if (count > 21) return 150;
+            return "-";
+          }
+          if (editingRowId.value === row.original.id) {
+            return h("div", { class: "py-2 w-full min-w-[100px]" }, [
+              h(AppInput, {
+                modelValue: editForm.value.score ?? "",
+                "onUpdate:modelValue": (value: string) => {
+                  editForm.value.score = value ? Number(value) : 0;
+                },
+                type: "number",
+                white: true,
+                height: "32px",
+              }),
+            ]);
+          }
+          return row.original.score ?? "-";
+        },
+    },
+
     {
         accessorKey: "link",
         header: "Ссылка на подтверждение",
@@ -628,12 +654,37 @@ const columns: TableColumn<any>[] = [
     },
 ];
 
-// Используем новую структуру данных для таблицы
+// --- Вставка строки "первух" в начало таблицы ---
+const participantRow = {
+  name: "Участник студенческого объединения ФГБОУ ВО «Алтайского государственного университета» «Объединение фотографов»",
+  date_from: "указывается при выгрузке", // Дата вступления указывается при экспорте
+  level_of_participation: "Участник",
+  achievement_level: "университетский",
+  link: "указывается при выгрузке", // Ссылка указывается при экспорте
+  score: 10,
+  is_participant: true,
+};
+
 const filteredData = computed(() => {
-    if (showOnlyCustom.value) {
-        return sortedData.value.filter((item) => item.is_custom);
-    }
-    return groupedCopywriterTasks.value;
+  let base = showOnlyCustom.value
+    ? sortedData.value.filter((item) => item.is_custom)
+    : groupedCopywriterTasks.value;
+  // Строка "первух" всегда первая
+  base = [participantRow, ...base];
+  return base;
+});
+
+// --- Подсчёт задач по ролям для справки ---
+const reportStats = computed(() => {
+    const copywriterTasks = getSystemTasksByRole('Журналист', achievementsForReport.value);
+    const designerTasks = getSystemTasksByRole('Дизайнер', achievementsForReport.value);
+    const photographerTasks = getSystemTasksByRole('Фотограф', achievementsForReport.value);
+
+    return {
+        copywriter: copywriterTasks.length,
+        designer: designerTasks.length,
+        photographer: photographerTasks.length
+    };
 });
 
 async function loadAchievements() {
@@ -704,9 +755,11 @@ function startEdit(achievement: AchievementRead) {
         level_of_participation: achievement.level_of_participation,
         link: achievement.link,
         achievement_level: achievement.achievement_level,
+        score: achievement.score,  // ← добавить
     };
     originalEditForm.value = { ...editForm.value };
 }
+
 
 function cancelEdit() {
     editingRowId.value = null;
@@ -718,6 +771,7 @@ function cancelEdit() {
         level_of_participation: null,
         link: null,
         achievement_level: null,
+        score: 0
     };
 }
 
@@ -787,6 +841,7 @@ function resetCreateForm() {
         level_of_participation: null,
         link: null,
         achievement_level: null,
+        score: 0
     };
     pendingClose.value = false;
 }
@@ -895,6 +950,46 @@ const reportColumns: TableColumn<any>[] = [
     },
 ];
 
+// --- Модалка экспорта достижений в Excel ---
+const exportExcelModalOpen = ref(false);
+const exportExcelForm = ref({
+  year: selectedYear.value,
+  participant_date: '',
+  participant_link: '',
+});
+
+watch(selectedYear, (year) => {
+  exportExcelForm.value.year = year;
+});
+
+function openExportExcelModal() {
+  exportExcelModalOpen.value = true;
+}
+function closeExportExcelModal() {
+  exportExcelModalOpen.value = false;
+}
+
+async function exportAchievementsExcel() {
+  const meetingsIds = selectedMeetingIds.value;
+  const params = new URLSearchParams({
+    year: exportExcelForm.value.year.toString(),
+    participant_date: exportExcelForm.value.participant_date,
+    participant_link: exportExcelForm.value.participant_link,
+  });
+  if (meetingsIds && meetingsIds.length) {
+    meetingsIds.forEach(id => params.append('meetings_ids', id));
+  }
+  const downloadUrl = `/api/achievements/export-excel?${params.toString()}`;
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  $toast.success('Экспорт Excel запущен');
+  closeExportExcelModal();
+}
 
 // --- Модалка предпросмотра задач по ролям ---
 const previewModalOpen = ref(false);
@@ -920,17 +1015,6 @@ function getSystemTasksByRole(role: string, achievements: AchievementRead[]) {
 }
 
 // --- Подсчёт задач по ролям для справки (использует централизованную логику) ---
-const reportStats = computed(() => {
-    const copywriterTasks = getSystemTasksByRole('Журналист', achievementsForReport.value);
-    const designerTasks = getSystemTasksByRole('Дизайнер', achievementsForReport.value);
-    const photographerTasks = getSystemTasksByRole('Фотограф', achievementsForReport.value);
-
-    return {
-        copywriter: copywriterTasks.length,
-        designer: designerTasks.length,
-        photographer: photographerTasks.length
-    };
-});
 
 function openPreviewModal(role: string) {
     previewTasks.value = getSystemTasksByRole(role, achievementsForReport.value);
@@ -942,6 +1026,22 @@ function previewLink(link: string | null) {
     if (link) window.open(link, '_blank');
 }
 
+const totalScore = computed(() => {
+  let sum = 0;
+  filteredData.value.forEach(row => {
+    if (row.is_participant) {
+      sum += 10;
+    } else if (row.isGroup && row.id === 'copywriters-group') {
+      const count = row.children?.length || 0;
+      if (count >= 5 && count <= 10) sum += 20;
+      else if (count >= 11 && count <= 20) sum += 80;
+      else if (count > 21) sum += 150;
+    } else if (typeof row.score === 'number') {
+      sum += row.score;
+    }
+  });
+  return sum;
+});
 </script>
 
 <template>
@@ -951,6 +1051,9 @@ function previewLink(link: string | null) {
                 class="flex md:items-center gap-2 min-h-[60px] overflow-x-auto px-2 head md:flex-row flex-col-reverse justify-between"
             >
                 <div class="text-lg font-semibold">ПГАС</div>
+                <div class="text-base font-bold text-green-700">
+                  Сумма баллов: {{ totalScore }}
+                </div>
             </div>
 
             <div class="overflow-auto">
@@ -989,12 +1092,13 @@ function previewLink(link: string | null) {
                             />
                             Сформировать справку
                         </app-button>
-                        <app-button :active="true" mini @click="generateTable">
+
+                        <app-button :active="true" mini @click="openExportExcelModal">
                             <Icon
-                                name="material-symbols:table-rows-narrow"
+                                name="material-symbols:table-chart"
                                 class="mr-1"
                             />
-                            Сформировать таблицу
+                            Экспорт в Excel
                         </app-button>
                     </div>
                 </div>
@@ -1065,7 +1169,14 @@ function previewLink(link: string | null) {
                             {{ level }}
                         </UBadge>
                     </div>
-
+                    <app-input
+                        v-model.number="createForm.score"
+                        label="Балл"
+                        type="number"
+                        placeholder="0"
+                        white
+                        min="0"
+                    />
                     <app-input
                         v-model="createForm.achievement_level"
                         label="Уровень мероприятия *"
@@ -1286,6 +1397,54 @@ function previewLink(link: string | null) {
                     </div>
                 </div>
             </template>
+        </UModal>
+
+        <!-- Модалка экспорта достижений в Excel -->
+        <UModal
+          :open="exportExcelModalOpen"
+          title="Экспорт достижений в Excel"
+          @update:open="closeExportExcelModal"
+        >
+          <template #body>
+            <div class="flex flex-col gap-4">
+              <app-input
+                v-model.number="exportExcelForm.year"
+                label="Год *"
+                type="number"
+                min="2000"
+                max="2100"
+                white
+                required
+                :validator="(value: number) => value >= 2000 && value <= 2100"
+              />
+              <app-input
+                v-model="exportExcelForm.participant_date"
+                label="Дата вступление в объединение"
+                required
+                type="date"
+                white
+              />
+              <app-input
+                v-model="exportExcelForm.participant_link"
+                label="Ссылка на подписанную справку"
+                white
+                placeholder="Оставьте пустым, чтобы экспортировать без ссылки"
+                :validator="() => true"
+              />
+
+              <div class="flex gap-2">
+                <app-button
+                  @click="exportAchievementsExcel"
+                  :active="!!exportExcelForm.participant_date"
+                >
+                  Экспортировать
+                </app-button>
+                <app-button @click="closeExportExcelModal">
+                  Отмена
+                </app-button>
+              </div>
+            </div>
+          </template>
         </UModal>
 
         <!-- Модалка предпросмотра задач по ролям -->

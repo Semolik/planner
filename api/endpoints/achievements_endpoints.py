@@ -1,5 +1,7 @@
 import uuid
+from datetime import date
 from io import BytesIO
+from typing import List
 from urllib.parse import quote
 
 from docx import Document
@@ -11,7 +13,7 @@ from starlette.responses import StreamingResponse
 from api.cruds.meetings_crud import MeetingsCRUD
 from api.cruds.users_crud import UsersCRUD
 from api.models.user_models import User
-from api.schemas.custom_achievements import (
+from api.schemas.achievements import (
     AchievementRead,
     AchievementCreate,
     AchievementUpdate,
@@ -23,6 +25,9 @@ from docx.oxml.shared import OxmlElement
 from docx.oxml.ns import qn
 from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils.dataframe import dataframe_to_rows
 
 api_router = APIRouter(prefix="/achievements", tags=["achievements"])
 
@@ -221,4 +226,205 @@ async def export_achievements_by_year(
         file_stream,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers=headers,
+    )
+
+
+@api_router.get("/export-excel")
+async def export_achievements_excel(
+        year: int,
+        participant_date: date,
+        participant_link: str,
+        meetings_ids: List[uuid.UUID] = Query(None),
+        db=Depends(get_async_session),
+        current_user: User = Depends(current_user),
+):
+    # Получаем планерки
+    meetings = await MeetingsCRUD(db).get_meetings_by_ids(meetings_ids) if meetings_ids else []
+    meetings_count = len(meetings)
+
+    # Получаем все достижения за год
+    all_achievements = await CustomAchievementsCRUD(db).get_user_achievements_by_year(
+        user_id=current_user.id,
+        year=year,
+    )
+
+    # ФИЛЬТРАЦИЯ: убираем is_custom == false где "Журналист"
+    filtered_achievements = []
+    journalist_posts_count = 0
+
+    for achievement in all_achievements:
+        if (not achievement.get("is_custom") and
+                achievement.get("level_of_participation") == "Журналист"):
+            journalist_posts_count += 1
+        else:
+            filtered_achievements.append(achievement)
+
+    # === ПЕРВАЯ СТРОКА: Участник объединения ===
+    filtered_achievements.insert(0, {
+        "name": "Участник студенческого объединения ФГБОУ ВО «Алтайского государственного университета» «Объединение фотографов»",
+        "date_from": participant_date,
+        "level_of_participation": "Участник",
+        "achievement_level": "университетский",
+        "link": participant_link,
+        "score": 10,
+        "is_participant": True
+    })
+
+    # === АГРЕГАЦИЯ ПОСТОВ ЖУРНАЛИСТА ✅ ИСПРАВЛЕННЫЕ ЦИФРЫ ===
+    if journalist_posts_count >= 5:
+        if journalist_posts_count <= 10:
+            posts_level = "5-10"
+            posts_score = 20
+        elif journalist_posts_count <= 20:
+            posts_level = "11-20"
+            posts_score = 80
+        else:
+            posts_level = "более 21"
+            posts_score = 150
+
+        filtered_achievements.append({
+            "name": "Посты в социальных сетях студенческого объединения ФГБОУ ВО «Алтайского государственного университета» «Объединения фотографов»",
+            "date_from": None,
+            "level_of_participation": "Журналист",
+            "achievement_level": posts_level,
+            "link": "",
+            "score": posts_score,
+            "is_social_posts": True
+        })
+
+    # === АГРЕГАЦИЯ ПЛАНЕРОК (оставляем как было) ===
+    if meetings_count >= 8:
+        if meetings_count <= 12:
+            meetings_level = "8-12"
+            meetings_score = 30
+        elif meetings_count <= 23:
+            meetings_level = "13-23"
+            meetings_score = 50
+        else:
+            meetings_level = "более 24"
+            meetings_score = 80
+
+        filtered_achievements.append({
+            "name": "Посещение собраний студенческого объединения ФГБОУ ВО «Алтайского государственного университета» «Объединения фотографов»",
+            "date_from": None,
+            "level_of_participation": "Участник",
+            "achievement_level": meetings_level,
+            "link": participant_link,
+            "score": meetings_score,
+            "is_meetings": True
+        })
+
+    # Сортируем: участник первый, потом по дате, агрегации в конце
+    filtered_achievements.sort(
+        key=lambda x: (
+            x.get("is_participant", False),
+            x.get("is_social_posts", False) or x.get("is_meetings", False),
+            -(x.get("date_from") or date.min).year if x.get("date_from") else 9999
+        )
+    )
+
+    # Создаем workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Достижения"
+
+    # Заголовки
+    headers = [
+        "Номер", "Название мероприятия", "Дата проведения", "Уровень участия",
+        "Уровень мероприятия", "Ссылка на подтверждение", "Балл"
+    ]
+
+    # Стили - ПЕРЕНОС СТРОК ДЛЯ ВСЕХ ЯЧЕЕК
+    header_font = Font(name="Times New Roman", size=12, bold=True)
+    header_fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+    center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    left_align = Alignment(horizontal="left", vertical="top", wrap_text=True)
+
+    hyperlink_font = Font(name="Times New Roman", size=11, color="0000FF", underline="single")
+
+    # Заголовки
+    for col_num, header_text in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num, value=header_text)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center_align
+
+    # Заполняем данными
+    for row_num, achievement in enumerate(filtered_achievements, 2):
+        # Номер
+        ws.cell(row=row_num, column=1, value=row_num - 1).alignment = center_align
+
+        # Название
+        name_cell = ws.cell(row=row_num, column=2, value=achievement.get("name", ""))
+        name_cell.alignment = left_align
+
+        # Дата
+        date_cell = ws.cell(row=row_num, column=3)
+        date_value = achievement.get("date_from")
+        if isinstance(date_value, date):
+            date_cell.value = date_value
+            date_cell.number_format = "DD.MM.YYYY"
+        date_cell.alignment = center_align
+
+        # Уровень участия
+        ws.cell(row=row_num, column=4, value=achievement.get("level_of_participation", "")).alignment = left_align
+
+        # Уровень мероприятия
+        ws.cell(row=row_num, column=5, value=achievement.get("achievement_level", "")).alignment = left_align
+
+        # Ссылка
+        link = achievement.get("link", "")
+        link_cell = ws.cell(row=row_num, column=6)
+        if link:
+            link_cell.value = link
+            link_cell.alignment = left_align
+            if link.lower().startswith(('http://', 'https://')):
+                link_cell.hyperlink = link
+                link_cell.font = hyperlink_font
+            else:
+                link_cell.font = Font(name="Times New Roman", size=11)
+        else:
+            link_cell.value = ""
+
+        # Балл
+        score_cell = ws.cell(row=row_num, column=7, value=achievement.get("score", 0))
+        score_cell.alignment = center_align
+        score_cell.number_format = "0"
+
+    # Ширины колонок
+    column_widths = {'A': 8, 'B': 55, 'C': 14, 'D': 20, 'E': 20, 'F': 45, 'G': 8}
+    for col_letter, width in column_widths.items():
+        ws.column_dimensions[col_letter].width = width
+
+    # Автоматическая высота для ВСЕХ строк
+    ws.row_dimensions[1].height = 25
+    for row in range(2, len(filtered_achievements) + 2):
+        max_lines = 1
+        for col in range(1, 8):
+            text = str(ws.cell(row=row, column=col).value or "")
+            lines = len(text) // 45 + 1
+            max_lines = max(max_lines, lines)
+        ws.row_dimensions[row].height = max(15, 15 * max_lines + 5)
+
+    # Рамки
+    thin_border = Border(left=Side(style='thin'), right=Side(style='thin'),
+                         top=Side(style='thin'), bottom=Side(style='thin'))
+    for row in ws.iter_rows():
+        for cell in row:
+            cell.border = thin_border
+
+    # Сохранение
+    file_stream = BytesIO()
+    wb.save(file_stream)
+    file_stream.seek(0)
+
+    filename = f"Выгрузка_достижения_{year}_{current_user.last_name}_{current_user.first_name}.xlsx"
+    quoted_filename = quote(filename)
+
+    headers = {"Content-Disposition": f"attachment; filename*=UTF-8''{quoted_filename}"}
+
+    return StreamingResponse(
+        file_stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers
     )

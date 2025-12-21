@@ -16,7 +16,7 @@ from api.models.events_models import (
     EventGroup,
 )
 from api.models.user_models import CustomAchievementModel, UserRole
-from api.schemas.custom_achievements import (
+from api.schemas.achievements import (
     AchievementCreate,
     AchievementUpdate,
 )
@@ -45,10 +45,10 @@ class CustomAchievementsCRUD(BaseCRUD):
         return await self.update(custom_achievement)
 
     async def get_user_achievements_by_year(
-        self,
-        user_id: uuid.UUID,
-        year: int,
-        only_custom: bool = False,
+            self,
+            user_id: uuid.UUID,
+            year: int,
+            only_custom: bool = False,
     ) -> list[dict]:
         results: list[dict] = []
 
@@ -75,6 +75,7 @@ class CustomAchievementsCRUD(BaseCRUD):
                     "level_of_participation": achievement.level_of_participation,
                     "achievement_level": achievement.achievement_level,
                     "link": achievement.link,
+                    "score": achievement.score,
                     "is_custom": True,
                     "event_id": None,
                     "is_aggregated": False,
@@ -180,8 +181,8 @@ class CustomAchievementsCRUD(BaseCRUD):
 
                 # только для фотографа тянем ссылку, и только один раз
                 if (
-                    role_key == UserRole.PHOTOGRAPHER.value
-                    and photographer_link is None
+                        role_key == UserRole.PHOTOGRAPHER.value
+                        and photographer_link is None
                 ):
                     link: Optional[str] = None
 
@@ -195,9 +196,9 @@ class CustomAchievementsCRUD(BaseCRUD):
 
                     # 3) если нет — пробуем group
                     if (
-                        not link
-                        and event_obj is not None
-                        and getattr(event_obj, "group", None) is not None
+                            not link
+                            and event_obj is not None
+                            and getattr(event_obj, "group", None) is not None
                     ):
                         link = getattr(event_obj.group, "link", None)
 
@@ -210,6 +211,10 @@ class CustomAchievementsCRUD(BaseCRUD):
                 print(event_obj)
                 raise ValueError("Не удалось определить имя достижения")
 
+            is_aggregated = False
+            if task_obj and task_obj.id in aggregate_task_ids:
+                is_aggregated = True
+
             achievement_base = {
                 "name": name,
                 "date_from": final_date,
@@ -219,13 +224,15 @@ class CustomAchievementsCRUD(BaseCRUD):
                 else None,
                 "is_custom": False,
                 "event_id": task_obj.event_id,
-                "is_aggregated": task_obj.id in aggregate_task_ids
-                if task_obj is not None
-                else False,
+                "is_aggregated": is_aggregated,
             }
 
             # фотограф с линком (если роль есть)
             if UserRole.PHOTOGRAPHER.value in roles_for_user:
+                score = 0
+                if achievement_base["event_id"] or is_aggregated:
+                    score = 10
+
                 results.append(
                     {
                         "id": task_obj.id,
@@ -233,6 +240,7 @@ class CustomAchievementsCRUD(BaseCRUD):
                             UserRole.PHOTOGRAPHER.value, UserRole.PHOTOGRAPHER.value
                         ),
                         "link": photographer_link,
+                        "score": score,
                         **achievement_base,
                     }
                 )
@@ -241,21 +249,28 @@ class CustomAchievementsCRUD(BaseCRUD):
             for role_key in roles_for_user:
                 if role_key == UserRole.PHOTOGRAPHER.value:
                     continue
+
+                score = 0
+                if role_key == UserRole.DESIGNER.value:
+                    score = 3
+
                 if (
-                    task_obj.birthday_user_id is not None
-                    and achievement_base["achievement_level"] is None
+                        task_obj.birthday_user_id is not None
+                        and achievement_base["achievement_level"] is None
                 ):
                     achievement_base["achievement_level"] = "Университетский"
+
                 results.append(
                     {
                         "id": task_obj.id,
                         "level_of_participation": role_mapping.get(role_key, role_key),
                         "link": None,
+                        "score": score,
                         **achievement_base,
                     }
                 )
 
         # ---------- финальная сортировка ----------
-        results.sort(key=lambda x: x["date_from"] or date.min)
+        results.sort(key=lambda x: x["date_from"] or date.min, reverse=True)
 
         return results

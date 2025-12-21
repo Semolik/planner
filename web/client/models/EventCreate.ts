@@ -20,7 +20,7 @@ export type EventCreate = {
     description: string;
     level_id: string;
     use_in_pgas: boolean;
-    exclude_admin_report: boolean;
+    exclude_admin_report?: boolean;
     photographers_deadline: string;
     photographer_description?: (string | null);
     aggregate_task?: boolean;

@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.models.user_models import User
-from api.schemas.custom_achievements import (
+from api.schemas.achievements import (
     AchievementRead,
     AchievementCreate,
     AchievementUpdate,
