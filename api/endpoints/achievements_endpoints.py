@@ -85,9 +85,8 @@ async def export_achievements_by_year(
     accepted_achievements = []
     for achievement in all_achievements:
         if (
-            achievement["is_custom"]
-            or achievement["is_aggregated"]
-            or achievement["event_id"]
+            achievement["is_custom"] or
+            achievement["link"]
         ):
             continue
         accepted_achievements.append(achievement)
