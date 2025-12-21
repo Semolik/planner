@@ -125,9 +125,10 @@ async def export_achievements_by_year(
     title_run.font.size = Pt(14)
     title_run.bold = True
 
+    nb_space = "\u00a0"
     p1 = doc.add_paragraph(
         f"Подтверждающая, что {current_user.last_name} {current_user.first_name} {current_user.patronymic}, "
-        f"студент {kurs}\u00a0курса{'\u00a0магистратуры' if is_magistracy else  ''}\u00a0гр.\u00a0{group} института {current_user.institute.name}, действительно "
+        f"студент {kurs}{nb_space}курса{nb_space if not is_magistracy else ''}{' магистратуры' if is_magistracy else ''}{nb_space}гр.{nb_space}{group} института {current_user.institute.name}, действительно "
         f"является участником и активистом студенческого объединения ФГБОУ ВО «Алтайского государственного "
         f"университета» «Объединение фотографов» c {date}."
     )
