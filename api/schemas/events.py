@@ -41,6 +41,7 @@ class EventCreate(EventUpdate, PublicationTypedTasksParams):
     photographers_deadline: date
     photographer_description: str | None = None
     aggregate_task: bool = False
+    exclude_admin_report: bool = False
 
 
 class TaskBase(BaseModel):
