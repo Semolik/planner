@@ -25,3 +25,10 @@ class MeetingsCRUD(BaseCRUD):
             query = query.where(func.extract("year", MeetingModel.date) == year)
         result = await self.db.execute(query)
         return result.scalars().all()
+
+    async def get_meetings_by_ids(
+        self, meetings_ids: list[uuid.UUID]
+    ) -> list[MeetingModel]:
+        query = select(MeetingModel).where(MeetingModel.id.in_(meetings_ids))
+        result = await self.db.execute(query)
+        return result.scalars().all()

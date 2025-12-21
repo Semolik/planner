@@ -30,4 +30,39 @@ export class AchievementsService {
             },
         });
     }
+    /**
+     * Export Achievements By Year
+     * @param year
+     * @param kurs
+     * @param group
+     * @param isMagistracy
+     * @param date
+     * @param meetingsIds
+     * @returns binary Successful Response
+     * @throws ApiError
+     */
+    public static exportAchievementsByYearAchievementsExportGet(
+        year: number,
+        kurs: number,
+        group: string,
+        isMagistracy: boolean,
+        date: string,
+        meetingsIds?: Array<string>,
+    ): CancelablePromise<Blob> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/achievements/export',
+            query: {
+                'year': year,
+                'kurs': kurs,
+                'group': group,
+                'is_magistracy': isMagistracy,
+                'date': date,
+                'meetings_ids': meetingsIds,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
 }

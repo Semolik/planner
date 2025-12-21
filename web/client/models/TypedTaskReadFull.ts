@@ -2,7 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { TaskReadShort } from './TaskReadShort';
+import type { TaskReadShortWithoutEvent } from './TaskReadShortWithoutEvent';
 import type { TypedTaskState } from './TypedTaskState';
 import type { UserRole } from './UserRole';
 export type TypedTaskReadFull = {
@@ -16,6 +16,6 @@ export type TypedTaskReadFull = {
     task_states: Array<TypedTaskState>;
     due_date_passed?: boolean;
     displayed_name?: (string | null);
-    parent_task: TaskReadShort;
+    parent_task: TaskReadShortWithoutEvent;
 };
 

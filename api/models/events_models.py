@@ -595,7 +595,6 @@ TypedTask.displayed_name = column_property(
             ),
         ),
         # День рождения
-
         (
             select(Task.birthday_user_id)
             .where(Task.id == TypedTask.task_id)
@@ -609,7 +608,7 @@ TypedTask.displayed_name = column_property(
                     select(
                         func.concat(
                             "Дизайн открытки ко Дню Рождения (",
-                            User. first_name,
+                            User.first_name,
                             " ",
                             User.last_name,
                             ")",
