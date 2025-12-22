@@ -346,6 +346,17 @@ const columns: TableColumn<any>[] = [
         accessorKey: 'name',
         header: 'Название мероприятия',
         cell: ({ row }) => {
+            if (editingRowId.value === row.original.id) {
+                return h(AppInput, {
+                    modelValue: editForm.value.name,
+                    "onUpdate:modelValue": (value) => {
+                        editForm.value.name = value;
+                    },
+                    white: true,
+                    height: "32px",
+                    validator: (value) => value && value.trim().length > 0,
+                });
+            }
             if (row.original.isGroup) {
                 // Группа копирайтеров
                 return h(
@@ -660,7 +671,7 @@ const participantRow = {
   date_from: "указывается при выгрузке", // Дата вступления указывается при экспорте
   level_of_participation: "Участник",
   achievement_level: "университетский",
-  link: "указывается при выгрузке", // Ссылка указывается при экспорте
+  link: "указывается при выгрузе",
   score: 10,
   is_participant: true,
 };
