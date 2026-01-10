@@ -115,6 +115,11 @@ const asideBlocks = computed(() => {
                     path: routesNames.users,
                     icon: "material-symbols:person-rounded",
                 },
+                  {
+                    name: "Дни рождения",
+                    path: routesNames.birthdays,
+                    icon: "material-symbols:cake-rounded",
+                },
                 {
                     name: "Статистика",
                     icon: "material-symbols:analytics-outline-rounded",

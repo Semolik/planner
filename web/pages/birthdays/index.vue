@@ -154,7 +154,7 @@ onMounted(() => {
               </div>
             </div>
             <div class="flex items-center gap-3">
-             <app-button mini active>
+             <app-button mini active :to="`/users/${item.user.id}`" >
                  {{ item.day }} {{ month.nameGenitive }}
              </app-button>
             </div>
