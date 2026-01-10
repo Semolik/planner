@@ -10,6 +10,16 @@
         "
         max-width="600px"
     >
+        <div class="flex flex-col gap-1">
+            <UCheckbox
+                v-model="isActive"
+                label="Пользователь активен"
+                color="neutral"
+                variant="card"
+                size="lg"
+                :disabled="viewMode"
+            />
+        </div>
         <div :class="viewMode ? 'flex' : 'group'">
             <app-input
                 v-model="username"
@@ -25,6 +35,9 @@
                 v-model="password"
                 label="Пароль"
                 type="password"
+                autocomplete="off"
+                readonly
+                onfocus="this.removeAttribute('readonly')"
                 required
                 white
             />
@@ -100,18 +113,19 @@
         </div>
         <div class="flex flex-col gap-1">
             <div class="event-form-label">Роли</div>
-            <div class="flex flex-wrap md:gap-4 gap-2 md:ml-2">
+            <div class="flex flex-wrap  gap-2 md:ml-2">
                 <UCheckbox
                     v-for="role in roles"
                     v-model="role.selected"
                     :label="role.label"
                     color="neutral"
                     variant="card"
-                    size="lg"
+                    size="sm"
                     :disabled="viewMode"
                 />
             </div>
         </div>
+
         <div v-if="!viewMode" class="flex flex-col gap-1">
             <div class="event-form-label">Тип пользователя</div>
 
@@ -180,9 +194,9 @@ const userTypes = [
 ];
 const roles = ref([
     { label: "Фотограф", value: "photographer", selected: false },
-
     { label: "Копирайтер", value: "copywriter", selected: false },
     { label: "Дизайнер", value: "designer", selected: false },
+    { label: "Руководитель", value: "manager", selected: false },
 ]);
 if (userId) {
     const user = await UsersService.getUserUsersUserIdGet(userId);

@@ -15,8 +15,8 @@ export class CalendarService {
      * @throws ApiError
      */
     public static getCalendarCalendarGet(
-        dateFrom: string = '2025-12-22',
-        dateTo: string = '2025-12-28',
+        dateFrom: string = '2026-01-05',
+        dateTo: string = '2026-01-11',
     ): CancelablePromise<Record<string, Array<CalendarItem>>> {
         return __request(OpenAPI, {
             method: 'GET',

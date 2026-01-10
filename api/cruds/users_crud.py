@@ -159,10 +159,7 @@ class UsersCRUD(BaseCRUD):
             user.is_verified = (
                 False if not update_as_superuser else user_data.is_verified
             )
-            user = await self.update(user)
-        else:
-            user = await self.update(user)
-        return user
+        return await self.update(user)
 
     async def has_admin(self) -> bool:
         query = await self.db.execute(select(User).where(User.is_superuser))

@@ -33,6 +33,7 @@ const roleTranslations: Record<UserRole, string> = {
     [UserRole.PHOTOGRAPHER]: "Фотограф",
     [UserRole.COPYWRITER]: "Копирайтер",
     [UserRole.DESIGNER]: "Дизайнер",
+    [UserRole.MANAGER]: "Руководитель",
 };
 
 const columns: TableColumn<UserReadWithEmail>[] = [

@@ -8,10 +8,12 @@ from api.models.audit_models import AuditableMixin, register_audit_events
 from api.db.session import Base
 
 
-class UserRole(enum.Enum):
+class UserRole(str, enum.Enum):
     PHOTOGRAPHER = "photographer"
     COPYWRITER = "copywriter"
     DESIGNER = "designer"
+    MANAGER = "manager"
+
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base, AuditableMixin):

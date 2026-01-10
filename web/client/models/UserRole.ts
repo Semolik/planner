@@ -6,4 +6,5 @@ export enum UserRole {
     PHOTOGRAPHER = 'photographer',
     COPYWRITER = 'copywriter',
     DESIGNER = 'designer',
+    MANAGER = 'manager',
 }
