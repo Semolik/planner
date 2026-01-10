@@ -147,7 +147,7 @@ onMounted(() => {
         <div v-if="month.items.length" class="space-y-2">
           <div v-for="item in month.items" :key="item.user.id" class="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-2">
             <div class="flex flex-col">
-              <div class="font-medium">{{ item.user.last_name }} {{ item.user.first_name }}<span v-if="item.user.patronymic"> {{ item.user.patronymic }}</span></div>
+              <div class="font-medium">{{ item.user.last_name }} {{ item.user.first_name }}</div>
               <div class="text-sm text-gray-500 flex flex-wrap gap-2">
 
                 <span v-if="item.user.roles?.length">{{ item.user.roles.map((r) => roleTranslations[r] || r).join(", ") }}</span>
@@ -173,7 +173,7 @@ onMounted(() => {
         <div class="space-y-2">
           <div v-for="user in groupedByMonth.noDate" :key="user.id" class="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-2">
             <div class="flex flex-col">
-              <div class="font-medium">{{ user.last_name }} {{ user.first_name }}<span v-if="user.patronymic"> {{ user.patronymic }}</span></div>
+              <div class="font-medium">{{ user.last_name }} {{ user.first_name }}</div>
               <div class="text-sm text-gray-500 flex flex-wrap gap-2">
 
                 <span v-if="user.roles?.length">• {{ user.roles.map((r) => roleTranslations[r] || r).join(", ") }}</span>
