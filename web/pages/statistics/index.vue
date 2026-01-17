@@ -474,4 +474,11 @@ const groupingOptions = ref({
     border: 0 !important;
     height: 0 !important;
 }
+
+
+:deep(tbody tr:hover) {
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
+
 </style>
