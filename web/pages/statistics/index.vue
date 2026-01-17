@@ -3,6 +3,12 @@
         <div class="flex-1 md:divide-accented w-full">
             <div class="flex md:items-center gap-2 min-h-[60px] overflow-x-auto px-2 head md:flex-row flex-col-reverse justify-between">
                 <div class="text-lg font-semibold">Статистика</div>
+                 <USwitch
+                        v-model="showHidden"
+                        :label="`Показать скрытых (${hiddenUsersCount})`"
+                        color="neutral"
+                        v-if="hiddenUsersCount > 0"
+                    />
             </div>
 
             <div class="space-y-4 p-4">
@@ -179,6 +185,7 @@ useSeoMeta({
 
 const UButton = resolveComponent("UButton");
 const UBadge = resolveComponent("UBadge");
+const USwitch = resolveComponent("USwitch");
 
 const periodsRaw = await RequiredPeriodsService.getRequiredPeriodsRequiredPeriodsGet();
 const selectedPeriod = ref(periodsRaw[0]);
@@ -192,6 +199,7 @@ const periods = computed(() =>
 const rawData = ref<any[]>([]);
 const loading = ref(false);
 const tableContainer = ref<HTMLElement | null>(null);
+const showHidden = ref(false);
 
 const loadData = async () => {
     if (!selectedPeriod.value) {
@@ -325,12 +333,53 @@ const formattedRequirements = computed(() => {
     }));
 });
 
+// Подсчитываем количество скрытых пользователей
+const hiddenUsersCount = computed(() => {
+    let count = 0;
+    rawData.value.forEach((user: any) => {
+        const isActive = user.user?.is_active !== false;
+
+        let hasAnyNonZeroValue = false;
+        ["photographer", "copywriter", "designer"].forEach((activityType) => {
+            allMonths.value.forEach((month) => {
+                const value = user.stats?.[month]?.[activityType] || 0;
+                if (value > 0) {
+                    hasAnyNonZeroValue = true;
+                }
+            });
+        });
+
+        if (!isActive && !hasAnyNonZeroValue) {
+            count++;
+        }
+    });
+    return count;
+});
+
 const tableData = computed(() => {
     const data: any[] = [];
 
     rawData.value.forEach((user: any) => {
         const userId = user.user.id;
         const fullName = `${user.user.last_name} ${user.user.first_name}`;
+        const isActive = user.user?.is_active !== false; // по умолчанию считаем активным если поле отсутствует
+
+        // Проверяем, есть ли хоть одно ненулевое значение по всем ролям
+        let hasAnyNonZeroValue = false;
+        ["photographer", "copywriter", "designer"].forEach((activityType) => {
+            allMonths.value.forEach((month) => {
+                const value = user.stats?.[month]?.[activityType] || 0;
+                if (value > 0) {
+                    hasAnyNonZeroValue = true;
+                }
+            });
+        });
+
+        // Фильтруем: не показываем пользователей, у которых is_active === false И все значения нулевые
+        // (если только не включен тумблер "Показать скрытых")
+        if (!showHidden.value && !isActive && !hasAnyNonZeroValue) {
+            return; // пропускаем этого пользователя
+        }
 
         ["photographer", "copywriter", "designer"].forEach((activityType) => {
             const row: any = {
