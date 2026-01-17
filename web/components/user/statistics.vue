@@ -73,11 +73,11 @@
                                 {{ item.label }}
                             </h4>
                             <p class="text-xs mt-1" :style="{ color: textColorTertiary }">
-                                {{ item.count }}/{{ item.required }}
+                                {{ item.required > 0 ? (item.count + '/' + item.required) : item.count }}
                             </p>
                             <p
                                 class="text-xs font-semibold mt-1"
-                                :style="{ color: item.count >= item.required ? accentSuccess : accentRed }"
+                                :style="{ color: item.required > 0 ? (item.count >= item.required ? accentSuccess : accentRed) : textColorTertiary }"
                             >
                                 {{ item.status }}
                             </p>
@@ -174,7 +174,11 @@ const borderColor = 'rgba(0, 0, 0, 0.075)';
 const accentRed = 'hsl(0, 100%, 60%)';
 const accentSuccess = 'hsl(153, 80%, 60%)';
 
-const isOwnProfile = computed(() => authStore.userData?.id === props.userId);
+const isOwnProfile = computed(() => {
+    // Приводим к any, чтобы избежать ошибок типов от store (локальное безопасное приведение)
+    const id = (authStore.userData as any)?.id;
+    return id != null && String(id) === props.userId;
+});
 
 // Данные пользователя
 const user = ref<any>(null);
@@ -331,47 +335,40 @@ const roleLabels: Record<string, string> = {
 };
 
 const progressItems = computed(() => {
-    return [
-        {
-            role: 'photographer',
-            label: roleLabels.photographer,
-            color: chartColors.photographer,
-            count: taskStats.value.photographer,
-            required: requiredTasksMap.value.photographer || 0,
-            percentage: requiredTasksMap.value.photographer
-                ? Math.min(100, Math.round((taskStats.value.photographer / requiredTasksMap.value.photographer) * 100))
-                : 0,
-            status: taskStats.value.photographer >= (requiredTasksMap.value.photographer || 0)
-                ? '✓ Выполнено'
-                : `Не хватает ${(requiredTasksMap.value.photographer || 0) - taskStats.value.photographer}`
-        },
-        {
-            role: 'copywriter',
-            label: roleLabels.copywriter,
-            color: taskStats.value.copywriter >= (requiredTasksMap.value.copywriter || 0) ? accentSuccess : accentRed,
-            count: taskStats.value.copywriter,
-            required: requiredTasksMap.value.copywriter || 0,
-            percentage: requiredTasksMap.value.copywriter
-                ? Math.min(100, Math.round((taskStats.value.copywriter / requiredTasksMap.value.copywriter) * 100))
-                : 0,
-            status: taskStats.value.copywriter >= (requiredTasksMap.value.copywriter || 0)
-                ? '✓ Выполнено'
-                : `Не хватает ${(requiredTasksMap.value.copywriter || 0) - taskStats.value.copywriter}`
-        },
-        {
-            role: 'designer',
-            label: roleLabels.designer,
-            color: taskStats.value.designer >= (requiredTasksMap.value.designer || 0) ? accentSuccess : accentRed,
-            count: taskStats.value.designer,
-            required: requiredTasksMap.value.designer || 0,
-            percentage: requiredTasksMap.value.designer
-                ? Math.min(100, Math.round((taskStats.value.designer / requiredTasksMap.value.designer) * 100))
-                : 0,
-            status: taskStats.value.designer >= (requiredTasksMap.value.designer || 0)
-                ? '✓ Выполнено'
-                : `Не хватает ${(requiredTasksMap.value.designer || 0) - taskStats.value.designer}`
-        }
-    ].filter(item => hasRole(item.role));
+    const base = [
+        { role: 'photographer', label: roleLabels.photographer, color: chartColors.photographer, count: taskStats.value.photographer },
+        { role: 'copywriter', label: roleLabels.copywriter, color: null, count: taskStats.value.copywriter },
+        { role: 'designer', label: roleLabels.designer, color: null, count: taskStats.value.designer }
+    ];
+
+    return base
+        .map(item => {
+            const userHasRole = !!user.value?.roles?.includes(item.role);
+            const required = userHasRole ? (requiredTasksMap.value[item.role] || 0) : 0;
+            const percentage = required ? Math.min(100, Math.round((item.count / required) * 100)) : 0;
+            let status = '';
+
+            if (required > 0) {
+                status = item.count >= required ? '✓ Выполнено' : `Не хватает ${required - item.count}`;
+            } else {
+                // Если требования нет для пользователя (нет роли) — не показываем "Не хватает"
+                status = item.count > 0 ? `${item.count} выполнено` : '';
+            }
+
+            // Определяем цвет: если нет требования — нейтральный цвет, иначе успех/ошибка
+            const statusColor = required > 0
+                ? (item.count >= required ? accentSuccess : accentRed)
+                : textColorTertiary;
+
+            return {
+                ...item,
+                required,
+                percentage,
+                status,
+                statusColor
+            };
+        })
+        .filter(item => hasRole(item.role));
 });
 
 const getChartOption = (item: any) => ({

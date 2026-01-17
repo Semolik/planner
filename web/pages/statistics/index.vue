@@ -145,8 +145,8 @@
                             v-else
                             class="text-center font-semibold"
                             :class="{
-                                'bg-red-100 text-red-700': !isTaskCountSufficient(row.original.activityType, row.getValue('total')),
-                                'bg-green-100 text-green-700': isTaskCountSufficient(row.original.activityType, row.getValue('total')) && row.getValue('total') > 0
+                                'bg-red-100 text-red-700': row.original.hasRole && !isTaskCountSufficient(row.original.activityType, row.getValue('total'), row.original.hasRole),
+                                'bg-green-100 text-green-700': row.original.hasRole && isTaskCountSufficient(row.original.activityType, row.getValue('total'), row.original.hasRole) && Number(row.getValue('total')) > 0
                             }"
                         >
                             {{ row.getValue('total') }}
@@ -163,7 +163,7 @@
 </template>
 
 <script setup lang="ts">
-import { StatisticsService, RequiredPeriodsService } from "~/client";
+import { StatisticsService, RequiredPeriodsService, UsersService } from "~/client";
 import { routesNames } from "@typed-router";
 import { resolveComponent, ref, computed, watch } from "vue";
 import { getGroupedRowModel } from "@tanstack/vue-table";
@@ -203,7 +203,32 @@ const loadData = async () => {
         const data = await StatisticsService.getStatisticsStatisticsGet(
             selectedPeriod.value.id,
         );
-        rawData.value = data;
+        // Дополнительно загружаем роли пользователей — API статистики возвращает UserReadShort без ролей
+        const usersFull = await Promise.all(
+            data.map(async (item: any) => {
+                try {
+                    const full = await UsersService.getUserUsersUserIdGet(item.user.id);
+                    return full;
+                } catch (e) {
+                    // если не удалось — возвращаем null и оставляем короткую версию
+                    return null;
+                }
+            }),
+        );
+
+        // Мержим роли в полученные статистики
+        const merged = data.map((item: any, idx: number) => {
+            const full = usersFull[idx];
+            return {
+                ...item,
+                user: {
+                    ...item.user,
+                    roles: (full && (full as any).roles) || [],
+                },
+            };
+        });
+
+        rawData.value = merged;
     } catch (error) {
         console.error("Ошибка при загрузке статистики:", error);
     } finally {
@@ -315,15 +340,26 @@ const tableData = computed(() => {
                 activityType: activityType,
             };
 
+            // определяем, есть ли у пользователя эта роль
+            const userRoles = user.user?.roles || [];
+            const hasRole = userRoles.includes(activityType);
+            row.hasRole = hasRole;
+
             allMonths.value.forEach((month) => {
                 const value = user.stats?.[month]?.[activityType] || 0;
                 row[`month_${month}`] = value === 0 ? "-" : value;
             });
 
-            row.total = allMonths.value.reduce((sum: number, month: string) => {
+            // числовой total (без '-')
+            const totalNum = allMonths.value.reduce((sum: number, month: string) => {
                 const val = row[`month_${month}`];
-                return sum + (val === "-" ? 0 : val);
+                return sum + (val === "-" ? 0 : Number(val) || 0);
             }, 0);
+
+            row.total = totalNum;
+            // флаг достаточности задач для этой роли с учётом наличия роли у пользователя
+            const requiredForRole = Number(requiredTasksMap.value[activityType] || 0);
+            row.isSufficient = !hasRole ? true : totalNum >= requiredForRole;
 
             data.push(row);
         });
@@ -338,9 +374,13 @@ const activityTypeLabels: Record<string, string> = {
     designer: "Дизайнер",
 };
 
-const isTaskCountSufficient = (activityType: string, total: number): boolean => {
-    const required = requiredTasksMap.value[activityType] || 0;
-    return total >= required;
+const isTaskCountSufficient = (activityType: string, total: any, hasRole = true): boolean => {
+    // Если у пользователя нет этой роли — не считать дефицит
+    if (!hasRole) return true;
+    const required = Number(requiredTasksMap.value[activityType] || 0);
+    const totalNum = Number(total || 0);
+    if (isNaN(totalNum)) return false;
+    return totalNum >= required;
 };
 
 /**
@@ -353,9 +393,11 @@ const hasAnyRoleDeficiencyForUser = (groupRow: any): boolean => {
     const userRows = tableData.value.filter((r) => r.user_id === userId);
 
     return userRows.some((userRow) => {
-        const total = userRow.total;
+        // учитываем только роли, которые у пользователя есть
+        if (!userRow.hasRole) return false;
+        const total = Number(userRow.total || 0);
         const activityType = userRow.activityType;
-        return !isTaskCountSufficient(activityType, total);
+        return !isTaskCountSufficient(activityType, total, userRow.hasRole);
     });
 };
 
