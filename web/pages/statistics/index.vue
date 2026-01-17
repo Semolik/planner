@@ -222,10 +222,9 @@ const formatDate = (isoDate: string, showYear = false): string => {
     const parts = String(isoDate).split("-");
     if (parts.length !== 3) return isoDate;
     const [year, month, day] = parts;
-    const m = parseInt(month, 10) - 1;
-    const dd = String(parseInt(day, 10));
-    const monthName = monthNamesGenitive[m] || monthNames[m] || month;
-    return showYear ? `${dd} ${monthName} ${year}` : `${dd} ${monthName}`;
+    const m = String(parseInt(month, 10)).padStart(2, "0");
+    const dd = String(parseInt(day, 10)).padStart(2, "0");
+    return `${dd}.${m}.${year}`;
 };
 
 const formatPeriod = (period: any): string => {
