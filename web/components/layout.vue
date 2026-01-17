@@ -13,7 +13,7 @@
             </template>
 
             <div id="teleports"/>
-            <div :class="['default-layout__content', { padding: !noPadding }]">
+            <div :class="['default-layout__content', { padding: !noPadding, 'has-bottom-bar': authStore.logined && $viewport.isLessThan('lg') }]">
                 <slot />
             </div>
             <div
@@ -189,20 +189,32 @@ const asideBlocks = computed(() => {
         &.padding {
             padding: 13px;
         }
+        // На мобильных: контент занимает всю ширину и имеет безопасный отступ снизу под нижний бар
+        &.has-bottom-bar {
+            padding-bottom: calc(64px + env(safe-area-inset-bottom));
+        }
         @include lg {
             margin-left: 0;
         }
         @include lg(true) {
             overflow: auto;
             padding: 8px !important;
+            grid-column: 1 / -1; // одна колонка на мобильных
         }
     }
     .bottom-bar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: white;
+        border-top: 1px solid $border-color;
+        z-index: 20;
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 10px;
-        padding: 8px;
-        border-top: 1px solid $border-color;
+        padding: 8px calc(8px + env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-right));
+
         .bottom-bar-item {
             display: flex;
             align-items: center;

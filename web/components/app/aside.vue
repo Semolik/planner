@@ -1,5 +1,5 @@
 <template>
-    <aside class="aside-fixed">
+    <aside :class="['aside-fixed', { 'mobile-aside': mobile }]">
         <slot name="head" />
         <div class="aside-scrollable">
             <div v-for="(block, index) in blocks" :key="index" class="aside-block">
@@ -87,11 +87,15 @@ const dropdownOpen = ref(false);
 
 const appSettingsStore = useAppSettingsStore();
 await appSettingsStore.getSettings();
-const { blocks } = defineProps({
+const { blocks,mobile} = defineProps({
     blocks: {
         type: Array,
         default: () => [],
     },
+    mobile: {
+        type: Boolean,
+        default: false,
+    }
 });
 const mounted = ref(false);
 onMounted(() => {
@@ -117,6 +121,12 @@ const logout = () => {
     background: white;
     z-index: 10;
     border-right: 1px solid $border-color;
+    &.mobile-aside{
+        position: relative;
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
+    }
 }
 .aside-scrollable {
     flex: 1 1 auto;
@@ -124,6 +134,9 @@ const logout = () => {
     display: flex;
     flex-direction: column;
     height: 100%;
+    @include md(true) {
+        gap: 10px;
+    }
 }
 aside {
     display: flex;
@@ -150,6 +163,7 @@ aside {
         @include lg {
             padding: 13px;
         }
+        padding-bottom: 0px !important;
 
         .dropdown-button {
             border: 1px solid black;
