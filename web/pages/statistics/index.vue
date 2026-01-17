@@ -43,40 +43,7 @@
                 </div>
 
                 <!-- Круговые диаграммы по типам задач -->
-                <div v-if="shouldShowChart" class="mt-6">
-                    <h3 class="text-lg font-semibold mb-4">Общая статистика по типам задач</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div
-                            v-for="item in totalProgressItems"
-                            :key="item.role"
-                            class="rounded-lg border p-4 flex flex-col items-center bg-white"
-                        >
-                            <ClientOnly>
-                                <div style="width: 150px; height: 150px;">
-                                    <VChart
-                                        :option="getChartOption(item)"
-                                        :style="{ width: '100%', height: '100%' }"
-                                        autoresize
-                                    />
-                                </div>
-                            </ClientOnly>
-                            <div class="text-center mt-2">
-                                <h4 class="text-sm font-semibold">
-                                    {{ item.label }}
-                                </h4>
-                                <p class="text-xs mt-1 text-gray-600">
-                                    {{ item.count }}/{{ item.required }}
-                                </p>
-                                <p
-                                    class="text-xs font-semibold mt-1"
-                                    :class="item.count >= item.required ? 'text-green-500' : 'text-red-500'"
-                                >
-                                    {{ item.status }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
             </div>
 
             <div ref="tableContainer" class="overflow-auto">
@@ -169,8 +136,7 @@
 </template>
 
 <script setup lang="ts">
-import { StatisticsService, RequiredPeriodsService, UsersService } from "~/client";
-import { routesNames } from "@typed-router";
+import { StatisticsService, RequiredPeriodsService } from "~/client";
 import { resolveComponent, ref, computed, watch } from "vue";
 import { getGroupedRowModel } from "@tanstack/vue-table";
 
@@ -211,32 +177,7 @@ const loadData = async () => {
         const data = await StatisticsService.getStatisticsStatisticsGet(
             selectedPeriod.value.id,
         );
-        // Дополнительно загружаем роли пользователей — API статистики возвращает UserReadShort без ролей
-        const usersFull = await Promise.all(
-            data.map(async (item: any) => {
-                try {
-                    const full = await UsersService.getUserUsersUserIdGet(item.user.id);
-                    return full;
-                } catch (e) {
-                    // если не удалось — возвращаем null и оставляем короткую версию
-                    return null;
-                }
-            }),
-        );
-
-        // Мержим роли в полученные статистики
-        const merged = data.map((item: any, idx: number) => {
-            const full = usersFull[idx];
-            return {
-                ...item,
-                user: {
-                    ...item.user,
-                    roles: (full && (full as any).roles) || [],
-                },
-            };
-        });
-
-        rawData.value = merged;
+        rawData.value = data;
     } catch (error) {
         console.error("Ошибка при загрузке статистики:", error);
     } finally {

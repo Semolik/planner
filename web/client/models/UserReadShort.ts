@@ -3,10 +3,13 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { Institute } from './Institute';
+import type { UserRole } from './UserRole';
 export type UserReadShort = {
     id: string;
     first_name: string;
     last_name: string;
     institute: Institute;
+    is_active?: boolean;
+    roles?: Array<UserRole>;
 };
 

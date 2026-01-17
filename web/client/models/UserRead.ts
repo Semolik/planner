@@ -13,7 +13,7 @@ export type UserRead = {
     phone?: (string | null);
     group: string;
     roles?: Array<UserRole>;
-    is_active: boolean;
+    is_active?: boolean;
     is_superuser: boolean;
     is_verified?: boolean;
     username: string;

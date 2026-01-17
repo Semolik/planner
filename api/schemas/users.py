@@ -59,6 +59,8 @@ class UserReadShort(BaseModel):
     first_name: str
     last_name: str
     institute: Institute
+    is_active: bool = True
+    roles: list[UserRole] = []
 
     class Config:
         from_attributes = True
