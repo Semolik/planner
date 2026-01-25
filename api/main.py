@@ -26,7 +26,7 @@ from api.endpoints.meetings_endpoints import api_router as meetings_router
 from api.endpoints.custom_achievements_endpoints import (
     api_router as custom_achievements_router,
 )
-from api.endpoints.achievements_endpoints import api_router as achievements_router
+
 from api.db.session import async_session_maker
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -82,7 +82,6 @@ app.include_router(statistics_router)
 app.include_router(search_router)
 app.include_router(meetings_router)
 app.include_router(custom_achievements_router)
-app.include_router(achievements_router)
 
 
 main_app_lifespan = app.router.lifespan_context
