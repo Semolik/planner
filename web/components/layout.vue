@@ -37,6 +37,7 @@
 </template>
 <script setup>
 import { routesNames } from "@typed-router";
+import {storeToRefs} from "pinia";
 import { useAuthStore } from "~/stores/auth";
 const { $viewport } = useNuxtApp();
 const { noPadding } = defineProps({
@@ -46,6 +47,7 @@ const { noPadding } = defineProps({
     },
 });
 const authStore = useAuthStore();
+const {userData} = storeToRefs(authStore);
 
 const asideBlocks = computed(() => {
     const blocks = [
@@ -100,7 +102,10 @@ const asideBlocks = computed(() => {
                 },
                 {
                     name: "ПГАС",
-                    path: routesNames.pgas,
+                    path: routesNames.usersUserIdAchievements,
+                    params: {
+                        user_id: userData.value?.id,
+                    },
                     icon: "material-symbols:attach-money-rounded",
                 },
             ],

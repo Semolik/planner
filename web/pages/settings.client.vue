@@ -1,5 +1,6 @@
 <template>
     <app-form full-height headline="Настройки">
+
         <app-input
             v-model="appName"
             label="Название приложения"
@@ -65,6 +66,7 @@ useSeoMeta({
     title: "Настройки приложения",
 });
 const appSettingsStore = useAppSettingsStore();
+await appSettingsStore.getSettings();
 const appName = ref(appSettingsStore.settings.app_name);
 const photographersDeadline = ref(
     appSettingsStore.settings.photographers_deadline

@@ -3,7 +3,7 @@ import { h, resolveComponent, ref, computed, watch, onMounted, nextTick } from "
 import type { TableColumn } from "@nuxt/ui";
 import {
     CustomAchievementsService,
-    AchievementsService,
+    UsersService,
     EventsLevelsService,
     MeetingsService,
     type AchievementRead,
@@ -18,15 +18,17 @@ import { HandleOpenApiError } from "~/composables/handleErrors";
 import { NuxtLink } from "#components";
 import { useLocalStorage } from "@vueuse/core";
 
+// Props для компонента
+const props = defineProps<{
+    userId?: string;
+}>();
 
-definePageMeta({
-    layout: "no-padding",
-});
 
 useHead({
     title: "ПГАС",
 });
 
+const route = useRoute();
 const UBadge = resolveComponent("UBadge");
 const Icon = resolveComponent("Icon");
 const AppInput = resolveComponent("AppInput");
@@ -35,6 +37,19 @@ const UCheckbox = resolveComponent("UCheckbox");
 const { $toast } = useNuxtApp();
 const authStore = useAuthStore();
 const { userData } = storeToRefs(authStore);
+
+// Определяем ID пользователя для загрузки достижений
+// Приоритет: props > параметр маршрута > текущий пользователь
+const targetUserId = computed(() => {
+    if (props.userId) return props.userId;
+    if (route.params.user_id) return route.params.user_id as string;
+    return userData.value?.id || '';
+});
+
+// Проверяем, может ли текущий пользователь редактировать достижения
+const canEditAchievements = computed(() => {
+    return !props.userId && !route.params.user_id || targetUserId.value === userData.value?.id;
+});
 
 const data = ref<AchievementRead[]>([]);
 const eventLevels = ref<EventLevelRead[]>([]);
@@ -138,7 +153,7 @@ async function openReportModal() {
     try {
         const [meetings, achievements] = await Promise.all([
             MeetingsService.getMeetingsMeetingsGet(selectedYear.value),
-            AchievementsService.getAchievementsByYearAchievementsGet(selectedYear.value, false),
+            UsersService.getAchievementsByYearUsersUserIdAchievementsGet(targetUserId.value, selectedYear.value, false),
         ]);
         reportMeetings.value = meetings;
         achievementsForReport.value = achievements;
@@ -624,7 +639,7 @@ const columns: TableColumn<any>[] = [
                 );
             }
 
-            if (row.original.is_custom) {
+            if (row.original.is_custom && canEditAchievements.value) {
                 return h("div", { class: "text-right flex gap-1 justify-end" }, [
                     h(
                         "div",
@@ -702,7 +717,8 @@ async function loadAchievements() {
     try {
         isLoading.value = true;
         const achievements =
-            await AchievementsService.getAchievementsByYearAchievementsGet(
+            await UsersService.getAchievementsByYearUsersUserIdAchievementsGet(
+                targetUserId.value,
                 selectedYear.value,
                 showOnlyCustom.value,
             );
@@ -724,6 +740,10 @@ async function loadEventLevels() {
 }
 
 async function createAchievement() {
+    if (!canEditAchievements.value) {
+        $toast.error("Вы не можете редактировать достижения другого пользователя");
+        return;
+    }
 
     if (!createForm.value.name || !createForm.value.date_from) {
         $toast.error("Заполните обязательные поля");
@@ -787,6 +807,11 @@ function cancelEdit() {
 }
 
 async function updateAchievement(id: string) {
+    if (!canEditAchievements.value) {
+        $toast.error("Вы не можете редактировать достижения другого пользователя");
+        return;
+    }
+
     if (!editForm.value.name || !editForm.value.date_from) {
         $toast.error("Заполните обязательные поля");
         return;
@@ -822,6 +847,11 @@ async function updateAchievement(id: string) {
 }
 
 async function deleteAchievement() {
+    if (!canEditAchievements.value) {
+        $toast.error("Вы не можете удалять достижения другого пользователя");
+        return;
+    }
+
     if (!selectedAchievement.value?.id) return;
 
     try {
@@ -1093,7 +1123,7 @@ const totalScore = computed(() => {
                         />
                     </div>
                     <div class="flex gap-2 items-center flex-wrap">
-                        <app-button :active="true" mini @click="createModalOpen = true">
+                        <app-button v-if="canEditAchievements" :active="true" mini @click="createModalOpen = true">
                             Добавить достижение
                         </app-button>
                         <app-button :active="true" mini @click="generateReport">

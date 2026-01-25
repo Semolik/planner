@@ -3,6 +3,21 @@
         <div class="flex-1 md:divide-accented w-full">
             <div class="flex md:items-center gap-2 min-h-[60px] overflow-x-auto px-2 head md:flex-row flex-col-reverse justify-between">
                 <div class="text-lg font-semibold">Статистика {{ user?.last_name }} {{ user?.first_name }}</div>
+                <div class="flex gap-2">
+                    <app-button
+                        v-if="isOwnProfile"
+                         mini
+                         outline
+
+                        :to="{
+                            name: routesNames.usersUserIdAchievements,
+                            params: {
+                                user_id: props.userId
+                            },
+                        }"
+                        >
+                        ПГАС
+                    </app-button>
                 <app-button
                     v-if="isOwnProfile"
                     :to="`/users/${props.userId}`"
@@ -12,6 +27,7 @@
                 >
                     Перейти в профиль
                 </app-button>
+                    </div>
             </div>
 
             <div class="space-y-4 p-4">
@@ -152,6 +168,7 @@ import { use } from 'echarts/core';
 import { PieChart } from 'echarts/charts';
 import { TooltipComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
+import { routesNames } from "@typed-router";
 import VChart from 'vue-echarts';
 
 use([PieChart, TooltipComponent, CanvasRenderer]);

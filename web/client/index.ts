@@ -76,7 +76,6 @@ export type { UserUpdate } from './models/UserUpdate';
 export type { ValidationError } from './models/ValidationError';
 export type { VKAuthParams } from './models/VKAuthParams';
 
-export { AchievementsService } from './services/AchievementsService';
 export { AuthService } from './services/AuthService';
 export { CalendarService } from './services/CalendarService';
 export { CustomAchievementsService } from './services/CustomAchievementsService';

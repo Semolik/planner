@@ -57,6 +57,7 @@
                         class="aside-item"
                         :to="{
                             name: item.path,
+                            params: item.params ? item.params : {}
                         }"
                     >
                         <Icon :name="item.icon" />

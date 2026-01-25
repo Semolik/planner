@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { AchievementRead } from '../models/AchievementRead';
 import type { TaskRead } from '../models/TaskRead';
 import type { TypedTaskReadFull } from '../models/TypedTaskReadFull';
 import type { UserRead } from '../models/UserRead';
@@ -173,6 +174,108 @@ export class UsersService {
             query: {
                 'offset': offset,
                 'limit': limit,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Get Achievements By Year
+     * @param userId
+     * @param year
+     * @param onlyCustom
+     * @returns AchievementRead Successful Response
+     * @throws ApiError
+     */
+    public static getAchievementsByYearUsersUserIdAchievementsGet(
+        userId: string,
+        year: number,
+        onlyCustom: boolean = false,
+    ): CancelablePromise<Array<AchievementRead>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/users/{user_id}/achievements',
+            path: {
+                'user_id': userId,
+            },
+            query: {
+                'year': year,
+                'only_custom': onlyCustom,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Export Achievements By Year
+     * @param userId
+     * @param year
+     * @param kurs
+     * @param group
+     * @param isMagistracy
+     * @param date
+     * @param meetingsIds
+     * @returns binary Successful Response
+     * @throws ApiError
+     */
+    public static exportAchievementsByYearUsersUserIdAchievementsExportGet(
+        userId: string,
+        year: number,
+        kurs: number,
+        group: string,
+        isMagistracy: boolean,
+        date: string,
+        meetingsIds?: Array<string>,
+    ): CancelablePromise<Blob> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/users/{user_id}/achievements/export',
+            path: {
+                'user_id': userId,
+            },
+            query: {
+                'year': year,
+                'kurs': kurs,
+                'group': group,
+                'is_magistracy': isMagistracy,
+                'date': date,
+                'meetings_ids': meetingsIds,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Export Achievements Excel
+     * @param userId
+     * @param year
+     * @param participantDate
+     * @param participantLink
+     * @param meetingsIds
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static exportAchievementsExcelUsersUserIdAchievementsExportExcelGet(
+        userId: string,
+        year: number,
+        participantDate: string,
+        participantLink: string,
+        meetingsIds?: Array<string>,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/users/{user_id}/achievements/export-excel',
+            path: {
+                'user_id': userId,
+            },
+            query: {
+                'year': year,
+                'participant_date': participantDate,
+                'participant_link': participantLink,
+                'meetings_ids': meetingsIds,
             },
             errors: {
                 422: `Validation Error`,
