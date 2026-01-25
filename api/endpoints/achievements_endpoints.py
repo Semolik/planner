@@ -73,26 +73,24 @@ async def get_achievements_by_year(
 @api_router.get("/export", response_model=bytes)
 async def export_achievements_by_year(
     year: int,
-
     kurs: int,
-    group: str ,
+    group: str,
     is_magistracy: bool,
-    date: str ,
-        meetings_ids: list[uuid.UUID] = Query(None),
+    date: str,
+    meetings_ids: list[uuid.UUID] = Query(None),
     db=Depends(get_async_session),
     current_user: User = Depends(current_user),
 ):
-    meetings = await MeetingsCRUD(db).get_meetings_by_ids(meetings_ids) if meetings_ids else []
+    meetings = (
+        await MeetingsCRUD(db).get_meetings_by_ids(meetings_ids) if meetings_ids else []
+    )
     all_achievements = await CustomAchievementsCRUD(db).get_user_achievements_by_year(
         user_id=current_user.id,
         year=year,
     )
     accepted_achievements = []
     for achievement in all_achievements:
-        if (
-            achievement["is_custom"] or
-            achievement["link"]
-        ):
+        if achievement["is_custom"] or achievement["link"]:
             continue
         accepted_achievements.append(achievement)
     doc = Document()
@@ -231,15 +229,17 @@ async def export_achievements_by_year(
 
 @api_router.get("/export-excel")
 async def export_achievements_excel(
-        year: int,
-        participant_date: date,
-        participant_link: str,
-        meetings_ids: List[uuid.UUID] = Query(None),
-        db=Depends(get_async_session),
-        current_user: User = Depends(current_user),
+    year: int,
+    participant_date: date,
+    participant_link: str,
+    meetings_ids: List[uuid.UUID] = Query(None),
+    db=Depends(get_async_session),
+    current_user: User = Depends(current_user),
 ):
     # Получаем планерки
-    meetings = await MeetingsCRUD(db).get_meetings_by_ids(meetings_ids) if meetings_ids else []
+    meetings = (
+        await MeetingsCRUD(db).get_meetings_by_ids(meetings_ids) if meetings_ids else []
+    )
     meetings_count = len(meetings)
 
     # Получаем все достижения за год
@@ -253,22 +253,27 @@ async def export_achievements_excel(
     journalist_posts_count = 0
 
     for achievement in all_achievements:
-        if (not achievement.get("is_custom") and
-                achievement.get("level_of_participation") == "Журналист"):
+        if (
+            not achievement.get("is_custom")
+            and achievement.get("level_of_participation") == "Журналист"
+        ):
             journalist_posts_count += 1
         else:
             filtered_achievements.append(achievement)
 
     # === ПЕРВАЯ СТРОКА: Участник объединения ===
-    filtered_achievements.insert(0, {
-        "name": "Участник студенческого объединения ФГБОУ ВО «Алтайского государственного университета» «Объединение фотографов»",
-        "date_from": participant_date,
-        "level_of_participation": "Участник",
-        "achievement_level": "университетский",
-        "link": participant_link,
-        "score": 10,
-        "is_participant": True
-    })
+    filtered_achievements.insert(
+        0,
+        {
+            "name": "Участник студенческого объединения ФГБОУ ВО «Алтайского государственного университета» «Объединение фотографов»",
+            "date_from": participant_date,
+            "level_of_participation": "Участник",
+            "achievement_level": "университетский",
+            "link": participant_link,
+            "score": 10,
+            "is_participant": True,
+        },
+    )
 
     # === АГРЕГАЦИЯ ПОСТОВ ЖУРНАЛИСТА ✅ ИСПРАВЛЕННЫЕ ЦИФРЫ ===
     if journalist_posts_count >= 5:
@@ -282,15 +287,17 @@ async def export_achievements_excel(
             posts_level = "более 21"
             posts_score = 150
 
-        filtered_achievements.append({
-            "name": "Посты в социальных сетях студенческого объединения ФГБОУ ВО «Алтайского государственного университета» «Объединения фотографов»",
-            "date_from": None,
-            "level_of_participation": "Журналист",
-            "achievement_level": posts_level,
-            "link": "",
-            "score": posts_score,
-            "is_social_posts": True
-        })
+        filtered_achievements.append(
+            {
+                "name": "Посты в социальных сетях студенческого объединения ФГБОУ ВО «Алтайского государственного университета» «Объединения фотографов»",
+                "date_from": None,
+                "level_of_participation": "Журналист",
+                "achievement_level": posts_level,
+                "link": "",
+                "score": posts_score,
+                "is_social_posts": True,
+            }
+        )
 
     # === АГРЕГАЦИЯ ПЛАНЕРОК (оставляем как было) ===
     if meetings_count >= 8:
@@ -304,22 +311,24 @@ async def export_achievements_excel(
             meetings_level = "более 24"
             meetings_score = 80
 
-        filtered_achievements.append({
-            "name": "Посещение собраний студенческого объединения ФГБОУ ВО «Алтайского государственного университета» «Объединения фотографов»",
-            "date_from": None,
-            "level_of_participation": "Участник",
-            "achievement_level": meetings_level,
-            "link": participant_link,
-            "score": meetings_score,
-            "is_meetings": True
-        })
+        filtered_achievements.append(
+            {
+                "name": "Посещение собраний студенческого объединения ФГБОУ ВО «Алтайского государственного университета» «Объединения фотографов»",
+                "date_from": None,
+                "level_of_participation": "Участник",
+                "achievement_level": meetings_level,
+                "link": participant_link,
+                "score": meetings_score,
+                "is_meetings": True,
+            }
+        )
 
     # Сортируем: участник первый, потом по дате, агрегации в конце
     filtered_achievements.sort(
         key=lambda x: (
             x.get("is_participant", False),
             x.get("is_social_posts", False) or x.get("is_meetings", False),
-            -(x.get("date_from") or date.min).year if x.get("date_from") else 9999
+            -(x.get("date_from") or date.min).year if x.get("date_from") else 9999,
         )
     )
 
@@ -330,17 +339,26 @@ async def export_achievements_excel(
 
     # Заголовки
     headers = [
-        "Номер", "Название мероприятия", "Дата проведения", "Уровень участия",
-        "Уровень мероприятия", "Ссылка на подтверждение", "Балл"
+        "Номер",
+        "Название мероприятия",
+        "Дата проведения",
+        "Уровень участия",
+        "Уровень мероприятия",
+        "Ссылка на подтверждение",
+        "Балл",
     ]
 
     # Стили - ПЕРЕНОС СТРОК ДЛЯ ВСЕХ ЯЧЕЕК
     header_font = Font(name="Times New Roman", size=12, bold=True)
-    header_fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+    header_fill = PatternFill(
+        start_color="CCCCCC", end_color="CCCCCC", fill_type="solid"
+    )
     center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
     left_align = Alignment(horizontal="left", vertical="top", wrap_text=True)
 
-    hyperlink_font = Font(name="Times New Roman", size=11, color="0000FF", underline="single")
+    hyperlink_font = Font(
+        name="Times New Roman", size=11, color="0000FF", underline="single"
+    )
 
     # Заголовки
     for col_num, header_text in enumerate(headers, 1):
@@ -367,10 +385,14 @@ async def export_achievements_excel(
         date_cell.alignment = center_align
 
         # Уровень участия
-        ws.cell(row=row_num, column=4, value=achievement.get("level_of_participation", "")).alignment = left_align
+        ws.cell(
+            row=row_num, column=4, value=achievement.get("level_of_participation", "")
+        ).alignment = left_align
 
         # Уровень мероприятия
-        ws.cell(row=row_num, column=5, value=achievement.get("achievement_level", "")).alignment = left_align
+        ws.cell(
+            row=row_num, column=5, value=achievement.get("achievement_level", "")
+        ).alignment = left_align
 
         # Ссылка
         link = achievement.get("link", "")
@@ -378,7 +400,7 @@ async def export_achievements_excel(
         if link:
             link_cell.value = link
             link_cell.alignment = left_align
-            if link.lower().startswith(('http://', 'https://')):
+            if link.lower().startswith(("http://", "https://")):
                 link_cell.hyperlink = link
                 link_cell.font = hyperlink_font
             else:
@@ -392,7 +414,7 @@ async def export_achievements_excel(
         score_cell.number_format = "0"
 
     # Ширины колонок
-    column_widths = {'A': 8, 'B': 55, 'C': 14, 'D': 20, 'E': 20, 'F': 45, 'G': 8}
+    column_widths = {"A": 8, "B": 55, "C": 14, "D": 20, "E": 20, "F": 45, "G": 8}
     for col_letter, width in column_widths.items():
         ws.column_dimensions[col_letter].width = width
 
@@ -407,8 +429,12 @@ async def export_achievements_excel(
         ws.row_dimensions[row].height = max(15, 15 * max_lines + 5)
 
     # Рамки
-    thin_border = Border(left=Side(style='thin'), right=Side(style='thin'),
-                         top=Side(style='thin'), bottom=Side(style='thin'))
+    thin_border = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin"),
+    )
     for row in ws.iter_rows():
         for cell in row:
             cell.border = thin_border
@@ -426,5 +452,5 @@ async def export_achievements_excel(
     return StreamingResponse(
         file_stream,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers=headers
+        headers=headers,
     )

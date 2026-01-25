@@ -7,7 +7,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import TypeAdapter
 from api.cruds.users_crud import UsersCRUD
-from api.schemas.events import TypedTaskReadFull
+from api.schemas.events import TypedTaskReadFull, TaskReadShort, TaskRead
 from api.schemas.users import UserRead, UserReadWithEmail, UserUpdate
 from api.core.users_controller import (
     current_user,
@@ -145,4 +145,24 @@ async def get_user_completed_typed_tasks(
         user_id=user_id,
         period_start=period.period_start,
         period_end=period.period_end,
+    )
+
+
+@api_router.get("/{user_id}/birthdays-tasks", response_model=list[TaskRead])
+async def get_user_birthdays_tasks(
+    user_id: uuid.UUID,
+    offset: int = Query(0, ge=0),
+    limit: int = Query(10, ge=1),
+    db=Depends(get_async_session),
+    current_db_user: User = Depends(current_user),
+):
+    user = await UsersCRUD(db).get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    if user.id != current_db_user.id and not current_db_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Доступ запрещен")
+    return await TasksCRUD(db).get_user_birthdays_tasks(
+        user_id=user_id,
+        offset=offset,
+        limit=limit,
     )

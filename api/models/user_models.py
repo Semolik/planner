@@ -15,7 +15,6 @@ class UserRole(str, enum.Enum):
     MANAGER = "manager"
 
 
-
 class User(SQLAlchemyBaseUserTableUUID, Base, AuditableMixin):
     __tablename__ = "users"
     email = None
@@ -118,4 +117,6 @@ class CustomAchievementModel(Base):
     user: Mapped["User"] = relationship("User", foreign_keys=[user_id])
     link: Mapped[str | None] = mapped_column(String, nullable=True)
     achievement_level: Mapped[str | None] = mapped_column(String, nullable=True)
-    score: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    score: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )

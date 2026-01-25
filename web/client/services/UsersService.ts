@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { TaskRead } from '../models/TaskRead';
 import type { TypedTaskReadFull } from '../models/TypedTaskReadFull';
 import type { UserRead } from '../models/UserRead';
 import type { UserReadWithEmail } from '../models/UserReadWithEmail';
@@ -143,6 +144,34 @@ export class UsersService {
             },
             query: {
                 'period_id': periodId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Get User Birthdays Tasks
+     * @param userId
+     * @param offset
+     * @param limit
+     * @returns TaskRead Successful Response
+     * @throws ApiError
+     */
+    public static getUserBirthdaysTasksUsersUserIdBirthdaysTasksGet(
+        userId: string,
+        offset?: number,
+        limit: number = 10,
+    ): CancelablePromise<Array<TaskRead>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/users/{user_id}/birthdays-tasks',
+            path: {
+                'user_id': userId,
+            },
+            query: {
+                'offset': offset,
+                'limit': limit,
             },
             errors: {
                 422: `Validation Error`,

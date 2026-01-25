@@ -45,10 +45,10 @@ class CustomAchievementsCRUD(BaseCRUD):
         return await self.update(custom_achievement)
 
     async def get_user_achievements_by_year(
-            self,
-            user_id: uuid.UUID,
-            year: int,
-            only_custom: bool = False,
+        self,
+        user_id: uuid.UUID,
+        year: int,
+        only_custom: bool = False,
     ) -> list[dict]:
         results: list[dict] = []
 
@@ -181,8 +181,8 @@ class CustomAchievementsCRUD(BaseCRUD):
 
                 # только для фотографа тянем ссылку, и только один раз
                 if (
-                        role_key == UserRole.PHOTOGRAPHER.value
-                        and photographer_link is None
+                    role_key == UserRole.PHOTOGRAPHER.value
+                    and photographer_link is None
                 ):
                     link: Optional[str] = None
 
@@ -196,9 +196,9 @@ class CustomAchievementsCRUD(BaseCRUD):
 
                     # 3) если нет — пробуем group
                     if (
-                            not link
-                            and event_obj is not None
-                            and getattr(event_obj, "group", None) is not None
+                        not link
+                        and event_obj is not None
+                        and getattr(event_obj, "group", None) is not None
                     ):
                         link = getattr(event_obj.group, "link", None)
 
@@ -255,8 +255,8 @@ class CustomAchievementsCRUD(BaseCRUD):
                     score = 3
 
                 if (
-                        task_obj.birthday_user_id is not None
-                        and achievement_base["achievement_level"] is None
+                    task_obj.birthday_user_id is not None
+                    and achievement_base["achievement_level"] is None
                 ):
                     achievement_base["achievement_level"] = "Университетский"
 

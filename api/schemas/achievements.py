@@ -14,7 +14,6 @@ class AchievementCreate(BaseModel):
     score: int = 0
 
 
-
 class AchievementUpdate(AchievementCreate):
     pass
 

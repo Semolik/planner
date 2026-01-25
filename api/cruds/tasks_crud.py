@@ -545,3 +545,38 @@ class TasksCRUD(BaseCRUD):
 
         result = await self.db.execute(query)
         return result.scalars().all()
+
+    async def get_user_birthdays_tasks(
+        self,
+        user_id: uuid.UUID,
+        offset: int = 0,
+        limit: int = 10,
+    ) -> list[Task]:
+        query = (
+            select(Task)
+            .where(
+                Task.birthday_user_id == user_id,
+            )
+            .options(
+                selectinload(Task.typed_tasks).options(
+                    selectinload(TypedTask.task_states).options(
+                        selectinload(TaskState.user).options(
+                            selectinload(User.institute)
+                        ),
+                        selectinload(TaskState.period),
+                    ),
+                    selectinload(TypedTask.users).options(
+                        selectinload(User.roles_objects)
+                    ),
+                ),
+                selectinload(Task.event).options(selectinload(Event.group)),
+                selectinload(Task.files),
+                selectinload(Task.images),
+                selectinload(Task.group),
+            )
+            .offset(offset)
+            .limit(limit)
+        )
+
+        result = await self.db.execute(query)
+        return result.unique().scalars().all()

@@ -87,6 +87,29 @@
         <app-button :active="isFormValidForSave" :disabled="!isFormValidForSave" @click="submitTask">
             Сохранить задачу
         </app-button>
+
+        <template #bottom v-if="activeTab === 'birthday' && birthdayTasksWithDueDate.length > 0">
+            <div class="text-sm text-center mb-2">Последние задачи</div>
+            <div  class="flex flex-col gap-2">
+                <app-button
+                    v-for="task in birthdayTasksWithDueDate"
+                    :key="task.id"
+                    active
+                    :to="{
+                        name: routesNames.tasksTaskId,
+                        params: { task_id: task.id },
+                    }"
+                    class="w-full text-left"
+                >
+                    <div class="flex items-center justify-between w-full gap-2">
+                        <span>{{ task.displayed_name }}</span>
+                        <span v-if="task.minDueDate" class="text-xs">
+                            {{ formatDate(task.minDueDate) }}
+                        </span>
+                    </div>
+                </app-button>
+            </div>
+        </template>
     </app-form>
 
     <UModal
@@ -140,7 +163,7 @@
 </template>
 
 <script setup>
-import { UserRole, TasksService } from "~/client";
+import { UserRole, TasksService,UsersService } from "~/client";
 import { routesNames } from "@typed-router";
 
 definePageMeta({ middleware: ["admin"] });
@@ -178,6 +201,23 @@ const activeTab = ref("task");
 const selectedUser = ref(null);
 const userSelectModalOpen = ref(false);
 const birthdayTaskDueDate = ref("");
+const birthdayTasks = ref([]);
+const loadingBirthdayTasks = ref(false);
+
+// Вычисляемый список задач с минимальной датой дедлайна
+const birthdayTasksWithDueDate = computed(() =>
+    birthdayTasks.value.map(task => {
+        const timestamps = (task.typed_tasks ?? [])
+            .filter(t => t.due_date)
+            .map(t => new Date(t.due_date).getTime());
+
+        const minTimestamp = timestamps.length ? Math.min(...timestamps) : null;
+        return {
+            ...task,
+            minDueDate: minTimestamp ? new Date(minTimestamp).toISOString() : null,
+        };
+    })
+);
 
 // Вычисляемое свойство для определения типа задачи
 const isBirthdayTask = computed(() => activeTab.value === "birthday");
@@ -283,13 +323,30 @@ const openUserSelectModal = () => {
 };
 
 // Обработка выбора пользователя
-const handleUserSelect = (user) => {
+const handleUserSelect = async (user) => {
     selectedUser.value = user;
     // Автоматически устанавливаем ближайшую дату дня рождения
     if (user.birth_date) {
         birthdayTaskDueDate.value = getNextBirthday(user.birth_date);
     }
+
+    // Загружаем задачи на дни рождения для выбранного пользователя
+    await loadBirthdayTasks(user.id);
+
     userSelectModalOpen.value = false;
+};
+
+// Загрузка задач на дни рождения пользователя
+const loadBirthdayTasks = async (userId) => {
+    try {
+        loadingBirthdayTasks.value = true;
+        birthdayTasks.value = await UsersService.getUserBirthdaysTasksUsersUserIdBirthdaysTasksGet(userId, 0, 10);
+    } catch (error) {
+        console.error("Error loading birthday tasks:", error);
+        birthdayTasks.value = [];
+    } finally {
+        loadingBirthdayTasks.value = false;
+    }
 };
 
 // Очистка выбранного пользователя
