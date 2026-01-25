@@ -573,6 +573,10 @@ class TasksCRUD(BaseCRUD):
                 selectinload(Task.files),
                 selectinload(Task.images),
                 selectinload(Task.group),
+                selectinload(Task.birthday_user).options(
+                    selectinload(User.institute),
+                    selectinload(User.roles_objects),
+                ),
             )
             .offset(offset)
             .limit(limit)
