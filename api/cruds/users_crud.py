@@ -1,4 +1,5 @@
 import uuid
+from asyncio import Task
 from datetime import date
 
 from sqlalchemy import delete, insert, select, or_, nulls_first, func
@@ -103,7 +104,8 @@ class UsersCRUD(BaseCRUD):
         users = users.offset((page - 1) * page_size).limit(page_size)
         result = await self.db.execute(
             users.options(
-                selectinload(User.institute), selectinload(User.roles_objects)
+                selectinload(User.institute), selectinload(User.roles_objects),
+
             )
         )
         return result.scalars().all()

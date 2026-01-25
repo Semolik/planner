@@ -7,7 +7,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import TypeAdapter
 from api.cruds.users_crud import UsersCRUD
-from api.schemas.events import TypedTaskReadFull, TaskReadShort, TaskRead
+from api.schemas.events import TypedTaskReadFull, TaskReadShort, TaskRead, UserReadAdmin
 from api.schemas.users import UserRead, UserReadWithEmail, UserUpdate
 from api.core.users_controller import (
     current_user,
@@ -83,7 +83,7 @@ async def get_user(
     return UserRead.model_validate(user)
 
 
-@api_router.get("", response_model=List[Union[UserRead, UserReadWithEmail]])
+@api_router.get("", response_model=List[Union[UserRead, UserReadAdmin]])
 async def get_users(
     search: str = None,
     page: int = Query(1, ge=1),
@@ -105,7 +105,7 @@ async def get_users(
         filter_role=filter_role,
     )
     if current_user and current_user.is_superuser:
-        return TypeAdapter(List[UserReadWithEmail]).validate_python(users)
+        return TypeAdapter(List[UserReadAdmin]).validate_python(users)
     return TypeAdapter(List[UserRead]).validate_python(users)
 
 

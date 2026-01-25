@@ -5,6 +5,7 @@
 import type { TaskRead } from '../models/TaskRead';
 import type { TypedTaskReadFull } from '../models/TypedTaskReadFull';
 import type { UserRead } from '../models/UserRead';
+import type { UserReadAdmin } from '../models/UserReadAdmin';
 import type { UserReadWithEmail } from '../models/UserReadWithEmail';
 import type { UserRole } from '../models/UserRole';
 import type { UserUpdate } from '../models/UserUpdate';
@@ -107,7 +108,7 @@ export class UsersService {
         superusersToTop: boolean = false,
         onlySuperusers: boolean = false,
         filterRole?: UserRole,
-    ): CancelablePromise<Array<(UserRead | UserReadWithEmail)>> {
+    ): CancelablePromise<Array<(UserRead | UserReadAdmin)>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/users',

@@ -154,6 +154,9 @@ onMounted(() => {
               </div>
             </div>
             <div class="flex items-center gap-3">
+                 <app-button mini active :to="`/tasks/${item.user.nearest_current_year_birthday_task.id}`" v-if="item.user.nearest_current_year_birthday_task">
+                Задача
+             </app-button>
              <app-button mini active :to="`/users/${item.user.id}`" >
                  {{ item.day }} {{ month.nameGenitive }}
              </app-button>

@@ -73,7 +73,6 @@ class UserReadShortWithEmail(UserReadShort, BaseUserUsername):
 class UserRead(UserReadShortWithEmail, BaseUser):
     created_at: datetime
     updated_at: datetime
-
     model_config = {"exclude": {"phone"}}
 
 

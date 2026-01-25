@@ -10,12 +10,11 @@ from api.models.user_models import User, UserRole
 api_router = APIRouter(prefix="/vk", tags=["vk"])
 
 
-@api_router.post("/token", status_code=204)
+@api_router.post("/token", status_code=204, dependencies=[Depends(current_superuser)])
 async def set_token(
     request: Request,
     token: str = Form(...),
     db=Depends(get_async_session),
-    current_user: User = Depends(current_superuser),
 ):
     settings_crud = SettingsCRUD(db)
     await settings_crud.set_setting(key="vk_token", value=token)

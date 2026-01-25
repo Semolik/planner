@@ -17,7 +17,7 @@ from sqlalchemy import (
     Time,
     select,
     case,
-    text,
+    text, and_,
 )
 from sqlalchemy.sql import func
 from api.models.files_models import File, Image
@@ -446,6 +446,38 @@ Task.all_typed_tasks_completed = column_property(
     .correlate_except(TypedTask, TaskState)
     .scalar_subquery()
 )
+
+
+Task.min_typed_due_date = column_property(
+    select(func.min(TypedTask.due_date))
+    .where(TypedTask.task_id == Task.id)
+    .correlate_except(TypedTask)
+    .scalar_subquery()
+)
+
+
+normalized_birthday_year = case(
+    (
+        func.to_char(Task.min_typed_due_date, "MM-DD")
+        > func.to_char(User.birth_date, "MM-DD"),
+        func.extract("year", Task.min_typed_due_date) + 1,
+    ),
+    else_=func.extract("year", Task.min_typed_due_date),
+)
+
+User.nearest_current_year_birthday_task = relationship(
+    "Task",
+    primaryjoin=and_(
+        Task.birthday_user_id == User.id,
+        Task.min_typed_due_date.isnot(None),
+        normalized_birthday_year == func.extract("year", func.current_date()),
+    ),
+    order_by=Task.min_typed_due_date.asc(),
+    viewonly=True,
+    uselist=False,
+    lazy="selectin",
+)
+
 register_audit_events(
     Event,
     tracked_fields=[

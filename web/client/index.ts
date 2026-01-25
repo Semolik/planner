@@ -68,6 +68,7 @@ export type { UpdateTypedTask } from './models/UpdateTypedTask';
 export type { UpdateTypedTaskState } from './models/UpdateTypedTaskState';
 export type { UserCreate } from './models/UserCreate';
 export type { UserRead } from './models/UserRead';
+export type { UserReadAdmin } from './models/UserReadAdmin';
 export type { UserReadShort } from './models/UserReadShort';
 export type { UserReadWithEmail } from './models/UserReadWithEmail';
 export { UserRole } from './models/UserRole';

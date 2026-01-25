@@ -4,7 +4,7 @@ from datetime import date, time, datetime
 import uuid
 from api.schemas.files import ImageInfo, File
 from api.models.events_models import State
-from api.schemas.users import UserReadShort, UserRole
+from api.schemas.users import UserReadShort, UserRole, UserRead, UserReadWithEmail
 from pydantic import Field
 
 from api.schemas.utils import EmptyStrToNone
@@ -200,7 +200,11 @@ class TaskRead(TaskReadShort):
 
     class Config:
         from_attributes = True
+class UserReadAdmin(UserReadWithEmail):
+    nearest_current_year_birthday_task: TaskReadShort | None = None
 
+    class Config:
+        from_attributes = True
 
 class TaskWithoutEventRead(TaskReadShortWithoutEvent):
     typed_tasks: List[TypedTaskRead]
