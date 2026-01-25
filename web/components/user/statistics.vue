@@ -194,7 +194,7 @@ const accentSuccess = 'hsl(153, 80%, 60%)';
 const isOwnProfile = computed(() => {
     // Приводим к any, чтобы избежать ошибок типов от store (локальное безопасное приведение)
     const id = (authStore.userData as any)?.id;
-    return id != null && String(id) === props.userId;
+    return (id != null && String(id) === props.userId) || !!authStore.isAdmin;
 });
 
 // Данные пользователя
