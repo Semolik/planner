@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     FIRST_INSTITUTE: str
     FIRST_ADMIN_USERNAME: str
     FIRST_ADMIN_PASSWORD: str
+    FRONTEND_DOMAIN: str
     # PostgresSQL Configuration
     POSTGRES_HOST: str
     POSTGRES_PORT: int

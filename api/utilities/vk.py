@@ -9,10 +9,13 @@ from vkbottle import (
     GroupEventType,
     Keyboard,
     Callback,
+    OpenLink,
 )
 from vkbottle.bot import MessageEvent
 from vkbottle.tools import WaiterMachine
 from gigachat import GigaChat, Chat as GigaChatMessage, Messages, MessagesRole
+
+from api.core.config import settings as config_settings
 from api.utilities.events import build_message
 from api.schemas.vk import Chat
 from api.cruds.vk_crud import VKCRUD
@@ -22,6 +25,7 @@ from api.cruds.tasks_crud import TasksCRUD
 from api.models.user_models import User, UserRole
 from api.models.app_models import AppSettings
 from api.db.session import AsyncSession
+
 from fastapi.logger import logger
 
 from vkbottle.dispatch.rules.base import PeerRule
@@ -1133,6 +1137,23 @@ class VKUtils:
                     await bot.api.messages.send(
                         peer_id=peer_id,
                         message=f"✅ Событие успешно добавлено:\n\n📅 {event_data.get('date')}\n⏰ {time_info}\n📍 {event_data.get('location')}\n🎯 {event_data.get('title')}\n📊 {event_data.get('level')}",
+                        random_id=0,
+                    )
+
+                    keyboard = Keyboard(one_time=False, inline=True)
+                    platform_url = f"http://{config_settings.FRONTEND_DOMAIN}/events/{new_event.id}"
+                    keyboard.add(
+                        OpenLink(
+                            platform_url,
+                            "🔗 Перейти на платформу",
+
+                        )
+                    )
+
+                    await bot.api.messages.send(
+                        peer_id=peer_id,
+                        message=f"📌 Перейдите на платформу для управления событием:\n{platform_url}",
+                        keyboard=keyboard.get_json(),
                         random_id=0,
                     )
 
