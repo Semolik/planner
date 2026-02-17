@@ -10,10 +10,11 @@ from vkbottle import (
     Keyboard,
     Callback,
     OpenLink,
-    EMPTY_KEYBOARD,
+    KeyboardButtonColor,
 )
+
 from vkbottle.bot import MessageEvent
-from vkbottle.tools import WaiterMachine
+
 from gigachat import GigaChat, Chat as GigaChatMessage, Messages, MessagesRole
 
 from api.core.config import settings as config_settings
@@ -31,19 +32,53 @@ from fastapi.logger import logger
 
 from vkbottle.dispatch.rules.base import PeerRule
 
-waiter = WaiterMachine()
-
 
 class VKUtils:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.bot_task = None
         self.bot: Optional[Bot] = None
-        self.wm = WaiterMachine()
         self.chat_fetch_cache = {}
         self.superusers_vk_ids = []
         # Состояние редактирования: {(user_id, peer_id): {"field": str, "event_data": dict}}
         self.editing_state = {}
+
+    @staticmethod
+    def truncate_snackbar_text(text: str, max_length: int = 90) -> str:
+        """
+        Сокращает текст для snackbar до максимальной длины (VK API ограничение - 90 символов)
+        """
+        if len(text) > max_length:
+            return text[:max_length-3] + "..."
+        return text
+
+    @staticmethod
+    def format_date_with_relative_day(date_str: str) -> str:
+        """
+        Форматирует дату, добавляя относительный день недели.
+        Например: "15.02.2026 (сегодня)" или "16.02.2026 (завтра)" или "14.02.2026 (вчера)"
+        """
+        try:
+            date_parts = date_str.split(".")
+            event_date = datetime.datetime(
+                int(date_parts[2]), int(date_parts[1]), int(date_parts[0])
+            ).date()
+
+            today = datetime.datetime.now().date()
+            tomorrow = today + datetime.timedelta(days=1)
+            yesterday = today - datetime.timedelta(days=1)
+
+            if event_date == today:
+                return f"{date_str} (сегодня)"
+            elif event_date == tomorrow:
+                return f"{date_str} (завтра)"
+            elif event_date == yesterday:
+                return f"{date_str} (вчера)"
+            else:
+                return date_str
+        except Exception as e:
+            logger.error(f"Error formatting date: {e}")
+            return date_str
 
     async def get_token(self):
         query = select(AppSettings)
@@ -53,6 +88,150 @@ class VKUtils:
         if not token_setting:
             return None
         return token_setting.value
+
+    async def check_for_duplicate_events(
+        self, new_event_name: str, new_event_date: datetime.date, days_range: int = 3
+    ) -> dict | None:
+
+        try:
+            # Получаем события за период: от (дата - дни) до (дата + дни)
+            date_from = new_event_date - datetime.timedelta(days=days_range)
+            date_to = new_event_date + datetime.timedelta(days=days_range)
+
+            events_in_period = await EventsCRUD(self.session).get_events_by_period(
+                date_from, date_to
+            )
+
+            if not events_in_period:
+                return None
+
+            # Получаем GigaChat токен
+            gigachat_token = await SettingsCRUD(self.session).get_setting(
+                "gigachat_token"
+            )
+            if not gigachat_token:
+                logger.warning(
+                    "GigaChat token not configured, skipping duplicate check"
+                )
+                return None
+
+            # Формируем JSON для GigaChat с правильным форматом
+            events_data = []
+            for idx, event in enumerate(events_in_period, 1):
+                events_data.append({
+                    "номер": idx,
+                    "title": event.name,
+                    "date": event.date.strftime("%Y-%m-%d")
+                })
+
+            request_payload = {
+                "события": events_data,
+                "новое_событие": {
+                    "title": new_event_name,
+                    "date": new_event_date.strftime("%Y-%m-%d")
+                }
+            }
+
+            # Системное сообщение с инструкцией
+            system_prompt = """Ты работаешь с базой данных событий и задачей является определение, существует ли аналогичное мероприятие среди ранее зарегистрированных событий.
+
+## Основная цель
+Определяется наличие события в базе, схожего по названию и точной дате с вновь поступившим событием. Полное совпадение по названию необязательно - названия могут различаться незначительно (разными предлогами или уточняющими словами), но сущность мероприятия должна быть одинакова.
+
+## Инструкция
+1. Приводи оба названия (существующее и новое) к единому формату путём выделения ключевых слов (существительные, прилагательные, глаголы) без учёта порядка следования слов.
+2. Проводи сравнение исключительно по этим ключевым словам и дате.
+3. При полном совпадении даты и достаточной близости по ключевым словам сообщи номер события из базы.
+4. Если ни одно событие не соответствует указанным критериям, возвращай значение "0".
+
+## Формат ответа
+Выведите **только число** (номер события или "0"), без каких-либо дополнительных символов, пояснений или форматирования. Ответ должен содержать исключительно одно число.
+
+## Пример
+Если в списке событий:
+- Событие 1: "Научная конференция по искусственному интеллекту" на дату "2026-03-05"
+- Событие 2: "День защиты детей в университете" на дату "2026-06-01"
+
+И новое событие: "Конференция AI и машинное обучение" на дату "2026-03-05"
+
+То ответ должен быть: `1`
+
+Ключевые слова события 1: научная, конференция, искусственный, интеллект
+Ключевые слова нового события: конференция, искусственный, машинное, обучение
+Общие ключевые слова: конференция, искусственный
+Дата совпадает: 2026-03-05 == 2026-03-05
+Вывод: События совпадают → ответ "1"
+
+## Дополнительный пример
+Если в списке событий:
+- Событие 1: "Летний фестиваль музыки" на дату "2026-07-15"
+- Событие 2: "Концерт симфонического оркестра" на дату "2026-04-20"
+
+И новое событие: "Музыкальный фестиваль лета 2026" на дату "2026-08-15"
+
+То ответ должен быть: `0`
+
+Ключевые слова события 1: летний, фестиваль, музыка
+Ключевые слова нового события: музыкальный, фестиваль, лета
+Дата не совпадает: 2026-07-15 != 2026-08-15
+Вывод: События не совпадают → ответ "0"
+
+ВАЖНО: Ответьте ТОЛЬКО числом! Никаких объяснений, никакого форматирования. Только цифра."""
+
+            # Обычное сообщение с информацией о мероприятиях
+            user_message = f"""Входящие данные:
+```json
+{json.dumps(request_payload, ensure_ascii=False)}
+```"""
+
+            giga = GigaChat(
+                credentials=gigachat_token.value,
+                scope="GIGACHAT_API_PERS",
+                model="GigaChat",
+                verify_ssl_certs=False,
+            )
+
+            response = giga.chat(
+                payload=GigaChatMessage(
+                    messages=[
+                        Messages(
+                            role=MessagesRole.SYSTEM, content=system_prompt
+                        ),
+                        Messages(
+                            role=MessagesRole.USER, content=user_message
+                        ),
+                    ]
+                )
+            )
+
+            response_text = response.choices[0].message.content.strip()
+
+            try:
+                event_index = int(response_text)
+                if event_index > 0 and event_index <= len(events_in_period):
+                    matched_event = events_in_period[event_index - 1]
+
+                    # Получаем task_id из связи event.task
+                    task_id = None
+                    if matched_event.task:
+                        task_id = str(matched_event.task.id)
+
+                    return {
+                        "event": matched_event,
+                        "task_id": task_id,
+                        "event_id": str(matched_event.id),
+                        "name": matched_event.name,
+                        "date": matched_event.date,
+                    }
+            except (ValueError, IndexError) as e:
+                logger.error(f"Error parsing GigaChat response: {e}")
+                return None
+
+            return None
+
+        except Exception as e:
+            logger.error(f"Error checking for duplicate events: {e}")
+            return None
 
     async def get_superusers_vk_ids(self):
         query = select(User.vk_id).where(User.is_superuser, User.vk_id.is_not(None))
@@ -137,7 +316,12 @@ class VKUtils:
     def _build_event_info_message(self, event_data: dict) -> str:
         """Строит сообщение с информацией о событии"""
         result_message = f"📋 Информация о событии:\n\n"
-        result_message += f"📅 Дата: {event_data.get('date', 'не указана')}\n"
+
+        # Форматируем дату с добавлением относительного дня
+        date_str = event_data.get("date", "не указана")
+        if date_str != "не указана":
+            date_str = self.format_date_with_relative_day(date_str)
+        result_message += f"📅 Дата: {date_str}\n"
 
         time_info = event_data.get("time", "не указано")
         end_time = event_data.get("end_time")
@@ -152,10 +336,17 @@ class VKUtils:
         result_message += f"📊 Уровень: {event_data.get('level', 'не указан')}\n\n"
 
         return result_message
-
-    def _build_event_edit_keyboard(self, event_data: dict) -> Keyboard:
+    @staticmethod
+    @staticmethod
+    def _build_event_edit_keyboard(event_data: dict) -> Keyboard:
         """Строит клавиатуру для редактирования полей события"""
+        # Определяем обязательные поля
+        required_fields = {"title", "date", "time", "level"}
+
         keyboard = Keyboard(one_time=False, inline=True)
+
+        # Кнопка "Название"
+        title_color = KeyboardButtonColor.NEGATIVE if not event_data.get("title") else KeyboardButtonColor.SECONDARY
         keyboard.add(
             Callback(
                 "✏️ Название",
@@ -163,8 +354,12 @@ class VKUtils:
                     "action": "edit_title",
                     "event_data": json.dumps(event_data, ensure_ascii=False),
                 },
-            )
+            ),
+            color=title_color,
         )
+
+        # Кнопка "Дата"
+        date_color = KeyboardButtonColor.NEGATIVE if not event_data.get("date") else KeyboardButtonColor.SECONDARY
         keyboard.add(
             Callback(
                 "✏️ Дата",
@@ -172,9 +367,13 @@ class VKUtils:
                     "action": "edit_date",
                     "event_data": json.dumps(event_data, ensure_ascii=False),
                 },
-            )
+            ),
+            color=date_color,
         )
         keyboard.row()
+
+        # Кнопка "Время"
+        time_color = KeyboardButtonColor.NEGATIVE if not event_data.get("time") else KeyboardButtonColor.SECONDARY
         keyboard.add(
             Callback(
                 "✏️ Время",
@@ -182,7 +381,8 @@ class VKUtils:
                     "action": "edit_time",
                     "event_data": json.dumps(event_data, ensure_ascii=False),
                 },
-            )
+            ),
+            color=time_color,
         )
         keyboard.add(
             Callback(
@@ -203,6 +403,9 @@ class VKUtils:
                 },
             )
         )
+
+        # Кнопка "Уровень"
+        level_color = KeyboardButtonColor.NEGATIVE if not event_data.get("level") else KeyboardButtonColor.SECONDARY
         keyboard.add(
             Callback(
                 "✏️ Уровень",
@@ -210,12 +413,13 @@ class VKUtils:
                     "action": "edit_level",
                     "event_data": json.dumps(event_data, ensure_ascii=False),
                 },
-            )
+            ),
+            color=level_color,
         )
         keyboard.row()
         keyboard.add(
             Callback(
-                "✅ Добавить в систему",
+                "✅ Добавить",
                 payload={
                     "action": "add_event",
                     "event_data": json.dumps(event_data, ensure_ascii=False),
@@ -361,9 +565,7 @@ class VKUtils:
                         keyboard=keyboard.get_json(),
                     )
                 except Exception as e:
-                    logger.warning(
-                        f"Could not edit message: {e}. Sending new message instead."
-                    )
+                    logger.error(f"Could not edit message: {e}")
                     await message.answer(
                         result_message,
                         keyboard=keyboard.get_json(),
@@ -375,8 +577,6 @@ class VKUtils:
                     "event_data": event_data,
                     "event_message_id": event_message_id,
                 }
-
-                logger.info(f"Поле {field} отредактировано пользователем {user_id}")
                 return
 
             # Обычное сообщение - показываем кнопки с действиями
@@ -622,11 +822,6 @@ class VKUtils:
   * Если ясно: "День студента" (строка)
   * Если неоднозначно: ["Профориентационное мероприятие ИНГЕО", "Профориентационная встреча института географии"] (массив вариантов)"""
 
-                    # Логируем приходящее сообщение
-                    logger.info(f"=== Анализ объявления ===")
-                    logger.info(f"[Организатор мероприятия → Администратор системы]")
-                    logger.info(f"Сообщение:\n{original_message}")
-
                     response = giga.chat(
                         payload=GigaChatMessage(
                             messages=[
@@ -641,17 +836,17 @@ class VKUtils:
                     )
 
                     response_text = response.choices[0].message.content
-
-                    # Логируем ответ GigaChat
-                    logger.info(f"\n[Администратор системы → Результат обработки]")
-                    logger.info(f"Ответ GigaChat:\n{response_text}")
-
                     json_start = response_text.find("{")
                     json_end = response_text.rfind("}") + 1
 
                     if json_start != -1 and json_end > json_start:
                         json_str = response_text[json_start:json_end]
-                        event_data = json.loads(json_str)
+
+                        try:
+                            event_data = json.loads(json_str)
+                        except json.JSONDecodeError as je:
+                            logger.error(f"Error parsing JSON: {str(je)}")
+                            raise
 
                         # Обработка title: если это массив вариантов, сохраняем их и используем первый
                         title_variants = None
@@ -660,26 +855,98 @@ class VKUtils:
                         if isinstance(title_to_display, list):
                             title_variants = title_to_display
                             title_to_display = title_variants[0]
-                            event_data["title"] = (
-                                title_to_display  # Сохраняем первый вариант в event_data
-                            )
+                            event_data["title"] = title_to_display
+
+                        # Проверяем на дубликаты после парсинга
+                        event_date_obj = None
+                        try:
+                            date_parts = event_data.get("date", "").split(".")
+                            if len(date_parts) == 3:
+                                event_date_obj = datetime.date(
+                                    int(date_parts[2]),
+                                    int(date_parts[1]),
+                                    int(date_parts[0]),
+                                )
+                        except (ValueError, IndexError):
+                            pass
+
+                        duplicate_info = None
+                        if event_date_obj:
+                            try:
+                                duplicate_info = await self.check_for_duplicate_events(
+                                    new_event_name=event_data.get("title", ""),
+                                    new_event_date=event_date_obj,
+                                )
+                            except Exception as e:
+                                logger.error(f"Error checking duplicates: {str(e)}")
 
                         # Используем метод для построения сообщения
                         result_message = self._build_event_info_message(event_data)
-
-                        # Используем метод для построения клавиатуры
                         keyboard = self._build_event_edit_keyboard(event_data)
 
+                        # Если найден дубликат, добавляем кнопку "Отмена" в основную клавиатуру
+                        if duplicate_info:
+                            logger.info(f"⚠️ Найден дубликат: {duplicate_info}")
+                            keyboard.row()
+                            keyboard.add(
+                                Callback(
+                                    "❌ Отмена",
+                                    payload={
+                                        "action": "cancel_with_duplicate",
+                                        "msg_id": msg_id,
+                                    },
+                                )
+                            )
+                            logger.info(f"✓ Кнопка отмены добавлена к клавиатуре")
+
                         # Отправляем сообщение и сохраняем его ID
-                        response = await bot.api.messages.send(
-                            peer_id=peer_id,
-                            message=result_message,
-                            keyboard=keyboard.get_json(),
-                            random_id=0,
-                        )
+                        try:
+                            keyboard_json = keyboard.get_json()
+                            response = await bot.api.messages.send(
+                                peer_id=peer_id,
+                                message=result_message,
+                                keyboard=keyboard_json,
+                                random_id=0,
+                            )
+                        except Exception as e:
+                            logger.error(f"Error sending message: {str(e)}")
+                            raise
+
                         sent_message_id = (
                             response[0] if isinstance(response, list) else response
                         )
+
+                        # Если найден дубликат, отправляем отдельное сообщение с информацией и ссылкой
+                        if duplicate_info:
+                            platform_url = (
+                                f"http://{config_settings.FRONTEND_DOMAIN}/tasks/{duplicate_info['task_id']}"
+                                if duplicate_info.get("task_id")
+                                else f"{config_settings.FRONTEND_DOMAIN}/events/{duplicate_info['event_id']}"
+                            )
+
+                            duplicate_message = (
+                                f"⚠️ ВНИМАНИЕ! Возможный дубликат в базе:\n\n"
+                                f"📅 {duplicate_info['date']}\n"
+                                f"🎯 {duplicate_info['name']}"
+                            )
+
+                            # Создаем клавиатуру со ссылкой на существующее мероприятие
+                            duplicate_keyboard = Keyboard(one_time=False, inline=True)
+                            duplicate_keyboard.add(
+                                OpenLink(platform_url, "Посмотреть")
+                            )
+
+                            try:
+                                duplicate_keyboard_json = duplicate_keyboard.get_json()
+                                await bot.api.messages.send(
+                                    peer_id=peer_id,
+                                    message=duplicate_message,
+                                    keyboard=duplicate_keyboard_json,
+                                    random_id=0,
+                                )
+                            except Exception as e:
+                                logger.error(f"Error sending duplicate message: {str(e)}")
+                                raise
 
                         # Сохраняем информацию о сообщении в editing_state для последующего редактирования
                         self.editing_state[(user_id, peer_id)] = {
@@ -726,12 +993,18 @@ class VKUtils:
                                 )
                             )
 
-                            variants_response = await bot.api.messages.send(
-                                peer_id=peer_id,
-                                message=variants_message,
-                                keyboard=variants_keyboard.get_json(),
-                                random_id=0,
-                            )
+                            try:
+                                variants_keyboard_json = variants_keyboard.get_json()
+                                variants_response = await bot.api.messages.send(
+                                    peer_id=peer_id,
+                                    message=variants_message,
+                                    keyboard=variants_keyboard_json,
+                                    random_id=0,
+                                )
+                            except Exception as e:
+                                logger.error(f"Error sending variants message: {str(e)}")
+                                raise
+
                             variants_message_id = (
                                 variants_response[0]
                                 if isinstance(variants_response, list)
@@ -751,10 +1024,6 @@ class VKUtils:
                             conversation_message_ids=message_id,
                             delete_for_all=True,
                         )
-
-                        logger.info(
-                            f"Сообщение от пользователя {user_id} обработано как анонс. Данные: {event_data}"
-                        )
                     else:
                         await event.show_snackbar(
                             "❌ Не удалось парсить ответ GigaChat"
@@ -764,8 +1033,12 @@ class VKUtils:
                         )
 
                 except Exception as e:
-                    await event.show_snackbar(f"❌ Ошибка: {str(e)}")
-                    logger.error(f"Error processing announcement: {str(e)}")
+                    print(e)
+                    error_msg = self.truncate_snackbar_text(f"❌ Ошибка: {str(e)}")
+                    await event.show_snackbar(error_msg)
+                    logger.error(f"❌ Error processing announcement: {str(e)}", exc_info=True)
+                    logger.error(f"📋 Тип ошибки: {type(e).__name__}")
+                    logger.error(f"📋 Полное описание ошибки: {repr(e)}", exc_info=True)
 
                 return
 
@@ -776,7 +1049,31 @@ class VKUtils:
                     conversation_message_ids=message_id,
                     delete_for_all=True,
                 )
-                logger.info("Сообщение из личного диалога удалено.")
+                return
+
+            if action == "cancel_with_duplicate":
+                """Удаляет оба сообщения при отмене из-за дубликата"""
+                try:
+                    await bot.api.messages.delete(
+                        peer_id=peer_id,
+                        conversation_message_ids=msg_id,
+                        delete_for_all=True,
+                    )
+                    await bot.api.messages.delete(
+                        peer_id=peer_id,
+                        conversation_message_ids=message_id,
+                        delete_for_all=True,
+                    )
+
+                    state_key = (user_id, peer_id)
+                    if state_key in self.editing_state:
+                        del self.editing_state[state_key]
+
+                    await event.show_snackbar("✅ Отмена выполнена")
+                except Exception as e:
+                    logger.error(f"Error deleting messages: {e}")
+                    error_msg = self.truncate_snackbar_text(f"❌ Ошибка: {str(e)}")
+                    await event.show_snackbar(error_msg)
                 return
 
             if action == "edit_title":
@@ -942,7 +1239,6 @@ class VKUtils:
                     )
                 )
 
-                # Редактируем исходное сообщение со списком вариантов
                 await bot.api.messages.edit(
                     peer_id=peer_id,
                     conversation_message_id=message_id,
@@ -955,6 +1251,7 @@ class VKUtils:
                 event_data_str = payload.get("event_data")
                 event_data = json.loads(event_data_str)
                 state_key = (user_id, peer_id)
+                logger.info(f"✅ Подтверждение варианта названия. event_data: {event_data}")
 
                 # Получаем event_message_id из editing_state (основного сообщения с информацией о событии)
                 event_message_id = None
@@ -964,6 +1261,7 @@ class VKUtils:
                     )
 
                 if not event_message_id:
+                    logger.error(f"❌ event_message_id не найден для {state_key}")
                     await bot.api.messages.send(
                         peer_id=peer_id,
                         message="❌ Ошибка: не удалось найти сообщение события",
@@ -972,16 +1270,27 @@ class VKUtils:
                     return
 
                 # Используем методы для построения сообщения и клавиатуры
+                logger.info(f"📋 Построение сообщения и клавиатуры для подтвержденного варианта")
                 result_message = self._build_event_info_message(event_data)
+                logger.info(f"✓ Сообщение построено")
+
                 keyboard = self._build_event_edit_keyboard(event_data)
+                logger.info(f"✓ Клавиатура построена")
 
                 # Редактируем исходное сообщение с информацией о событии
-                await bot.api.messages.edit(
-                    peer_id=peer_id,
-                    conversation_message_id=event_message_id,
-                    message=result_message,
-                    keyboard=keyboard.get_json(),
-                )
+                try:
+                    logger.info(f"📤 Обновление основного сообщения события в чат {peer_id}")
+                    await bot.api.messages.edit(
+                        peer_id=peer_id,
+                        conversation_message_id=event_message_id,
+                        message=result_message,
+                        keyboard=keyboard.get_json(),
+                    )
+                    logger.info(f"✓ Основное сообщение события обновлено успешно")
+                except Exception as e:
+                    logger.error(f"❌ Ошибка при обновлении основного сообщения события: {str(e)}", exc_info=True)
+                    logger.error(f"   - event_data: {event_data}")
+                    raise
 
                 # Обновляем состояние
                 self.editing_state[state_key] = {
@@ -1193,14 +1502,21 @@ class VKUtils:
                     actual_end_time = end_time.strftime("%H:%M")
                     time_info += f" - {actual_end_time}"
 
+                    # Форматируем дату с добавлением относительного дня
+                    formatted_date = self.format_date_with_relative_day(
+                        event_data.get("date")
+                    )
+
                     await bot.api.messages.send(
                         peer_id=peer_id,
-                        message=f"✅ Событие успешно добавлено:\n\n📅 {event_data.get('date')}\n⏰ {time_info}\n📍 {event_data.get('location')}\n🎯 {event_data.get('title')}\n📊 {event_data.get('level')}",
+                        message=f"✅ Событие успешно добавлено:\n\n📅 {formatted_date}\n⏰ {time_info}\n📍 {event_data.get('location')}\n🎯 {event_data.get('title')}\n📊 {event_data.get('level')}",
                         random_id=0,
                     )
 
                     keyboard = Keyboard(one_time=False, inline=True)
-                    platform_url = f"http://{config_settings.FRONTEND_DOMAIN}/tasks/{task.id}"
+                    platform_url = (
+                        f"http://{config_settings.FRONTEND_DOMAIN}/tasks/{task.id}"
+                    )
                     keyboard.add(
                         OpenLink(
                             platform_url,
