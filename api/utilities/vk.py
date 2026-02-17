@@ -1200,7 +1200,7 @@ class VKUtils:
                     )
 
                     keyboard = Keyboard(one_time=False, inline=True)
-                    platform_url = f"http://{config_settings.FRONTEND_DOMAIN}/events/{new_event.id}"
+                    platform_url = f"http://{config_settings.FRONTEND_DOMAIN}/tasks/{task.id}"
                     keyboard.add(
                         OpenLink(
                             platform_url,
