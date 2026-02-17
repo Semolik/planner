@@ -10,6 +10,7 @@ from vkbottle import (
     Keyboard,
     Callback,
     OpenLink,
+    EMPTY_KEYBOARD,
 )
 from vkbottle.bot import MessageEvent
 from vkbottle.tools import WaiterMachine
@@ -138,13 +139,13 @@ class VKUtils:
         result_message = f"📋 Информация о событии:\n\n"
         result_message += f"📅 Дата: {event_data.get('date', 'не указана')}\n"
 
-        time_info = event_data.get('time', 'не указано')
-        end_time = event_data.get('end_time')
+        time_info = event_data.get("time", "не указано")
+        end_time = event_data.get("end_time")
         if end_time:
             time_info += f" - {end_time}"
         result_message += f"⏰ Время: {time_info}\n"
 
-        location = event_data.get('location')
+        location = event_data.get("location")
         location_str = location if location else "не указано"
         result_message += f"📍 Место: {location_str}\n"
         result_message += f"🎯 Название: {event_data.get('title', 'не указано')}\n"
@@ -269,14 +270,18 @@ class VKUtils:
                 edit_info = self.editing_state[state_key]
                 field = edit_info["field"]
                 event_data = edit_info["event_data"]
-                event_message_id = edit_info.get("event_message_id")  # ID сообщения с информацией о событии
+                event_message_id = edit_info.get(
+                    "event_message_id"
+                )  # ID сообщения с информацией о событии
 
                 new_value = message.text.strip()
 
                 # Если field == "event_info_message", пользователь отправил новое сообщение
                 # Очищаем состояние и обрабатываем это сообщение как новое
                 if field == "event_info_message":
-                    logger.info(f"Пользователь {user_id} отправил новое сообщение после обработки предыдущего события")
+                    logger.info(
+                        f"Пользователь {user_id} отправил новое сообщение после обработки предыдущего события"
+                    )
                     del self.editing_state[state_key]
                     # Показываем кнопки с действиями для нового сообщения
                     keyboard = Keyboard(one_time=False, inline=True)
@@ -300,12 +305,13 @@ class VKUtils:
                         )
                     )
 
-                    await message.answer("Что сделать с этим сообщением?", keyboard=keyboard)
+                    await message.answer(
+                        "Что сделать с этим сообщением?", keyboard=keyboard
+                    )
                     return
 
                 if field == "title":
                     if not new_value:
-
                         await message.answer("❌ Название не может быть пустым")
                         return
                     event_data["title"] = new_value
@@ -355,7 +361,9 @@ class VKUtils:
                         keyboard=keyboard.get_json(),
                     )
                 except Exception as e:
-                    logger.warning(f"Could not edit message: {e}. Sending new message instead.")
+                    logger.warning(
+                        f"Could not edit message: {e}. Sending new message instead."
+                    )
                     await message.answer(
                         result_message,
                         keyboard=keyboard.get_json(),
@@ -493,13 +501,18 @@ class VKUtils:
                             if fwd_msg.text:
                                 # Форматируем дату и время сообщения
                                 msg_date = ""
-                                if hasattr(fwd_msg, 'date') and fwd_msg.date:
-                                    msg_datetime = datetime.datetime.fromtimestamp(fwd_msg.date)
+                                if hasattr(fwd_msg, "date") and fwd_msg.date:
+                                    msg_datetime = datetime.datetime.fromtimestamp(
+                                        fwd_msg.date
+                                    )
                                     msg_date = msg_datetime.strftime("%d.%m.%Y %H:%M")
 
                                 # Определяем автора сообщения
                                 author = "Организатор мероприятия"
-                                if hasattr(fwd_msg, 'from_id') and fwd_msg.from_id == user_id:
+                                if (
+                                    hasattr(fwd_msg, "from_id")
+                                    and fwd_msg.from_id == user_id
+                                ):
                                     author = "Администратор системы"
 
                                 # Собираем полное сообщение с подписью
@@ -530,10 +543,23 @@ class VKUtils:
                     # Получаем default level из настроек
                     settings = await SettingsCRUD(self.session).get_settings()
                     default_level_id = settings.default_event_level_id
-                    default_level = next((level for level in event_levels if level.id == default_level_id), None)
+                    default_level = next(
+                        (
+                            level
+                            for level in event_levels
+                            if level.id == default_level_id
+                        ),
+                        None,
+                    )
 
-                    levels_list = ", ".join([level.name for level in event_levels]) if event_levels else "уровни не найдены"
-                    default_level_name = default_level.name if default_level else "уровень по умолчанию"
+                    levels_list = (
+                        ", ".join([level.name for level in event_levels])
+                        if event_levels
+                        else "уровни не найдены"
+                    )
+                    default_level_name = (
+                        default_level.name if default_level else "уровень по умолчанию"
+                    )
 
                     current_date = datetime.datetime.now().strftime("%d.%m.%Y")
                     system_prompt = f"""Ты – виртуальный помощник по извлечению информации о событиях из текста. Твоя основная задача – извлекать следующую информацию о событии:
@@ -629,12 +655,14 @@ class VKUtils:
 
                         # Обработка title: если это массив вариантов, сохраняем их и используем первый
                         title_variants = None
-                        title_to_display = event_data.get('title', 'не указано')
+                        title_to_display = event_data.get("title", "не указано")
 
                         if isinstance(title_to_display, list):
                             title_variants = title_to_display
                             title_to_display = title_variants[0]
-                            event_data['title'] = title_to_display  # Сохраняем первый вариант в event_data
+                            event_data["title"] = (
+                                title_to_display  # Сохраняем первый вариант в event_data
+                            )
 
                         # Используем метод для построения сообщения
                         result_message = self._build_event_info_message(event_data)
@@ -649,7 +677,9 @@ class VKUtils:
                             keyboard=keyboard.get_json(),
                             random_id=0,
                         )
-                        sent_message_id = response[0] if isinstance(response, list) else response
+                        sent_message_id = (
+                            response[0] if isinstance(response, list) else response
+                        )
 
                         # Сохраняем информацию о сообщении в editing_state для последующего редактирования
                         self.editing_state[(user_id, peer_id)] = {
@@ -660,7 +690,9 @@ class VKUtils:
 
                         # Если есть варианты названия, показываем второе сообщение с выбором
                         if title_variants and len(title_variants) > 1:
-                            variants_message = "📝 Выбери правильное название события:\n\n"
+                            variants_message = (
+                                "📝 Выбери правильное название события:\n\n"
+                            )
                             for i, variant in enumerate(title_variants, 1):
                                 variants_message += f"{i}. {variant}\n"
 
@@ -671,9 +703,13 @@ class VKUtils:
                                         f"{i}",
                                         payload={
                                             "action": "select_title_variant",
-                                            "event_data": json.dumps(event_data, ensure_ascii=False),
+                                            "event_data": json.dumps(
+                                                event_data, ensure_ascii=False
+                                            ),
                                             "variant_index": i - 1,
-                                            "title_variants": json.dumps(title_variants, ensure_ascii=False),
+                                            "title_variants": json.dumps(
+                                                title_variants, ensure_ascii=False
+                                            ),
                                         },
                                     )
                                 )
@@ -683,7 +719,9 @@ class VKUtils:
                                     "✅ Сохранить",
                                     payload={
                                         "action": "confirm_title_variant",
-                                        "event_data": json.dumps(event_data, ensure_ascii=False),
+                                        "event_data": json.dumps(
+                                            event_data, ensure_ascii=False
+                                        ),
                                     },
                                 )
                             )
@@ -694,7 +732,11 @@ class VKUtils:
                                 keyboard=variants_keyboard.get_json(),
                                 random_id=0,
                             )
-                            variants_message_id = variants_response[0] if isinstance(variants_response, list) else variants_response
+                            variants_message_id = (
+                                variants_response[0]
+                                if isinstance(variants_response, list)
+                                else variants_response
+                            )
 
                             # Сохраняем ID сообщения с вариантами названия
                             self.editing_state[(user_id, peer_id)] = {
@@ -881,7 +923,9 @@ class VKUtils:
                             f"{i}",
                             payload={
                                 "action": "select_title_variant",
-                                "event_data": json.dumps(event_data, ensure_ascii=False),
+                                "event_data": json.dumps(
+                                    event_data, ensure_ascii=False
+                                ),
                                 "variant_index": i - 1,
                                 "title_variants": title_variants_str,
                             },
@@ -915,7 +959,9 @@ class VKUtils:
                 # Получаем event_message_id из editing_state (основного сообщения с информацией о событии)
                 event_message_id = None
                 if state_key in self.editing_state:
-                    event_message_id = self.editing_state[state_key].get("event_message_id")
+                    event_message_id = self.editing_state[state_key].get(
+                        "event_message_id"
+                    )
 
                 if not event_message_id:
                     await bot.api.messages.send(
@@ -950,7 +996,10 @@ class VKUtils:
                 state_key = (user_id, peer_id)
 
                 # Получаем event_data из editing_state
-                if state_key not in self.editing_state or self.editing_state[state_key].get("field") != "level_selection":
+                if (
+                    state_key not in self.editing_state
+                    or self.editing_state[state_key].get("field") != "level_selection"
+                ):
                     await bot.api.messages.send(
                         peer_id=peer_id,
                         message="❌ Ошибка: данные события не найдены",
@@ -992,7 +1041,7 @@ class VKUtils:
                     "title": "Название",
                     "date": "Дата",
                     "time": "Время начала",
-                    "level": "Уровень"
+                    "level": "Уровень",
                 }
 
                 missing_fields = []
@@ -1004,7 +1053,9 @@ class VKUtils:
                     error_message = "❌ Не заполнены обязательные поля:\n"
                     for field in missing_fields:
                         error_message += f"• {field}\n"
-                    error_message += "\nПожалуйста, заполните все поля перед добавлением."
+                    error_message += (
+                        "\nПожалуйста, заполните все поля перед добавлением."
+                    )
                     await bot.api.messages.send(
                         peer_id=peer_id,
                         message=error_message,
@@ -1026,7 +1077,9 @@ class VKUtils:
                     # Парсим или устанавливаем время окончания
                     if event_data.get("end_time"):
                         end_time_parts = event_data["end_time"].split(":")
-                        end_time = datetime.time(int(end_time_parts[0]), int(end_time_parts[1]))
+                        end_time = datetime.time(
+                            int(end_time_parts[0]), int(end_time_parts[1])
+                        )
                     else:
                         # По умолчанию ставим время окончания на 2 часа позже начала
                         start_dt = datetime.datetime.combine(event_date, start_time)
@@ -1090,9 +1143,15 @@ class VKUtils:
                     settings = await SettingsCRUD(self.session).get_settings()
 
                     # Вычисляем дедлайны: дата мероприятия + значение из настроек (в днях)
-                    photographers_deadline = new_event.date + datetime.timedelta(days=settings.photographers_deadline)
-                    designers_deadline = new_event.date + datetime.timedelta(days=settings.designers_deadline)
-                    copywriters_deadline = new_event.date + datetime.timedelta(days=settings.copywriters_deadline)
+                    photographers_deadline = new_event.date + datetime.timedelta(
+                        days=settings.photographers_deadline
+                    )
+                    designers_deadline = new_event.date + datetime.timedelta(
+                        days=settings.designers_deadline
+                    )
+                    copywriters_deadline = new_event.date + datetime.timedelta(
+                        days=settings.copywriters_deadline
+                    )
 
                     # Создаем основную задачу для мероприятия
                     task = await TasksCRUD(self.session).create_task(
@@ -1130,7 +1189,7 @@ class VKUtils:
 
                     await self.session.commit()
 
-                    time_info = event_data.get('time', '')
+                    time_info = event_data.get("time", "")
                     actual_end_time = end_time.strftime("%H:%M")
                     time_info += f" - {actual_end_time}"
 
@@ -1146,7 +1205,6 @@ class VKUtils:
                         OpenLink(
                             platform_url,
                             "🔗 Перейти на платформу",
-
                         )
                     )
 
@@ -1170,7 +1228,9 @@ class VKUtils:
                     if state_key in self.editing_state:
                         del self.editing_state[state_key]
 
-                    logger.info(f"Событие добавлено пользователем {user_id}: {event_data}, ID события: {new_event.id}")
+                    logger.info(
+                        f"Событие добавлено пользователем {user_id}: {event_data}, ID события: {new_event.id}"
+                    )
 
                 except ValueError as e:
                     await bot.api.messages.send(

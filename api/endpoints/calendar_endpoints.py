@@ -6,7 +6,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from api.cruds.tasks_crud import TasksCRUD
 from api.db.session import get_async_session
 from api.cruds.users_crud import UsersCRUD
-from api.schemas.events import CalendarItem, TaskReadShort, TypedTaskReadFull, EventFullInfo
+from api.schemas.events import (
+    CalendarItem,
+    TaskReadShort,
+    TypedTaskReadFull,
+    EventFullInfo,
+)
 from api.schemas.users import UserReadShort
 from api.models.events_models import Task, TypedTask
 from api.models.user_models import User
