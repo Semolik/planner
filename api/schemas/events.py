@@ -200,11 +200,14 @@ class TaskRead(TaskReadShort):
 
     class Config:
         from_attributes = True
+
+
 class UserReadAdmin(UserReadWithEmail):
     nearest_current_year_birthday_task: TaskReadShort | None = None
 
     class Config:
         from_attributes = True
+
 
 class TaskWithoutEventRead(TaskReadShortWithoutEvent):
     typed_tasks: List[TypedTaskRead]

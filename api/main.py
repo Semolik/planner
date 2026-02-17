@@ -2,6 +2,8 @@ from fastapi.staticfiles import StaticFiles
 from api.utilities.vk import VKUtils
 from fastapi.middleware.cors import CORSMiddleware
 from api.core.config import settings
+
+
 from api.endpoints.settings_endpoints import api_router as settings_router
 from api.endpoints.institutes_endpoints import api_router as institutes_router
 from api.endpoints.files_endpoints import api_router as files_router
@@ -26,7 +28,7 @@ from api.endpoints.meetings_endpoints import api_router as meetings_router
 from api.endpoints.custom_achievements_endpoints import (
     api_router as custom_achievements_router,
 )
-
+from api.endpoints.gigachat_enpoints import api_router as gigachat_router
 from api.db.session import async_session_maker
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -82,6 +84,7 @@ app.include_router(statistics_router)
 app.include_router(search_router)
 app.include_router(meetings_router)
 app.include_router(custom_achievements_router)
+app.include_router(gigachat_router)
 
 
 main_app_lifespan = app.router.lifespan_context
@@ -103,7 +106,7 @@ async def lifespan_wrapper(app):
         yield maybe_state
 
 
-# app.router.lifespan_context = lifespan_wrapper
+app.router.lifespan_context = lifespan_wrapper
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS_LIST,

@@ -70,6 +70,11 @@ const asideBlocks = computed(() => {
                     path: routesNames.chats,
                 },
                 {
+                    name: "GigaChat",
+                    icon: "material-symbols:smart-toy-rounded",
+                    path: routesNames.gigachat,
+                },
+                {
                     name: "Настройки",
                     icon: "material-symbols:settings-rounded",
                     path: routesNames.settings,

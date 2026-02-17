@@ -104,8 +104,8 @@ class UsersCRUD(BaseCRUD):
         users = users.offset((page - 1) * page_size).limit(page_size)
         result = await self.db.execute(
             users.options(
-                selectinload(User.institute), selectinload(User.roles_objects),
-
+                selectinload(User.institute),
+                selectinload(User.roles_objects),
             )
         )
         return result.scalars().all()

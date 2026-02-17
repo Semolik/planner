@@ -17,7 +17,8 @@ from sqlalchemy import (
     Time,
     select,
     case,
-    text, and_,
+    text,
+    and_,
 )
 from sqlalchemy.sql import func
 from api.models.files_models import File, Image
