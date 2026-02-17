@@ -5,6 +5,7 @@ export const useAuthStore = defineStore("auth", {
     state: () => ({
         logined: false,
         userData: null,
+        redirectTo: null,
     }),
     getters: {
         userRole() {
@@ -19,6 +20,12 @@ export const useAuthStore = defineStore("auth", {
         resetSavedData() {
             this.logined = false;
             this.userData = null;
+        },
+        setRedirectTo(url) {
+            this.redirectTo = url;
+        },
+        clearRedirectTo() {
+            this.redirectTo = null;
         },
         async logout() {
             try {

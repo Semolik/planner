@@ -5,7 +5,12 @@
 </template>
 <script setup>
 const onLogin = () => {
+    const authStore = useAuthStore();
     const router = useRouter();
-    router.push("/");
+
+    const redirectUrl = authStore.redirectTo || "/";
+    authStore.clearRedirectTo();
+
+    router.push(redirectUrl);
 };
 </script>

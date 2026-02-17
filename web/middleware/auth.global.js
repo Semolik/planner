@@ -6,6 +6,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         let error = await authStore.getUserData();
         if (error) {
             if (to.name !== "login") {
+                authStore.setRedirectTo(to.fullPath);
                 return navigateTo({ name: routesNames.login });
             }
         }
