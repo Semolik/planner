@@ -1,19 +1,18 @@
 import { defineStore } from "pinia";
 import { AuthService, UsersService, UserRole } from "@/client";
+import type { UserReadWithEmail } from "@/client";
 
 export const useAuthStore = defineStore("auth", {
     state: () => ({
         logined: false,
-        userData: null,
-        redirectTo: null,
+        userData: null as UserReadWithEmail | null,
+        redirectTo: null as string | null,
     }),
     getters: {
-        userRole() {
-            return this.userData?.role || null;
-        },
 
-        isAdmin() {
-            return this.userData?.is_superuser;
+
+        isAdmin(): boolean {
+            return this.userData ? this.userData.is_superuser : false;
         },
     },
     actions: {
@@ -21,7 +20,7 @@ export const useAuthStore = defineStore("auth", {
             this.logined = false;
             this.userData = null;
         },
-        setRedirectTo(url) {
+        setRedirectTo(url: string) {
             this.redirectTo = url;
         },
         clearRedirectTo() {
@@ -33,7 +32,7 @@ export const useAuthStore = defineStore("auth", {
             } catch (error) {}
             this.resetSavedData();
         },
-        async login(username, password) {
+        async login(username: string, password: string) {
             this.logined = false;
             try {
                 await AuthService.authJwtLoginAuthJwtLoginPost({
@@ -57,7 +56,7 @@ export const useAuthStore = defineStore("auth", {
                 return error;
             }
         },
-        async updateProfile(data) {
+        async updateProfile(data: Partial<UserReadWithEmail>) {
             try {
                 this.userData = await UsersService.updateUserMeUsersMePut({
                     ...this.userData,
@@ -68,7 +67,7 @@ export const useAuthStore = defineStore("auth", {
             }
         },
 
-        async registerRequest(username, password, name, role) {
+        async registerRequest(username: string, password: string, name: string, role: UserRole) {
             this.logined = false;
             try {
                 this.userData = await AuthService.registerUserAuthRegisterPost({
@@ -85,3 +84,4 @@ export const useAuthStore = defineStore("auth", {
         },
     },
 });
+

@@ -1,7 +1,9 @@
 import { useAuthStore } from "@/stores/auth";
 import { storeToRefs } from "pinia";
 import { routesNames } from "@typed-router";
-export const useAuthMiddleware = async (context, userRole) => {
+import type { UserRole } from "@/client";
+
+export const useAuthMiddleware = async (context: any, userRole?: UserRole) => {
     const authStore = useAuthStore();
     const { logined } = storeToRefs(authStore);
 
@@ -11,9 +13,10 @@ export const useAuthMiddleware = async (context, userRole) => {
     if (
         !logined.value ||
         (userRole &&
-            !authStore.userData.roles.includes(userRole) &&
-            !authStore.userData.is_superuser)
+            !authStore.userData?.roles?.includes(userRole) &&
+            !authStore.userData?.is_superuser)
     ) {
         return navigateTo({ name: routesNames.login });
     }
 };
+

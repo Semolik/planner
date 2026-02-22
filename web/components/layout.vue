@@ -36,8 +36,6 @@
     </UApp>
 </template>
 <script setup>
-import { routesNames } from "@typed-router";
-import {storeToRefs} from "pinia";
 import { useAuthStore } from "~/stores/auth";
 const { $viewport } = useNuxtApp();
 const { noPadding } = defineProps({
@@ -47,131 +45,27 @@ const { noPadding } = defineProps({
     },
 });
 const authStore = useAuthStore();
-const {userData} = storeToRefs(authStore);
+
+const { getMenuBlocks, filterBlocksForMobile } = useMenuBlocks();
 
 const asideBlocks = computed(() => {
-    const blocks = [
-        {
-            name: null,
-            items: [
-                {
-                    name: "Главная",
-                    path: routesNames.index,
-                    icon: "material-symbols:home-rounded",
-                },
-                {
-                    name: "Профиль",
-                    path: routesNames.usersMe,
-                    icon: "material-symbols:person-rounded",
-                },
-                {
-                    name: "Мои задачи",
-                    icon: "material-symbols:task-alt-rounded",
-                    path: routesNames.tasksMy,
-                }
-            ],
-        },
-        {
-            name: "Мероприятия",
-            items: [
-                {
-                    name: "Мероприятия и задачи",
-                    path: routesNames.tasks,
-                    icon: "material-symbols:calendar-month",
-                },
-                {
-                    name: "Группы мероприятий",
-                    path: routesNames.eventsGroups,
-                    icon: "material-symbols:folder-rounded",
-                },
-            ],
-        },
-        {
-            name: "Отчеты",
-            items: [
-
-                {
-                  name: "Моя статистика",
-                  icon: "material-symbols:bar-chart-rounded",
-                  path: routesNames.statisticsMe,
-                },
-                {
-                    name: "Планерки",
-                    path: routesNames.meetings,
-                    icon: "material-symbols:meeting-room-rounded",
-                },
-                {
-                    name: "ПГАС",
-                    path: routesNames.usersUserIdAchievements,
-                    params: {
-                        user_id: userData.value?.id,
-                    },
-                    icon: "material-symbols:attach-money-rounded",
-                },
-            ],
-        },
-    ];
-    if (authStore.isAdmin) {
-        blocks.push({
-            name: "Администрирование",
-            items: [
-                {
-                    name: "Пользователи",
-                    path: routesNames.users,
-                    icon: "material-symbols:person-rounded",
-                },
-                  {
-                    name: "Дни рождения",
-                    path: routesNames.birthdays,
-                    icon: "material-symbols:cake-rounded",
-                },
-                {
-                    name: "Статистика",
-                    icon: "material-symbols:analytics-outline-rounded",
-                    path: routesNames.statistics,
-                },
-                {
-                    name: "Отчетные периоды",
-                    icon: "material-symbols:date-range-rounded",
-                    path: routesNames.periods,
-                },
-                {
-                    name: "Институты",
-                    path: routesNames.institutes,
-                    icon: "material-symbols:account-balance-rounded",
-                },
-                {
-                    name: "Привязанные чаты",
-                    icon: "material-symbols:chat-rounded",
-                    path: routesNames.chats,
-                },
-                  {
-                    name: "GigaChat",
-                    icon: "material-symbols:smart-toy-rounded",
-                    path: routesNames.gigachat,
-                },
-                {
-                    name: "Настройки",
-                    icon: "material-symbols:settings-rounded",
-                    path: routesNames.settings,
-                },
-            ],
-        });
-    }
-
-    return blocks;
+    const blocks = getMenuBlocks();
+    const isMobile = $viewport.isLessThan('lg');
+    return filterBlocksForMobile(blocks, isMobile);
 });
 </script>
 <style lang="scss">
 .default-layout {
     display: grid;
     grid-template-columns: 280px 1fr;
+    grid-template-rows: 1fr auto;
     max-width: 100vw;
     min-height: 100vh;
     height: 100vh;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     isolation: isolate;
-    
+
     & > .aside-fixed {
         grid-row: 1 / span 2;
         grid-column: 1 / 2;
@@ -190,24 +84,19 @@ const asideBlocks = computed(() => {
         grid-column: 2 / 3;
         grid-row: 1 / 2;
         min-width: 0;
-        max-height: 100vh;
         width: 100%;
-        height: 100vh;
-        overflow-y: auto;
         margin: 0;
         z-index: 0;
         &.padding {
             padding: 13px;
         }
-        // На мобильных: контент занимает всю ширину и имеет безопасный отступ снизу под нижний бар
         &.has-bottom-bar {
-            padding-bottom: calc(64px + env(safe-area-inset-bottom));
+            padding-bottom: calc(64px + env(safe-area-inset-bottom) + 8px);
         }
         @include lg {
             margin-left: 0;
         }
         @include lg(true) {
-            overflow: auto;
             padding: 8px !important;
             grid-column: 1 / -1; // одна колонка на мобильных
         }

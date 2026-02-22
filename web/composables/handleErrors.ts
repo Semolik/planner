@@ -1,21 +1,52 @@
-const messages = {
+interface ErrorMessage {
+    message: string;
+    status: number | null;
+}
+
+interface ErrorResponse {
+    detail?: string | Array<{ msg: string }>;
+    message?: string;
+}
+
+interface AxiosError {
+    response?: {
+        status: number;
+        data?: ErrorResponse;
+        message?: string;
+    };
+    request?: any;
+    message?: string;
+}
+
+interface OpenApiError {
+    body?: ErrorResponse;
+    status?: number;
+    request?: {
+        errors?: Record<string, string>;
+    };
+    message?: string;
+}
+
+const messages: Record<string, string> = {
     RESET_PASSWORD_BAD_TOKEN: "Запрос на сброс пароля устарел.",
     VERIFY_USER_ALREADY_VERIFIED: "Пользователь уже подтвержден.",
     LOGIN_BAD_CREDENTIALS: "Неверный логин или пароль.",
 };
-const getErrorMessage = (error_code) => {
-    return messages[error_code] || error_code;
+
+const getErrorMessage = (error_code: string | number): string => {
+    return messages[String(error_code)] || String(error_code);
 };
-const HandleAxiosError = (error, errorText) => {
+
+const HandleAxiosError = (error: AxiosError, errorText?: string): ErrorMessage => {
     if (error.response) {
-        let status = error.response.status;
-        let message = error.response.data?.detail || errorText || error.message;
+        const status = error.response.status;
+        const message = error.response.data?.detail || errorText || error.message;
         return {
             message: Array.isArray(message)
                 ? message
-                      .map((message) => getErrorMessage(message.msg))
+                      .map((msg: any) => getErrorMessage(msg.msg))
                       .join("\n")
-                : getErrorMessage(message),
+                : getErrorMessage(String(message)),
             status: status,
         };
     } else if (error.request) {
@@ -30,13 +61,14 @@ const HandleAxiosError = (error, errorText) => {
         };
     }
 };
-const HandleOpenApiError = (error, errorText) => {
+
+const HandleOpenApiError = (error: OpenApiError, errorText?: string): ErrorMessage => {
     if (error.body) {
-        let message = error.body?.detail || errorText;
+        const message = error.body?.detail || errorText;
         if (message) {
             return {
-                message: getErrorMessage(message),
-                status: error.status,
+                message: getErrorMessage(String(message)),
+                status: error.status || null,
             };
         }
     } else if (error.request) {
@@ -55,7 +87,7 @@ const HandleOpenApiError = (error, errorText) => {
             }
             return {
                 message: getErrorMessage(error.request.errors[statusCodes[0]]),
-                status: statusCodes[0],
+                status: Number(statusCodes[0]),
             };
         }
     }
@@ -64,4 +96,6 @@ const HandleOpenApiError = (error, errorText) => {
         status: null,
     };
 };
+
 export { HandleAxiosError, HandleOpenApiError };
+

@@ -1,4 +1,6 @@
 import { UserRole } from "@/client";
+
 export default defineNuxtRouteMiddleware(async (context) => {
-    return useAuthMiddleware(context, UserRole.PHOTOGRAPHER);
+    return useAuthMiddleware(context, UserRole.DESIGNER);
 });
+

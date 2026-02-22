@@ -60,6 +60,7 @@
                             params: item.params ? item.params : {}
                         }"
                     >
+
                         <Icon :name="item.icon" />
                         <span>
                             {{ item.name }}
@@ -127,6 +128,11 @@ const logout = () => {
         width: 100%;
         min-width: 100%;
         max-width: 100%;
+        height: auto;
+
+
+        border-right: none;
+        border-bottom: 1px solid $border-color;
     }
 }
 .aside-scrollable {
@@ -138,6 +144,7 @@ const logout = () => {
     @include md(true) {
         gap: 10px;
     }
+    padding-bottom: 10px;
 }
 aside {
     display: flex;
@@ -162,7 +169,7 @@ aside {
         flex-direction: column;
         gap: 10px;
         @include lg {
-            padding: 13px;
+            padding: 8px;
         }
         padding-bottom: 0px !important;
 
